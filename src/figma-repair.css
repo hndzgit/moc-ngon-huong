@@ -103,7 +103,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .contact-page h1 { font-size:80px; line-height:90px; color:#3e5641; margin-bottom:4px; }
   .contact-page .text-center > p:first-child { font:400 24px/29px 'Minion Pro',Georgia,serif; color:#8e6746; letter-spacing:4.8px; }
   .contact-page .text-center > p:last-of-type { font-size:20px; line-height:30px; max-width:764px; }
-  .contact-page .text-center > .flex { display:grid; grid-template-columns:1fr 1fr; gap:24px; text-align:left; }
+  .contact-page .text-center > .flex { display:grid; grid-template-columns:1fr 1fr; gap:24px; text-align:left; max-width:1394px; margin-inline:auto; }
   .contact-page .text-center > .flex > div { gap:16px; }
   .contact-page .text-center > .flex span:first-child { width:56px; height:56px; border:1px solid #8e6746; background:none; border-radius:16px; }
   .contact-page label { font:400 20px/30px Philosopher,serif; color:#3e5641; margin-bottom:8px; }
@@ -111,6 +111,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .contact-page input::placeholder,.contact-page textarea::placeholder { color:transparent; }
   .contact-page textarea { height:202px; border-color:#999; border-radius:12px; background:transparent; font-size:20px; }
   .contact-page form { display:flex; flex-direction:column; gap:24px; }
+  .contact-page form > .grid { column-gap:24px; }
   .contact-page form > * + * { margin-top:0; }
   .contact-page form > button { height:68px; display:flex; align-items:center; justify-content:center; gap:8px; font:400 24px/36px Roboto,sans-serif; color:white; box-shadow:none; }
   .auth-page { padding:80px 0; }

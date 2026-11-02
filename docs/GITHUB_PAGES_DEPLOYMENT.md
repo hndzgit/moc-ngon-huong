@@ -89,3 +89,9 @@ Bằng chứng local không chứa credential: `docs/evidence/github-pages-live/
 Minion Pro gốc chưa được cung cấp; vẫn dùng fallback đã ghi trong audit Figma. 24 trạng thái có bảng theo dõi, chưa màn nào được nghiệm thu đầy đủ mọi tiêu chí visual. Đợt deployment không thay thế đo Lighthouse/CWV, audit accessibility/security toàn diện hoặc kiểm tra Firebase/backend thật của Phase 4.
 
 Trước khi nhận đơn/xác thực thật: cung cấp Firebase client config qua Actions Variables, thêm authorized domain, kiểm tra Auth provider; triển khai và kiểm thử dịch vụ nhận đơn/liên hệ/newsletter bằng môi trường an toàn. Không coi website tĩnh đã xuất bản là backend đã hoạt động. Đợt triển khai giữ nguyên artwork, icon, giá và Firebase SDK; không thay đổi dữ liệu khách hàng.
+
+## Sửa căn lề Hotline — 02/11/2026
+
+Theo phản hồi ảnh chụp của chủ dự án, đối chiếu metadata Figma `127:9603`–`127:9617`: hàng Hotline/Email và form phải cùng rộng 1394px, hai cột cách 24px. Đã giới hạn hàng liên hệ theo form và đồng bộ column gap desktop. Trước sửa tại 1920px: hàng liên hệ x=120, form x=263; sau sửa cả hai x=263, rộng 1394px, Email thẳng cột số điện thoại. Không thay icon hoặc nội dung.
+
+Build TypeScript + Vite PASS; kiểm tra contact page tại 1920/1440/1280/1024/768/390/375/360px PASS, không overflow, ảnh hỏng hoặc lỗi console/page. Bằng chứng cục bộ: `docs/evidence/hotline-alignment/`.
