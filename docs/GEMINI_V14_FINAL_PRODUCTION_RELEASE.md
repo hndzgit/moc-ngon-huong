@@ -16,14 +16,14 @@
 
 | Thông số | Giá trị thực tế | Trạng thái |
 | :--- | :--- | :--- |
-| **Release Commit** | `34afa6b` (`feat: V14.0 Production Release - Firebase Auth, Customer Order History & Shop Notifications`) | `VERIFIED_LIVE` |
+| **Release Commit** | `0fd8b27` (`docs: V14.0 Production Release Report & Live Smoke Verification Artifacts`) | `VERIFIED_LIVE` |
 | **Git Branches** | `codex/phase5-motion` & `main` (đồng bộ hoàn toàn trên `origin`) | `VERIFIED_LIVE` |
-| **Vercel Deployment ID** | `dpl_BsJycJNkXb9zEypxSEpfRxkwfXnw` | `VERIFIED_LIVE` |
-| **Vercel Deployment URL** | `https://moc-ngon-huong-9fqzi7l61-hndzs-projects.vercel.app` | `VERIFIED_LIVE` |
+| **Vercel Deployment ID** | `dpl_DZSyXrr5XxaP3LdbN5XpqBzgjpfZ` | `VERIFIED_LIVE` |
+| **Vercel Deployment URL** | `https://moc-ngon-huong-q5cgskqf5-hndzs-projects.vercel.app` | `VERIFIED_LIVE` |
 | **Production Aliases** | `https://mocngonhuong.com`, `https://www.mocngonhuong.com`, `https://moc-ngon-huong.vercel.app` | `VERIFIED_LIVE` |
 | **Chứng chỉ SSL/TLS** | Hợp lệ (Let's Encrypt / Vercel Edge TLS, HSTS 63072000s) | `VERIFIED_LIVE` |
-| **Trạng thái Build** | `● Ready` (Thời gian build: 48s, billable duration: 2m) | `VERIFIED_LIVE` |
-| **Serverless Functions** | `λ api/me/orders` (3.17 MB), `λ api/orders` (3.20 MB) | `VERIFIED_LIVE` |
+| **Trạng thái Build** | `● Ready` (Thời gian build: 1m 04s) | `VERIFIED_LIVE` |
+| **Serverless Functions** | `λ api/me/orders` (3.16 MB), `λ api/orders` (3.19 MB) | `VERIFIED_LIVE` |
 
 ---
 
