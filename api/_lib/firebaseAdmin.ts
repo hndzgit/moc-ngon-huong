@@ -19,6 +19,29 @@ let cachedAdminApp: App | null = null;
 let cachedDb: Firestore | null = null;
 let cachedAuth: Auth | null = null;
 
+function parseServiceAccount(raw: string): any {
+  let str = raw.trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    try {
+      str = JSON.parse(str);
+    } catch {
+      str = str.slice(1, -1).trim();
+    }
+  }
+  if (!str.startsWith('{') && /^[A-Za-z0-9+/=]+$/.test(str.replace(/\s+/g, ''))) {
+    try {
+      str = Buffer.from(str, 'base64').toString('utf-8').trim();
+    } catch {
+      // ignore
+    }
+  }
+  const parsed = typeof str === 'string' ? JSON.parse(str) : str;
+  if (parsed.private_key && typeof parsed.private_key === 'string') {
+    parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+  }
+  return parsed;
+}
+
 export function getFirebaseAdminApp(): App | null {
   if (cachedAdminApp) return cachedAdminApp;
 
@@ -28,18 +51,21 @@ export function getFirebaseAdminApp(): App | null {
     return cachedAdminApp;
   }
 
-  // 1. Full JSON Service Account
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  // 1. Full JSON Service Account (FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT)
+  const serviceAccountJson =
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
+    process.env.FIREBASE_SERVICE_ACCOUNT;
   if (serviceAccountJson) {
     try {
-      const parsed = JSON.parse(serviceAccountJson);
+      const parsed = parseServiceAccount(serviceAccountJson);
       cachedAdminApp = initializeApp({
         credential: cert(parsed),
-        projectId: parsed.project_id,
+        projectId: parsed.project_id || 'moc-ngon-huong',
       });
+      console.log(`[MNH Admin] Successfully initialized Firebase Admin for project: ${parsed.project_id || 'moc-ngon-huong'}`);
       return cachedAdminApp;
     } catch (err) {
-      console.error('[MNH Admin] Error parsing FIREBASE_SERVICE_ACCOUNT:', err);
+      console.error('[MNH Admin] Error parsing FIREBASE_SERVICE_ACCOUNT_JSON:', err);
     }
   }
 

@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import fs from 'fs';
 import path from 'path';
 import { getFirestoreDb, verifyAuthToken, getIsProduction, getIsServerless } from './_lib/firebaseAdmin.js';
-import { sendShopOrderNotification } from './_lib/notifications.js';
+import { sendOrderNotifications } from './_lib/notifications.js';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../src/data/products.js';
 import type { OrderRecord, OrderItemSnapshot, PaymentStatus, OrderStatus } from '../src/types';
 
@@ -430,8 +430,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!cleanIdempotencyKey) {
         // Direct order without idempotency key
         await db.collection('orders').doc(orderRecord.id).set(orderRecord);
-        // Trigger shop owner email notification
-        sendShopOrderNotification(orderRecord).catch((err) =>
+        // Trigger shop and customer transactional email notifications
+        sendOrderNotifications(orderRecord).catch((err) =>
           console.error('[MNH Notification] Background email dispatch error:', err)
         );
         return {
@@ -511,9 +511,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
       });
 
-      // If a brand new order was committed (HTTP 201), dispatch email notification to shop
+      // If a brand new order was committed (HTTP 201), dispatch email notifications
       if (txResult.statusCode === 201) {
-        sendShopOrderNotification(orderRecord).catch((err) =>
+        sendOrderNotifications(orderRecord).catch((err) =>
           console.error('[MNH Notification] Background email dispatch error:', err)
         );
       }
@@ -556,7 +556,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Trigger dev notification
-    sendShopOrderNotification(orderRecord).catch((err) =>
+    sendOrderNotifications(orderRecord).catch((err) =>
       console.error('[MNH Dev Notification Error]:', err)
     );
 
