@@ -2,46 +2,85 @@ import { assetUrl } from '../lib/assets';
 import { MotionImage } from '../motion/MotionImage';
 import { FigmaArtwork } from './FigmaArtwork';
 import { FigmaIcon } from './FigmaIcon';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { PRODUCTS } from '../data/products';
 import { PageRoute, Product } from '../types';
+import './SignatureAtelier.css';
 
 interface SignatureBoxSectionProps {
   onNavigate: (page: PageRoute, productId?: string) => void;
   onAddToCart: (product: Product, quantity?: number) => void;
+  /** Retained for existing callers; catalog price is authoritative. */
   displayPrice?: number;
+  onComposeGift?: () => void;
 }
+
+const GIFT_VIEWS = [
+  { src: '/assets/figma/combo-slide-1.png', node: '96:2989', title: 'Hộp quà Tâm Ý', caption: 'Một món quà, bốn sắc hương trà Việt.' },
+  { src: '/assets/figma/originals/gift-96-3129.jpg', node: '96:3129', title: 'Mở hộp quà', caption: 'Khám phá hộp quà qua ảnh chụp nguyên bản.' },
+  { src: '/assets/figma/originals/gift-96-3091.jpg', node: '96:3091', title: 'Những điều bên trong', caption: 'Các thức trà và phụ kiện trong cùng một món quà.' },
+  { src: '/assets/figma/originals/gift-96-3111.jpg', node: '96:3111', title: 'Bốn sắc hương', caption: 'Bưởi — AN, Nhài — THƯƠNG, Hoa Sói — CẢM, Cốm — NHỚ.' },
+] as const;
 
 export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
   onNavigate,
   onAddToCart,
-  displayPrice = 399000,
+  onComposeGift,
 }) => {
   const signatureProduct =
     PRODUCTS.find((p) => p.id === 'hop-qua-tam-y') || PRODUCTS[4];
   // Component 8 originals; product-detail galleries are a separate Figma slot.
-  const slides = ['/assets/figma/combo-slide-1.png', '/assets/figma/originals/gift-96-3129.jpg', '/assets/figma/originals/gift-96-3091.jpg', '/assets/figma/originals/gift-96-3111.jpg'];
+  const slides = GIFT_VIEWS;
   const [slideIdx, setSlideIdx] = useState(0);
+  const gesture = useRef<{ x: number; y: number } | null>(null);
+  const suppressImageClick = useRef(false);
 
   const prevSlide = () =>
     setSlideIdx((i) => (i - 1 + slides.length) % slides.length);
   const nextSlide = () => setSlideIdx((i) => (i + 1) % slides.length);
 
   return (
-    <section className="signature-box relative py-14 md:py-20 bg-[#3e5641] text-[#f7f4d5] overflow-hidden">
+    <section id="hop-qua-tam-y" aria-labelledby="signature-box-title" className="signature-box signature-atelier relative py-14 md:py-20 bg-[#3e5641] text-[#f7f4d5] overflow-hidden">
       <div className="figma-container relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Image Carousel with Arrows & Dots (Figma Component 8 - 96:3135) */}
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-6" role="region" aria-label="Hình ảnh Hộp Quà Tâm Ý" aria-roledescription="thư viện ảnh">
             <div className="relative rounded-[18px] overflow-hidden shadow-xl aspect-[16/10]">
+              <button
+                type="button"
+                className="signature-photo-link"
+                aria-label="Xem chi tiết Hộp Quà Tâm Ý"
+                onPointerDown={event => {
+                  if (event.button !== 0) return;
+                  gesture.current = { x: event.clientX, y: event.clientY };
+                  suppressImageClick.current = false;
+                }}
+                onPointerCancel={() => { gesture.current = null; }}
+                onPointerUp={event => {
+                  const start = gesture.current;
+                  gesture.current = null;
+                  if (!start) return;
+                  const dx = event.clientX - start.x, dy = event.clientY - start.y;
+                  if (Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+                    suppressImageClick.current = true;
+                    if (dx < 0) nextSlide(); else prevSlide();
+                  }
+                }}
+                onClick={() => {
+                  if (suppressImageClick.current) { suppressImageClick.current = false; return; }
+                  onNavigate('detail', signatureProduct.id);
+                }}
+              >
               <MotionImage
-                src={assetUrl(slides[slideIdx])}
-                data-figma-node={["96:2989","96:3129","96:3091","96:3111"][slideIdx]}
-                alt='Hộp Quà Trà Đa Hương — "TÂM Ý"'
+                src={assetUrl(`/assets/optimized/gift-view-${slideIdx + 1}.webp`)}
+                data-original-asset={slides[slideIdx].src}
+                data-figma-node={slides[slideIdx].node}
+                alt={`${slides[slideIdx].title} — ảnh ${slideIdx + 1} trong 4`}
                 loading="lazy" decoding="async"
-                onClick={() => onNavigate('detail', signatureProduct.id)}
+                draggable={false}
                 className="w-full h-full object-cover cursor-pointer"
               />
+              </button>
 
               {/* Left / Right Carousel Arrows */}
               <button
@@ -60,6 +99,18 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
               >
                 <FigmaIcon name="arrowRight" />
               </button>
+            </div>
+            <div className="signature-view-caption" aria-live="polite" aria-atomic="true">
+              <span>{String(slideIdx + 1).padStart(2, '0')} / 04</span>
+              <p>{slides[slideIdx].caption}</p>
+            </div>
+            <div className="signature-thumbnails" role="group" aria-label="Góc nhìn hộp quà">
+              {slides.map((slide, idx) => (
+                <button key={slide.node} type="button" aria-label={slide.title} aria-pressed={slideIdx === idx} onClick={() => setSlideIdx(idx)}>
+                  <img src={assetUrl(`/assets/optimized/gift-thumb-${idx + 1}.webp`)} alt="" width={180} height={120} loading="lazy" decoding="async" />
+                  <span>{slide.title}</span>
+                </button>
+              ))}
             </div>
 
             {/* 4 Carousel Dots */}
@@ -87,7 +138,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
               Quà Tặng Signature Cao Cấp
             </span>
 
-            <h2 className="font-philosopher font-bold text-[28px] sm:text-[36px] lg:text-[42px] text-[#f7f4d5] leading-[1.15] mb-4">
+            <h2 id="signature-box-title" className="font-philosopher font-bold text-[28px] sm:text-[36px] lg:text-[42px] text-[#f7f4d5] leading-[1.15] mb-4">
               Hộp Quà Trà Đa Hương — &ldquo;TÂM Ý&rdquo;
             </h2>
 
@@ -107,25 +158,35 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
               </div>
               <div className="rounded-[10px] border border-[#f7f4d5]/25 bg-white/5 px-3.5 py-2.5">
                 <p className="font-semibold text-[12.5px] text-[#f7f4d5]">
-                  <FigmaArtwork name="spoon" /> Muỗng Gỗ Khắc Tên
+                  <FigmaArtwork name="spoon" /> Muỗng Gỗ
                 </p>
                 <p className="text-[11px] text-[#f7f4d5]/75 mt-0.5">
-                  Gỗ dẻ gai thủ công
+                  Phụ kiện thưởng trà
                 </p>
               </div>
               <div className="rounded-[10px] border border-[#f7f4d5]/25 bg-white/5 px-3.5 py-2.5">
                 <p className="font-semibold text-[12.5px] text-[#f7f4d5]">
-                  <FigmaArtwork name="card" /> Thiệp Nắn Nót Lời Chúc
+                  <FigmaArtwork name="card" /> Thẻ Thông Điệp QR
                 </p>
                 <p className="text-[11px] text-[#f7f4d5]/75 mt-0.5">
-                  Hỗ trợ viết tay cá nhân
+                  Xem trước lời nhắn 2D
                 </p>
               </div>
             </div>
 
             <div className="font-philosopher font-bold text-[28px] md:text-[32px] text-[#f7f4d5] mb-5">
-              {displayPrice.toLocaleString('en-US')}đ
+              {signatureProduct.price.toLocaleString('vi-VN')}đ
             </div>
+
+            <details className="signature-inclusions">
+              <summary>Trong hộp quà có gì?</summary>
+              <p>{signatureProduct.packaging}</p>
+              <ul>
+                {signatureProduct.includedFlavors?.map(flavor => <li key={flavor.id}>{flavor.subtitle} · {flavor.title}</li>)}
+              </ul>
+            </details>
+
+            {onComposeGift && <button className="signature-compose" type="button" onClick={onComposeGift}>Viết lời nhắn cho món quà này <FigmaIcon name="arrowRight" /></button>}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button

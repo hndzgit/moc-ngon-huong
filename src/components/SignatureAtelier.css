@@ -1,0 +1,29 @@
+/* V10 gallery enhancements; original photography, icon geometry and frame remain intact. */
+.signature-box.signature-atelier .signature-photo-link {
+  display:block; width:100%; height:100%; padding:0; border:0; background:transparent;
+  touch-action:pan-y pinch-zoom; cursor:grab;
+}
+.signature-box.signature-atelier .signature-photo-link:active { cursor:grabbing; scale:1; }
+.signature-box.signature-atelier .signature-photo-link:focus-visible { outline:2px solid #f7f4d5; outline-offset:-6px; }
+.signature-box.signature-atelier .signature-view-caption { display:flex; gap:16px; align-items:baseline; margin-top:20px; min-height:42px; }
+.signature-box.signature-atelier .signature-view-caption > span { flex-shrink:0; color:#d7b77f; font-size:12px; font-variant-numeric:tabular-nums; letter-spacing:.08em; }
+.signature-box.signature-atelier .signature-view-caption p { margin:0; font-size:13px; line-height:1.6; color:#f7f4d5; }
+.signature-box.signature-atelier .signature-thumbnails { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:16px; }
+.signature-box.signature-atelier .signature-thumbnails button { display:block; min-width:0; padding:0 0 8px; border:0; border-bottom:2px solid transparent; text-align:left; color:#f7f4d5; background:transparent; }
+.signature-box.signature-atelier .signature-thumbnails button[aria-pressed="true"] { border-bottom-color:#d7b77f; }
+.signature-box.signature-atelier .signature-thumbnails img { display:block; width:100%; height:auto; aspect-ratio:3/2; object-fit:cover; border-radius:4px; opacity:.65; transition:opacity 220ms ease; }
+.signature-box.signature-atelier .signature-thumbnails button[aria-pressed="true"] img { opacity:1; }
+.signature-box.signature-atelier .signature-thumbnails span { display:block; font-size:11px; line-height:1.5; margin-top:8px; }
+.signature-box.signature-atelier .signature-inclusions { border-top:1px solid #f7f4d540; padding:18px 0; margin-bottom:12px; }
+.signature-box.signature-atelier .signature-inclusions summary { cursor:pointer; font-size:15px; padding:4px 0; }
+.signature-box.signature-atelier .signature-inclusions p { font-size:13px; line-height:1.8; margin:12px 0; }
+.signature-box.signature-atelier .signature-inclusions ul { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 18px; padding:0; list-style:none; font-size:12px; line-height:1.7; color:#f7f4d5d9; }
+.signature-box.signature-atelier .signature-compose { display:flex; gap:12px; align-items:center; padding:12px 0; margin-bottom:16px; text-align:left; background:none; border:0; color:#f7f4d5; font-size:15px; text-decoration:underline; text-underline-offset:5px; }
+@media(max-width:479px) {
+  .signature-box.signature-atelier .signature-thumbnails { gap:8px; }
+  .signature-box.signature-atelier .signature-thumbnails span { font-size:10px; }
+  .signature-box.signature-atelier .signature-inclusions ul { grid-template-columns:1fr; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .signature-box.signature-atelier .signature-thumbnails img { transition:none; }
+}

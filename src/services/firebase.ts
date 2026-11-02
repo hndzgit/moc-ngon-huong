@@ -8,6 +8,16 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
+  updateProfile,
+  sendEmailVerification,
+  applyActionCode,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  checkActionCode,
+  reload,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   User
 } from 'firebase/auth';
 
@@ -34,6 +44,16 @@ export {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  signInWithPopup
+  signInWithPopup,
+  updateProfile,
+  sendEmailVerification,
+  applyActionCode,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  checkActionCode,
+  reload,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 };
 export type { User };

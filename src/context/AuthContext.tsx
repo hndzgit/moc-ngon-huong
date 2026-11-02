@@ -1,0 +1,251 @@
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import {
+  auth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  updateProfile,
+  sendEmailVerification,
+  applyActionCode,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  reload,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  User,
+} from '../services/firebase';
+
+export interface CustomerProfile {
+  fullName: string;
+  email: string;
+  address?: string;
+  phone?: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  isAuthAvailable: boolean;
+  isEmailVerified: boolean;
+  userEmail: string | null;
+  displayName: string | null;
+  profile: CustomerProfile | null;
+  login: (email: string, pass: string, rememberMe?: boolean) => Promise<User>;
+  register: (email: string, pass: string, fullName: string, address?: string) => Promise<User>;
+  logout: () => Promise<void>;
+  sendVerification: () => Promise<void>;
+  reloadUser: () => Promise<void>;
+  sendResetEmail: (email: string) => Promise<void>;
+  verifyResetCode: (code: string) => Promise<string>;
+  confirmReset: (code: string, newPass: string) => Promise<void>;
+  applyVerifyCode: (code: string) => Promise<void>;
+  updateProfileData: (data: Partial<CustomerProfile>) => Promise<void>;
+  getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const PROFILE_STORAGE_PREFIX = 'mnh_profile_';
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+
+  const isAuthAvailable = Boolean(auth);
+
+  // Load local profile metadata when user changes
+  const loadProfile = (currentUser: User | null) => {
+    if (!currentUser) {
+      setProfile(null);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(`${PROFILE_STORAGE_PREFIX}${currentUser.uid}`);
+      if (stored) {
+        setProfile(JSON.parse(stored));
+      } else {
+        setProfile({
+          fullName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Khách hàng',
+          email: currentUser.email || '',
+        });
+      }
+    } catch {
+      setProfile({
+        fullName: currentUser.displayName || 'Khách hàng',
+        email: currentUser.email || '',
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      loadProfile(firebaseUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (emailInput: string, pass: string, rememberMe = true): Promise<User> => {
+    if (!auth) {
+      throw new Error('Dịch vụ xác thực hiện chưa khả dụng trên máy chủ.');
+    }
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+    const cred = await signInWithEmailAndPassword(auth, emailInput.trim(), pass);
+    setUser(cred.user);
+    loadProfile(cred.user);
+    return cred.user;
+  };
+
+  const register = async (emailInput: string, pass: string, fullName: string, address?: string): Promise<User> => {
+    if (!auth) {
+      throw new Error('Dịch vụ tạo tài khoản hiện chưa khả dụng trên máy chủ.');
+    }
+    const cred = await createUserWithEmailAndPassword(auth, emailInput.trim(), pass);
+    if (fullName.trim()) {
+      await updateProfile(cred.user, { displayName: fullName.trim() });
+    }
+    // Real email verification
+    try {
+      await sendEmailVerification(cred.user);
+    } catch (err) {
+      console.warn('Could not automatically send verification email:', err);
+    }
+
+    const newProfile: CustomerProfile = {
+      fullName: fullName.trim(),
+      email: cred.user.email || emailInput.trim(),
+      address: address?.trim() || '',
+    };
+    try {
+      localStorage.setItem(`${PROFILE_STORAGE_PREFIX}${cred.user.uid}`, JSON.stringify(newProfile));
+    } catch {}
+    setProfile(newProfile);
+    setUser(cred.user);
+    return cred.user;
+  };
+
+  const logout = async () => {
+    if (auth) {
+      await signOut(auth);
+    }
+    setUser(null);
+    setProfile(null);
+  };
+
+  const sendVerification = async () => {
+    if (!auth || !auth.currentUser) {
+      throw new Error('Không tìm thấy phiên đăng nhập để gửi email xác thực.');
+    }
+    await sendEmailVerification(auth.currentUser);
+  };
+
+  const reloadUser = async () => {
+    if (!auth || !auth.currentUser) return;
+    await reload(auth.currentUser);
+    setUser({ ...auth.currentUser });
+  };
+
+  const sendResetEmail = async (emailInput: string) => {
+    if (!auth) {
+      throw new Error('Dịch vụ đặt lại mật khẩu chưa khả dụng.');
+    }
+    // Action code settings with production domain
+    await sendPasswordResetEmail(auth, emailInput.trim());
+  };
+
+  const verifyResetCode = async (code: string): Promise<string> => {
+    if (!auth) {
+      throw new Error('Dịch vụ xác thực mã chưa khả dụng.');
+    }
+    return await verifyPasswordResetCode(auth, code);
+  };
+
+  const confirmReset = async (code: string, newPass: string) => {
+    if (!auth) {
+      throw new Error('Dịch vụ đặt lại mật khẩu chưa khả dụng.');
+    }
+    await confirmPasswordReset(auth, code, newPass);
+  };
+
+  const applyVerifyCode = async (code: string) => {
+    if (!auth) {
+      throw new Error('Dịch vụ xác thực mã chưa khả dụng.');
+    }
+    await applyActionCode(auth, code);
+    if (auth.currentUser) {
+      await reload(auth.currentUser);
+      setUser({ ...auth.currentUser });
+    }
+  };
+
+  const updateProfileData = async (data: Partial<CustomerProfile>) => {
+    if (!user) return;
+    const updated: CustomerProfile = {
+      fullName: data.fullName ?? profile?.fullName ?? user.displayName ?? 'Khách hàng',
+      email: user.email || '',
+      address: data.address ?? profile?.address ?? '',
+      phone: data.phone ?? profile?.phone ?? '',
+    };
+    if (data.fullName && user) {
+      await updateProfile(user, { displayName: data.fullName });
+    }
+    try {
+      localStorage.setItem(`${PROFILE_STORAGE_PREFIX}${user.uid}`, JSON.stringify(updated));
+    } catch {}
+    setProfile(updated);
+  };
+
+  const getIdToken = async (forceRefresh = false): Promise<string | null> => {
+    if (!user) return null;
+    try {
+      return await user.getIdToken(forceRefresh);
+    } catch {
+      return null;
+    }
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      isAuthAvailable,
+      isEmailVerified: Boolean(user?.emailVerified),
+      userEmail: user?.email || null,
+      displayName: user?.displayName || profile?.fullName || null,
+      profile,
+      login,
+      register,
+      logout,
+      sendVerification,
+      reloadUser,
+      sendResetEmail,
+      verifyResetCode,
+      confirmReset,
+      applyVerifyCode,
+      updateProfileData,
+      getIdToken,
+    }),
+    [user, loading, isAuthAvailable, profile]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

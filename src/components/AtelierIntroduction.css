@@ -1,0 +1,23 @@
+.atelier-introduction{background:#f5f2ed;padding:clamp(56px,7vw,120px) 0 0;color:#3e5641}
+.atelier-intro-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.86fr);gap:clamp(32px,7vw,130px);align-items:center;padding-bottom:clamp(40px,6vw,88px)}
+.atelier-intro-eyebrow{font-size:11px;letter-spacing:.18em;color:#8a653e;margin-bottom:24px}
+.atelier-intro-copy h2{font:400 clamp(30px,3.2vw,56px)/1.25 Philosopher,serif;margin-bottom:26px}
+.atelier-intro-copy>p:not(.atelier-intro-eyebrow){font-size:14px;line-height:1.9;color:#6e7469}
+.atelier-intro-signature{display:block;font:400 22px Philosopher,serif;margin-top:32px;color:#8a653e}
+.atelier-letter{position:relative;background:#fbfaf5;border:1px solid #c89f5d66;padding:clamp(24px,3.5vw,60px);box-shadow:8px 12px 0 #e4dfd4;isolation:isolate}
+.atelier-letter-top{font-size:10px;letter-spacing:.12em;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #c89f5d66;padding-bottom:20px}
+.atelier-letter>p{font:400 clamp(28px,2.4vw,40px)/1.4 Philosopher,serif;margin:28px 0 20px}
+.atelier-letter-choices{position:relative;z-index:1;display:grid}
+.atelier-letter-choices>button{display:flex;gap:12px;justify-content:space-between;align-items:center;text-align:left;padding:16px 0;border-bottom:1px solid #3e564125;font:400 20px Philosopher,serif;transition:color .2s,background .2s}
+.atelier-letter-choices>button:hover{color:#8a653e;background:#fbfaf5a0}
+.atelier-arrow{display:inline-flex;align-items:center;justify-content:center;background:#3e5641;border-radius:50%;padding:4px;flex-shrink:0}
+.emotion-compose-entry{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:16px 0 24px;font-size:13px;line-height:1.8;color:#3e5641}
+.emotion-compose-entry>button{text-decoration:underline;text-underline-offset:5px;min-height:44px;text-align:right}
+.atelier-letter-choices>button:focus-visible,.atelier-corporate-entry button:focus-visible{outline:2px solid #8a653e;outline-offset:5px}
+.atelier-letter-footer{display:block;font-size:10px;line-height:1.9;margin-top:24px;position:relative;z-index:1}
+.atelier-letter>img{position:absolute;right:12px;bottom:8px;width:150px;height:150px;object-fit:contain;opacity:.09;z-index:0;pointer-events:none}
+.atelier-corporate-entry{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 0;border-top:1px solid #3e56412b;font-size:13px;line-height:1.8}
+.atelier-corporate-entry button{text-decoration:underline;text-underline-offset:5px;text-align:right;min-height:44px}
+@media(max-width:767px){.atelier-intro-grid{grid-template-columns:minmax(0,1fr);gap:32px}.atelier-intro-copy h2 br{display:none}.atelier-corporate-entry{align-items:flex-start;flex-direction:column;gap:6px}.atelier-corporate-entry button{text-align:left}.atelier-letter{box-shadow:5px 7px 0 #e4dfd4}}
+@media(prefers-reduced-motion:reduce){.atelier-letter-choices>button{transition:none}}
+@media(max-width:767px){.emotion-compose-entry{flex-direction:column;align-items:flex-start;gap:6px}.emotion-compose-entry>button{text-align:left}}

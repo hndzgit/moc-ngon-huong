@@ -6,9 +6,10 @@ import { PageRoute } from '../types';
 
 interface HeroProps {
   onNavigate: (page: PageRoute, productId?: string) => void;
+  onStartGift?:()=>void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
+export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
   const scrollToEmotionSelector = () => {
     const el = document.getElementById('chon-cam-xuc');
     if (el) {
@@ -53,24 +54,24 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           </h1>
 
           <p className="hero-description">
-            Đôi khi, những điều chân thành nhất lại khó cất thành lời. Hãy chọn điều bạn muốn gửi, Mộc Ngôn Hương sẽ thay bạn nói lời thương.
+            Không chỉ chọn một hộp trà, mà chọn một cách gửi lời thương.
           </p>
 
           <div className="hero-cta">
             <button
               type="button"
-              onClick={scrollToEmotionSelector}
+              onClick={onStartGift||scrollToEmotionSelector}
               className="hero-button hero-button-primary"
             >
-              Điều Bạn Muốn Gửi
+              Bắt đầu chọn món quà
             </button>
 
             <button
               type="button"
-              onClick={() => onNavigate('detail', 'hop-qua-tam-y')}
+              onClick={scrollToEmotionSelector}
               className="hero-button hero-button-secondary"
             >
-              Hộp Quà Tâm Ý
+              Khám phá hương trà
             </button>
           </div>
         </div>

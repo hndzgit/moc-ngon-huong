@@ -1,0 +1,85 @@
+.atelier-page{--atelier-green:#3e5641;--atelier-gold:#9c7140;--atelier-line:#3e564128;color:#3e5641;background:#fbfaf5}
+.gift-journey{padding:clamp(32px,4.5vw,80px) 0 clamp(56px,7vw,120px)}
+.atelier-eyebrow{font-size:11px;line-height:1.8;letter-spacing:.16em;font-weight:500;color:#8a653e}
+.journey-heading{max-width:900px;margin-bottom:40px}
+.journey-heading h1{font:400 clamp(38px,4.2vw,76px)/1.12 Philosopher,serif;margin:14px 0 18px}
+.journey-heading>p:last-child{font-size:15px;line-height:1.8;color:#62685f}
+.journey-progress{border-top:1px solid var(--atelier-line);border-bottom:1px solid var(--atelier-line);margin-bottom:clamp(32px,4vw,68px)}
+.journey-progress ol{list-style:none;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.journey-progress li{min-width:0}
+.journey-progress button{display:flex;gap:12px;align-items:center;width:100%;min-height:72px;font-size:13px;text-align:left;border-bottom:2px solid transparent;transition:border-color .2s}
+.journey-progress button>span:first-child{font:400 24px Philosopher,serif;color:#9c7140}
+.journey-progress button[aria-current=step]{border-bottom-color:#3e5641;font-weight:600}
+.journey-progress button:disabled{opacity:.45;cursor:not-allowed}
+.journey-layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(32px,6vw,110px);align-items:start}
+.journey-workspace,.journey-preview{min-width:0}
+.journey-chapter{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:24px}
+.journey-chapter>span{font-size:10px;letter-spacing:.15em;color:#8a653e}
+.journey-chapter button{font-size:12px;text-decoration:underline;text-underline-offset:5px}
+.journey-workspace h2{font:400 clamp(30px,2.8vw,48px)/1.2 Philosopher,serif;margin-bottom:18px;scroll-margin-top:28px}
+.journey-workspace h2:focus-visible{outline-offset:8px}
+.journey-lead{font-size:14px;line-height:1.8;color:#646b61;margin-bottom:28px;max-width:580px}
+.journey-intentions{display:grid;border-top:1px solid var(--atelier-line)}
+.journey-intentions>button{display:flex;gap:18px;align-items:center;text-align:left;padding:22px 16px;border-bottom:1px solid var(--atelier-line);transition:background .2s;min-width:0}
+.journey-intentions .choice-number{color:#9c7140;font:400 22px Philosopher,serif}
+.journey-intentions strong{display:block;font:400 25px/1.35 Philosopher,serif;margin-bottom:6px}
+.journey-intentions small{font-size:12px;color:#697064;line-height:1.8;display:block}
+.journey-intentions>button>span:last-child{margin-left:auto}
+.journey-intentions>button[aria-pressed=true]{background:#ecebdc}
+.journey-emotions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.journey-emotions button{padding:22px 14px;text-align:center;border:1px solid var(--atelier-line);background:#fffdf8;min-width:0;transition:background .2s,border-color .2s}
+.journey-emotions button[aria-pressed=true]{background:#eeeddf;border-color:#3e5641}
+.journey-emotions img{width:70px;height:70px;object-fit:contain;margin:0 auto 12px}
+.journey-emotions strong{display:block;font:400 32px Philosopher,serif;letter-spacing:.05em}
+.journey-emotions button>span{display:block;font-size:11px;line-height:1.8;margin-top:10px}
+.journey-emotion-quote{font:400 24px/1.6 Philosopher,serif;margin:24px 0 0}
+.journey-aroma{font:400 clamp(22px,2vw,30px)/1.55 Philosopher,serif;margin:16px 0 28px}
+.journey-tea-facts>div,.journey-summary>div{border-top:1px solid var(--atelier-line);padding:17px 0}
+.journey-tea-facts dt,.journey-summary dt{font-size:11px;color:#8a653e;margin-bottom:7px;letter-spacing:.02em}
+.journey-tea-facts dd,.journey-summary dd{font-size:14px;line-height:1.85;overflow-wrap:anywhere}
+.journey-flavor-switch{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}
+.journey-flavor-switch button{min-height:44px;min-width:56px;padding:10px 18px;border:1px solid var(--atelier-line);font-size:13px}
+.journey-flavor-switch button[aria-pressed=true]{background:#3e5641;color:#fbfaf5}
+.journey-photo{position:relative;aspect-ratio:3/2;background:#e9e7de;overflow:hidden}
+.journey-photo>img{width:100%;height:100%;object-fit:cover}
+.journey-photo-label{position:absolute;bottom:20px;left:24px;background:#fbfaf5f5;padding:14px 22px;font:400 clamp(26px,2.8vw,44px)/1 Philosopher,serif}
+.journey-photo-label small{display:block;font:400 11px/1.6 Montserrat,sans-serif;margin-top:10px}
+.journey-preview-copy{padding:32px 0 12px}
+.journey-preview-copy>p{font-size:10px;letter-spacing:.12em;color:#8a653e;margin-bottom:18px}
+.journey-preview-copy blockquote{font:400 clamp(22px,2.1vw,32px)/1.65 Philosopher,serif;margin-bottom:22px}
+.journey-preview-copy>span{font-size:14px;color:#646b61}
+.journey-preview>.gift-card-preview{margin-top:24px}
+.atelier-button{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:12px;background:#3e5641;color:#fbfaf5;padding:14px 24px;border:1px solid #3e5641;border-radius:2px;font-size:13px;line-height:1.6;transition:background .2s,color .2s;max-width:100%;text-align:center}
+.atelier-button .figma-icon{flex-shrink:0}
+.atelier-button:hover{background:#203323}
+.atelier-button-outline{background:transparent;color:#3e5641}
+.atelier-button-outline:hover{background:#ecebdc}
+.atelier-text-link{display:inline-flex;align-items:center;gap:10px;font-size:12px;line-height:1.8;min-height:44px;text-decoration:underline;text-underline-offset:5px;text-align:left}
+.atelier-text-link:disabled{opacity:.4;cursor:not-allowed}
+.journey-bottom{display:flex;justify-content:space-between;gap:16px;align-items:center;border-top:1px solid var(--atelier-line);padding-top:24px;margin-top:32px}
+.journey-bottom>span{font-size:11px;color:#7a8176;white-space:nowrap}
+.journey-product-options{display:grid;gap:12px;margin-bottom:28px}
+.journey-product-options>button{display:flex;gap:18px;justify-content:space-between;align-items:start;padding:20px;border:1px solid var(--atelier-line);text-align:left;min-width:0}
+.journey-product-options>button[aria-pressed=true]{background:#eeeddf;border-color:#3e5641}
+.journey-product-options strong{display:block;font:400 24px/1.3 Philosopher,serif;margin-bottom:8px}
+.journey-product-options small{font-size:11px;line-height:1.7;display:block}
+.journey-product-options b{font-size:14px;font-weight:500;white-space:nowrap}
+.journey-composer{display:flex;flex-direction:column;gap:10px}
+.journey-composer>label{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-top:10px}
+.journey-composer>label>span{font-size:11px;color:#747b6e}
+.journey-composer>input,.journey-composer>textarea{border:1px solid #a9b0a4;background:#fffdf8;padding:13px 16px;width:100%;border-radius:2px;font-size:14px;line-height:1.7;min-width:0;resize:vertical}
+.journey-composer fieldset{margin:12px 0 0}
+.journey-composer legend{font-size:13px;margin-bottom:12px}
+.journey-card-options{display:flex;gap:24px;flex-wrap:wrap}
+.journey-card-options label{font-size:13px;display:flex;align-items:center;gap:10px;min-height:44px}
+.journey-card-options input{accent-color:#3e5641}
+.journey-note{font-size:11px;line-height:1.9;color:#697062;margin:16px 0;overflow-wrap:anywhere}
+.journey-summary-actions{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin:28px 0 12px}
+.journey-error{font-size:13px;color:#a73a2d;margin-top:20px}
+.journey-mobile-preview-link{display:none}
+.atelier-page :is(button,a,input,textarea):focus-visible{outline:2px solid #9c7140;outline-offset:4px}
+@media(min-width:1024px){.journey-preview{position:sticky;top:24px}}
+@media(max-width:1023px){.journey-layout{gap:32px;grid-template-columns:minmax(0,1fr) minmax(0,.85fr)}.journey-progress button{gap:8px;font-size:11px}.journey-progress ol{gap:8px}.journey-progress button>span:first-child{font-size:20px}.journey-product-options>button{flex-direction:column;gap:10px}}
+@media(max-width:767px){.journey-layout{grid-template-columns:minmax(0,1fr)}.journey-progress button{flex-direction:column;align-items:flex-start;gap:8px;min-height:80px;font-size:10px;line-height:1.4;padding:12px 0}.journey-heading{margin-bottom:28px}.journey-heading h1{max-width:330px}.journey-chapter{margin-bottom:20px}.journey-preview-copy blockquote{font-size:25px}.journey-bottom{gap:8px}.journey-bottom .atelier-button{padding:12px 18px}.journey-product-options>button{flex-direction:row}.journey-photo-label{font-size:32px}.journey-preview{border-top:1px solid var(--atelier-line);padding-top:24px}.journey-composer>label>span{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.atelier-page *{scroll-behavior:auto;transition:none}}
+@media(max-width:767px){.journey-mobile-preview-link{display:inline-flex}.journey-preview{scroll-margin-top:24px}}

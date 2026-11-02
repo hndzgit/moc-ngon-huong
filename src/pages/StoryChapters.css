@@ -1,0 +1,62 @@
+/* V10 intentionally turns the existing story into chapters, without changing brand assets. */
+.story-page.story-editorial .story-chapter-nav { position:sticky; top:0; z-index:20; background:#fbfaf5f5; border-bottom:1px solid #3e564126; }
+.story-page.story-editorial .story-chapter-nav > .figma-container { display:flex; gap:clamp(12px,4vw,64px); align-items:center; }
+.story-page.story-editorial .story-chapter-nav button { display:flex; align-items:center; gap:12px; padding:22px 0; background:none; border:0; color:#686d63; font-size:13px; }
+.story-page.story-editorial .story-chapter-nav button > span { font-size:11px; color:#8e6746; letter-spacing:.1em; }
+.story-page.story-editorial .story-chapter-nav button[aria-current] { color:#3e5641; }
+.story-page.story-editorial .story-reading-progress { height:2px; background:#3e564112; }
+.story-page.story-editorial .story-reading-progress span { display:block; width:100%; height:100%; transform-origin:left; background:#8e6746; transition:transform 400ms ease; }
+.story-page.story-editorial .story-chapter { padding:clamp(64px,7vw,120px) 0; scroll-margin-top:88px; }
+.story-page.story-editorial .story-editorial-grid { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:clamp(32px,5vw,96px); align-items:center; }
+.story-page.story-editorial .story-editorial-grid-reverse { grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); }
+.story-page.story-editorial .story-chapter-number { font-size:11px; line-height:1.5; text-transform:uppercase; letter-spacing:.16em; color:#8e6746; margin:0 0 18px; }
+.story-page.story-editorial .story-chapter h2 { font-size:clamp(32px,3.3vw,56px); line-height:1.12; color:#3e5641; margin:0 0 28px; font-weight:400; }
+.story-page.story-editorial .story-chapter-copy > p:not(.story-chapter-number) { font-size:14px; line-height:1.9; color:#53594f; margin:0 0 20px; }
+.story-page.story-editorial .story-chapter-copy blockquote { font-family:Philosopher,serif; font-size:clamp(26px,2.2vw,38px); line-height:1.4; color:#3e5641; margin:32px 0 0; }
+.story-page.story-editorial .story-chapter-figure { margin:0; min-width:0; }
+.story-page.story-editorial .story-chapter-figure img { display:block; width:100%; height:auto; }
+.story-page.story-editorial .story-chapter-figure figcaption { margin-top:14px; font-size:11px; line-height:1.8; letter-spacing:.03em; color:#6b7065; }
+.story-page.story-editorial .story-flavor-chapter { background:#f0ede5; }
+.story-page.story-editorial .story-flavor-heading { max-width:840px; }
+.story-page.story-editorial .story-flavor-heading > p:last-child { font-size:14px; line-height:1.7; color:#53594f; }
+.story-page.story-editorial .story-emotion-controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:40px 0; border-block:1px solid #3e56412e; }
+.story-page.story-editorial .story-emotion-controls button { padding:22px 8px; border:0; border-bottom:2px solid transparent; background:transparent; color:#6b7065; }
+.story-page.story-editorial .story-emotion-controls button[aria-pressed="true"] { color:#3e5641; border-bottom-color:#3e5641; background:#3e564107; }
+.story-page.story-editorial .story-emotion-controls span { display:block; font-family:Philosopher,serif; font-size:clamp(22px,2.4vw,38px); line-height:1.2; }
+.story-page.story-editorial .story-emotion-controls small { display:block; font-size:11px; margin-top:8px; }
+.story-page.story-editorial .story-tea-scene { display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr); gap:clamp(32px,5vw,96px); align-items:center; }
+.story-page.story-editorial .story-tea-visual { aspect-ratio:3/2; overflow:hidden; }
+.story-page.story-editorial .story-tea-visual img { display:block; width:100%; height:100%; object-fit:contain; }
+.story-page.story-editorial .story-tea-copy { min-width:0; }
+.story-page.story-editorial .story-tea-copy h3 { font-size:clamp(28px,2.6vw,46px); line-height:1.2; color:#3e5641; margin:0 0 20px; }
+.story-page.story-editorial .story-tea-copy > p:not(.story-chapter-number) { font-size:14px; line-height:1.8; margin:0 0 24px; color:#53594f; }
+.story-page.story-editorial .story-tea-copy dl { margin:24px 0; }
+.story-page.story-editorial .story-tea-copy dl > div { padding:14px 0; border-top:1px solid #3e564126; }
+.story-page.story-editorial .story-tea-copy dt { font-size:11px; color:#8e6746; margin-bottom:6px; }
+.story-page.story-editorial .story-tea-copy dd { font-size:13px; line-height:1.8; color:#53594f; margin:0; }
+.story-page.story-editorial .story-text-link { padding:12px 0; border:0; border-bottom:1px solid #8e6746; background:none; color:#3e5641; font-size:14px; text-align:left; }
+.story-page.story-editorial .story-text-link span { margin-left:14px; }
+@media(prefers-reduced-motion:no-preference) {
+  /* One-shot and opt-in: content is visible before the observer runs, including without motion. */
+  .story-page.story-editorial .story-chapter[data-revealed="true"] h2 { animation:mnh-story-heading-reveal 600ms cubic-bezier(.2,.65,.3,1); }
+  .story-page.story-editorial .story-chapter[data-revealed="true"] .story-chapter-figure { animation:mnh-story-photo-reveal 700ms ease-out; }
+}
+@keyframes mnh-story-heading-reveal { from { opacity:.65; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes mnh-story-photo-reveal { from { opacity:.8; } to { opacity:1; } }
+@media(min-width:1600px) {
+  .story-page.story-editorial .story-chapter-copy > p:not(.story-chapter-number),.story-page.story-editorial .story-tea-copy > p:not(.story-chapter-number) { font-size:16px; }
+}
+@media(max-width:1023px) {
+  .story-page.story-editorial .story-editorial-grid,.story-page.story-editorial .story-editorial-grid-reverse,.story-page.story-editorial .story-tea-scene { grid-template-columns:1fr; gap:32px; }
+  .story-page.story-editorial .story-editorial-grid-reverse .story-chapter-figure { order:2; }
+}
+@media(max-width:479px) {
+  .story-page.story-editorial .story-chapter-nav > .figma-container { gap:0; justify-content:space-between; }
+  .story-page.story-editorial .story-chapter-nav button { flex-direction:column; gap:5px; padding:14px 2px; font-size:10px; }
+  .story-page.story-editorial .story-chapter { scroll-margin-top:90px; }
+  .story-page.story-editorial .story-emotion-controls small { font-size:10px; line-height:1.5; }
+  .story-page.story-editorial .story-emotion-controls button { padding:18px 3px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .story-page.story-editorial .story-reading-progress span { transition:none; }
+}

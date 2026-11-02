@@ -1,6 +1,6 @@
 export type EmotionKey = 'ALL' | 'AN' | 'THUONG' | 'CAM' | 'NHO' | 'COMBO';
 
-export type PageRoute = 'home' | 'story' | 'products' | 'detail' | 'contact' | 'checkout' | 'auth' | 'not-found';
+export type PageRoute = 'home' | 'story' | 'products' | 'detail' | 'contact' | 'checkout' | 'auth' | 'gift-journey' | 'corporate' | 'not-found';
 
 export type AuthStep =
   | 'login'
@@ -9,7 +9,59 @@ export type AuthStep =
   | 'forgot-email'
   | 'forgot-otp'
   | 'forgot-reset'
-  | 'forgot-success';
+  | 'forgot-success'
+  | 'profile';
+
+export type OrderStatus =
+  | 'pending_confirmation'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready_for_pickup'
+  | 'shipping'
+  | 'completed'
+  | 'cancelled';
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+
+export interface OrderItemSnapshot {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  giftConfiguration?: any;
+}
+
+export interface OrderRecord {
+  id: string;
+  orderCode: string;
+  userId?: string | null;
+  customerUid?: string | null;
+  notificationSent?: boolean;
+  customer: {
+    fullName: string;
+    phone: string;
+    email: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    shippingMode: 'delivery' | 'pickup';
+    pickupStore?: string;
+    note?: string;
+  };
+  items: OrderItemSnapshot[];
+  subtotal: number;
+  shippingFee: number;
+  discount: number;
+  total: number;
+  paymentMethod: 'cod' | 'bank';
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
+  createdAt: string;
+  idempotencyKey?: string;
+  schemaVersion?: string;
+}
 
 export interface IncludedFlavorItem {
   id: string;
@@ -59,7 +111,19 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedGiftCard?: string;
+  /** Local draft only; deliberately excluded from persistent cart storage. */
+  giftConfiguration?: GiftConfiguration;
 }
+
+export type TeaEmotion = 'AN' | 'THUONG' | 'CAM' | 'NHO';
+export interface GiftConfiguration {
+  intention: string;
+  emotion: TeaEmotion;
+  recipient: string;
+  message: string;
+  cardStyle: 'botanical' | 'letter';
+}
+export interface GiftDraft extends GiftConfiguration { productId: string; }
 
 export interface ReviewItem {
   id: string;

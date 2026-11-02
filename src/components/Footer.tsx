@@ -46,6 +46,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               BỘ SƯU TẬP
             </h3>
             <ul className="space-y-2.5 text-[13px] text-[#f7f4d5]/85">
+              <li><button type="button" onClick={()=>onNavigate('gift-journey')} className="hover:text-white transition-colors text-left">Tự tay chọn món quà</button></li>
+              <li><button type="button" onClick={()=>onNavigate('corporate')} className="hover:text-white transition-colors text-left">Quà tặng doanh nghiệp</button></li>
               <li>
                 <button
                   type="button"
@@ -103,19 +105,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li>
                 <button
                   type="button"
-                  onClick={() => onNavigate('story')}
+                  onClick={() => onNavigate('gift-journey')}
                   className="hover:text-white transition-colors text-left"
                 >
-                  Quy Trình Viết Thiệp Nắn Nót
+                  Chuẩn bị lời nhắn trên thiệp
                 </button>
               </li>
               <li>
                 <button
                   type="button"
-                  onClick={() => onNavigate('contact')}
+                  onClick={() => onNavigate('corporate')}
                   className="hover:text-white transition-colors text-left"
                 >
-                  Chính sách đặt quà doanh nghiệp
+                  Tư vấn quà doanh nghiệp
                 </button>
               </li>
               <li>

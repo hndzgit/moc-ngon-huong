@@ -12,6 +12,7 @@
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "firebase": "^11.4.0",
+    "firebase-admin": "^14.5.0",
     "gsap": "^3.12.7",
     "lucide-react": "^1.16.0",
     "react": "^19.0.0",
@@ -31,6 +32,7 @@
     "vite": "^6.2.0"
   },
   "overrides": {
-    "@grpc/grpc-js": "1.14.7"
+    "@grpc/grpc-js": "1.14.7",
+    "jwks-rsa": "3.1.0"
   }
 }

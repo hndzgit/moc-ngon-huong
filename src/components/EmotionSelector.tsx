@@ -6,16 +6,18 @@ import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState } from 'react';
 import { EMOTION_CARDS, PRODUCTS } from '../data/products';
-import { EmotionKey, PageRoute, Product } from '../types';
+import { EmotionKey, PageRoute, Product, TeaEmotion } from '../types';
 
 interface EmotionSelectorProps {
   onNavigate: (page: PageRoute, productId?: string) => void;
   onAddToCart: (product: Product, quantity?: number) => void;
+  onComposeGift?:(emotion:TeaEmotion)=>void;
 }
 
 export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
   onNavigate,
   onAddToCart,
+  onComposeGift,
 }) => {
   const [selectedEmotion, setSelectedEmotion] = useState<Exclude<EmotionKey, 'ALL' | 'COMBO'>>('AN');
   const [qrOpen, setQrOpen] = useState(false);
@@ -69,7 +71,8 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
               >
                 <div className="w-full flex items-start justify-between mb-2">
                   <img
-                    src={assetUrl(card.illustration)}
+                    src={assetUrl(`/assets/optimized/discovery-botanical-${card.key}.webp`)}
+                    data-original-asset={card.illustration}
                     alt={card.teaName}
                     loading="lazy" decoding="async"
                     className="w-[46px] h-[46px] object-contain"
@@ -98,6 +101,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
           })}
         </div>
 
+        {onComposeGift&&<div className="emotion-compose-entry"><span>Đã tìm thấy hương trà cho lời muốn gửi?</span><button type="button" onClick={()=>onComposeGift(selectedEmotion)}>Viết lời nhắn cho món quà {matchedProduct.shortName}</button></div>}
         {/* Main Flavor Card Showcase (Figma Component 6 - 80:4148) */}
         <div ref={flavorMotion} className="bg-white rounded-[20px] border border-gray-200/80 shadow-[0_12px_36px_rgba(32,51,35,0.08)] p-6 sm:p-8 lg:p-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
@@ -176,7 +180,8 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
             <div className="lg:col-span-6">
               <div className="relative w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[16px] overflow-hidden shadow-sm bg-[#203323]">
                 <MotionImage
-                  src={assetUrl(selectedEmotion === 'AN' ? '/assets/figma/originals/ae4e7.png' : activeItem.image)}
+                  src={assetUrl(`/assets/optimized/discovery-card-${activeItem.productId}.webp`)}
+                  data-original-asset={selectedEmotion==='AN'?'/assets/figma/originals/ae4e7.png':activeItem.image}
                   alt={storyCopy.storyTitle}
                   loading="lazy" decoding="async"
                   className="w-full h-full object-cover"

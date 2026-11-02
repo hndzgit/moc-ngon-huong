@@ -85,7 +85,7 @@ export function usePageMotion(route: string) {
     media.add(queries, context => {
       if (!context.conditions?.full) return;
       const targets = scope.querySelectorAll<HTMLElement>(
-        'main section > .figma-container > .text-center, main .story-page section h2, main .home-teas .product-card, main .products-page > section:last-child .product-card, main .home-unboxing .grid > div' +
+        'main section > .figma-container > .text-center, main .atelier-intro-copy, main .atelier-letter, main .story-page section h2, main .home-teas .product-card, main .products-page > section:last-child .product-card, main .home-unboxing .grid > div' +
         (context.conditions.touch ? '' : ', main .story-page section:not(:first-child) .overflow-hidden'),
       );
       if (typeof IntersectionObserver === 'undefined') return;

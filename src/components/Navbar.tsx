@@ -95,6 +95,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="relative"
               onMouseEnter={() => setDropdownOpen(true)}
               onMouseLeave={() => setDropdownOpen(false)}
+              onFocus={() => setDropdownOpen(true)}
+              onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setDropdownOpen(false);}}
             >
               <button
                 type="button"
@@ -145,6 +147,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </button>
                     ))}
+                    <button type="button" onClick={()=>onNavigate('gift-journey')} className="w-full text-left px-4 py-3 text-[13px] text-[#3e5641] border-t border-gray-100">Tự tay chọn món quà</button>
+                    <button type="button" onClick={()=>onNavigate('corporate')} className="w-full text-left px-4 py-3 text-[13px] text-[#3e5641]">Quà tặng doanh nghiệp</button>
                   </div>
                 </div>
               )}
@@ -262,6 +266,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Liên hệ
           </button>
+          <button type="button" onClick={()=>{onNavigate('gift-journey');setMobileMenuOpen(false);}} className="block w-full text-left py-2 text-[16px] font-medium text-[#222222]">Tự tay chọn món quà</button>
+          <button type="button" onClick={()=>{onNavigate('corporate');setMobileMenuOpen(false);}} className="block w-full text-left py-2 text-[16px] font-medium text-[#222222]">Quà tặng doanh nghiệp</button>
         </div>
       )}
     </header>

@@ -5,8 +5,10 @@ import { usePageMotion, scrollBehavior } from './motion/motion';
 import { warmMotionEngine } from './motion/engine-loader';
 import { useRouteScroll } from './motion/useRouteScroll';
 import { FigmaArtwork } from './components/FigmaArtwork';
-import React, { useState, useMemo, useEffect } from 'react';
-import { CartItem, PageRoute, Product } from './types';
+import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
+import { CartItem, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
+import { changeEmotion, createGiftDraft, INTENTIONS, journeyHash } from './data/giftJourney';
+import { AtelierIntroduction } from './components/AtelierIntroduction';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from './data/products';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -17,12 +19,16 @@ import { Footer } from './components/Footer';
 import { ChatBox } from './components/ChatBox';
 import { CartDrawer } from './components/CartDrawer';
 import { SearchOverlay } from './components/SearchOverlay';
-import { StoryPage } from './pages/StoryPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ContactPage } from './pages/ContactPage';
-import { CheckoutPage } from './pages/CheckoutPage';
 import { AuthPage } from './pages/AuthPage';
+import { CheckoutPage } from './pages/CheckoutPage';
+import { useAuth } from './context/AuthContext';
+
+const GiftJourneyPage=lazy(()=>import('./pages/GiftJourneyPage'));
+const CorporateGiftingPage=lazy(()=>import('./pages/CorporateGiftingPage').then(module=>({default:module.CorporateGiftingPage})));
+const StoryPage=lazy(()=>import('./pages/StoryPage').then(module=>({default:module.StoryPage})));
 
 const CART_STORAGE_KEY = 'mnh_cart_items_v1';
 const USER_STORAGE_KEY = 'mnh_user_email_v1';
@@ -35,6 +41,11 @@ const DEFAULT_CART_ITEMS: CartItem[] = [
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageRoute>(()=>readRoute().page);
   const [selectedProductId, setSelectedProductId] = useState<string>(()=>readRoute().productId || 'buoi-an');
+  const [giftDraft,setGiftDraft]=useState<GiftDraft>(()=>{
+    const emotion=readRoute().emotion;
+    return {...createGiftDraft(emotion),...(emotion?{intention:INTENTIONS.find(i=>i.emotion===emotion)!.id}:{})};
+  });
+  const [journeyStep,setJourneyStep]=useState(()=>readRoute().step||1);
   const motionScope = usePageMotion(`${currentPage}/${selectedProductId}`);
   const rememberNavigation = useRouteScroll(`${currentPage}/${selectedProductId}`);
   useEffect(warmMotionEngine,[]);
@@ -44,6 +55,10 @@ export function App() {
       const route = readRoute();
       setCurrentPage(route.page);
       if (route.productId) setSelectedProductId(route.productId);
+      if(route.page==='gift-journey'){
+        setJourneyStep(route.step||1);
+        if(route.emotion)setGiftDraft(prev=>prev.emotion===route.emotion?prev:changeEmotion(prev,route.emotion!));
+      }
       setCartOpen(false);
       setSearchOpen(false);
     };
@@ -76,35 +91,18 @@ export function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutProductIds, setCheckoutProductIds] = useState<string[] | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(USER_STORAGE_KEY);
-    } catch {
-      return null;
-    }
-  });
+  const { user, userEmail: authEmail } = useAuth();
+  // Only treat genuine Firebase Auth user as logged in. Never trust unauthenticated localStorage strings.
+  const effectiveUserEmail = user ? (authEmail || user.email || null) : null;
 
   // Sync cartItems to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems.map(({product,quantity})=>({product,quantity}))));
     } catch {
       // Ignore storage write errors
     }
   }, [cartItems]);
-
-  // Sync userEmail to localStorage
-  useEffect(() => {
-    try {
-      if (userEmail) {
-        localStorage.setItem(USER_STORAGE_KEY, userEmail);
-      } else {
-        localStorage.removeItem(USER_STORAGE_KEY);
-      }
-    } catch {
-      // Ignore storage write errors
-    }
-  }, [userEmail]);
 
   const handleNavigate = (page: PageRoute, productId?: string) => {
     rememberNavigation(routeHash(page,productId || selectedProductId));
@@ -173,6 +171,23 @@ export function App() {
     setCartOpen(true);
   };
 
+  const openGiftJourney=(emotion?:TeaEmotion,intention?:string,productId?:string)=>{
+    const draft={...(emotion?{...changeEmotion(giftDraft,emotion),...(intention?{intention}:{})}:giftDraft),...(productId?{productId}:{})};
+    const step=intention?2:1;
+    setGiftDraft(draft);setJourneyStep(step);setCartOpen(false);setSearchOpen(false);
+    rememberNavigation(journeyHash(draft.emotion,step));
+    setCurrentPage('gift-journey');window.location.hash=journeyHash(draft.emotion,step);
+    window.scrollTo({top:0,behavior:scrollBehavior()});
+  };
+  const addGiftToCart=(product:Product,draft:GiftDraft,checkout=false)=>{
+    const {productId:_,...giftConfiguration}=draft;
+    setCartItems(prev=>{
+      const existing=prev.find(i=>i.product.id===product.id);
+      return existing?prev.map(i=>i.product.id===product.id?{...i,quantity:i.quantity+1,giftConfiguration}:i):[...prev,{product,quantity:1,giftConfiguration}];
+    });
+    if(checkout)handleNavigate('checkout');else setCartOpen(true);
+  };
+
   const homepageFourProducts = PRODUCTS.slice(0, 4);
 
   return (
@@ -185,7 +200,7 @@ export function App() {
         onOpenCart={() => setCartOpen(true)}
         onOpenSearch={() => setSearchOpen(true)}
         onOpenAuth={() => handleNavigate('auth')}
-        userEmail={userEmail}
+        userEmail={effectiveUserEmail}
       />
 
       {/* Main Page Router */}
@@ -198,12 +213,14 @@ export function App() {
         {currentPage === 'home' && (
           <>
             {/* 1. Hero Banner (Figma 61:1165 & 61:1189) */}
-            <Hero onNavigate={handleNavigate} />
+            <Hero onNavigate={handleNavigate} onStartGift={()=>openGiftJourney()} />
+            <AtelierIntroduction onStart={openGiftJourney} onCorporate={()=>handleNavigate('corporate')}/>
 
             {/* 2. Interactive 4-Emotion Selector & Inline QR Showcase (Figma Component 5 & Component 6 - 80:4148) */}
             <EmotionSelector
               onNavigate={handleNavigate}
               onAddToCart={handleAddToCart}
+              onComposeGift={emotion=>openGiftJourney(emotion,INTENTIONS.find(i=>i.emotion===emotion)!.id)}
             />
 
             {/* 3. 4-Product Grid: "Bốn Sắc Hương Trà Việt" (Figma 56:1033) */}
@@ -222,10 +239,10 @@ export function App() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {homepageFourProducts.map((product, index) => (
+                  {homepageFourProducts.map((product) => (
                     <ProductCard
                       key={product.id}
-                      imageSrc={`/assets/figma/originals/${['ae4e7.png', '219aa.png', '417b2.png', 'c759e.png'][index]}`}
+                      imageSrc={`/assets/optimized/discovery-card-${product.id}.webp`}
                       product={product}
                       quantity={cartQuantities[product.id] || 0}
                       onUpdateQuantity={handleUpdateProductQuantity}
@@ -241,6 +258,7 @@ export function App() {
               onNavigate={handleNavigate}
               onAddToCart={handleAddToCart}
               displayPrice={399000}
+              onComposeGift={()=>openGiftJourney(undefined,undefined,'hop-qua-tam-y')}
             />
 
             {/* 5. Multi-Sensory Unboxing Section: "Nghệ Thuật Mở Hộp Đa Giác Quan" */}
@@ -268,8 +286,8 @@ export function App() {
                     },
                     {
                       icon: 'envelope' as const,
-                      title: 'Dịch Vụ Viết Thiệp Nắn Nót',
-                      desc: 'Bạn chỉ cần để lại lời nhắn ở bước thanh toán, đội ngũ Mộc Ngôn Hương sẽ thay bạn nắn nót từng nét chữ trên giấy ép hoa khô tự nhiên.',
+                      title: 'Một Lời Nhắn Của Riêng Bạn',
+                      desc: 'Viết và xem trước lời nhắn trong hành trình chọn quà. Bản nháp chưa được gửi tới cửa hàng; cách thực hiện thiệp và chi phí cần trao đổi trước khi đặt.',
                       tag: '02 • LỜI THƯƠNG ĐÍCH THỰC',
                     },
                     {
@@ -390,7 +408,7 @@ export function App() {
           </>
         )}
 
-        {currentPage === 'story' && <StoryPage onNavigate={handleNavigate} />}
+        {currentPage === 'story' && <Suspense fallback={<div className="figma-container py-16" role="status">Đang mở câu chuyện trà…</div>}><StoryPage onNavigate={handleNavigate} /></Suspense>}
 
         {currentPage === 'products' && (
           <ProductsPage
@@ -413,6 +431,15 @@ export function App() {
 
         {currentPage === 'contact' && <ContactPage onNavigate={handleNavigate} />}
 
+        {(currentPage==='gift-journey'||currentPage==='corporate')&&<Suspense fallback={<div className="figma-container py-16" role="status">Đang mở không gian quà tặng…</div>}>
+          {currentPage==='corporate'?<CorporateGiftingPage onNavigate={handleNavigate}/>:<GiftJourneyPage
+            draft={giftDraft} step={journeyStep} onChange={draft=>{setGiftDraft(draft);history.replaceState(null,'',journeyHash(draft.emotion,journeyStep));}}
+            onStep={step=>{setJourneyStep(step);window.location.hash=journeyHash(giftDraft.emotion,step);}}
+            onNavigate={handleNavigate} onAddGift={addGiftToCart}
+            onReset={()=>{setGiftDraft(createGiftDraft());setJourneyStep(1);window.location.hash=journeyHash('AN',1);}}
+          />}
+        </Suspense>}
+
         {currentPage === 'checkout' && (
           <CheckoutPage
             items={checkoutProductIds ? cartItems.filter(item=>checkoutProductIds.includes(item.product.id)) : cartItems}
@@ -425,7 +452,9 @@ export function App() {
 
         {currentPage === 'auth' && (
           <AuthPage
-            onLoginSuccess={(email) => setUserEmail(email)}
+            onLoginSuccess={(email) => {
+              try { localStorage.setItem(USER_STORAGE_KEY, email); } catch {}
+            }}
             onNavigate={handleNavigate}
           />
         )}

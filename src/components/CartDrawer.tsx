@@ -98,7 +98,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         ) : (
           /* Variant 1: Populated Cart Items List (Figma 127:8439) */
           <div ref={itemMotion} className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-gray-100">
-            {items.map(({ product, quantity }) => {
+            {items.map(({ product, quantity, giftConfiguration }) => {
               const checked = selectedIds[product.id] ?? true;
               return (
                 <div
@@ -146,11 +146,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         {product.id === 'hop-qua-tam-y' ? 'Hộp Quà Tâm Ý' : FIGMA_PRODUCT_COPY[product.id]?.title || product.name}
                       </h3>
                       <p className="cart-item-subtitle text-[12px] text-[#222] mt-1">
-                        {product.emotion === 'COMBO' ? 'AN, THƯƠNG' : {AN:'Trà Bưởi',THUONG:'Trà Nhài',CAM:'Trà Hoa Sói',NHO:'Trà Cốm',ALL:'Các hương trà'}[product.emotion]}
+                        {product.emotion === 'COMBO' ? 'AN · THƯƠNG · CẢM · NHỚ' : {AN:'Trà Bưởi',THUONG:'Trà Nhài',CAM:'Trà Hoa Sói',NHO:'Trà Cốm',ALL:'Các hương trà'}[product.emotion]}
                       </p>
                       <p className="cart-item-price text-[14px] text-[#444444] mt-1">
                         {product.price.toLocaleString('en-US')}đ
                       </p>
+                      {giftConfiguration&&<p className="text-[10px] leading-4 text-[#3e5641] mt-1">Có bản nháp thiệp · xem tại thanh toán</p>}
                     </div>
                   </div>
 

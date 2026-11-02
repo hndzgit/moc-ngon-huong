@@ -1,0 +1,15 @@
+.git
+.github
+.codex-baseline
+.checkpoint_before_phase2
+figma-reference
+docs
+dist
+node_modules
+scripts
+test-results
+playwright-report
+coverage
+*.tar.gz
+*.tsbuildinfo
+.DS_Store
