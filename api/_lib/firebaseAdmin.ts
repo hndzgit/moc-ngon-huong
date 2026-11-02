@@ -42,6 +42,33 @@ function parseServiceAccount(raw: string): any {
   return parsed;
 }
 
+/**
+ * Recursively cleans an object for Cloud Firestore serialization.
+ * Removes any properties whose value is strictly `undefined`.
+ * Keeps valid Firestore primitives: null, boolean, number, string, Array, Date, etc.
+ */
+export function cleanForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => cleanForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object') {
+    if (data instanceof Date) {
+      return data;
+    }
+    const cleaned: Record<string, any> = {};
+    for (const [key, val] of Object.entries(data as Record<string, any>)) {
+      if (val !== undefined) {
+        cleaned[key] = cleanForFirestore(val);
+      }
+    }
+    return cleaned as T;
+  }
+  return data;
+}
+
 export function getFirebaseAdminApp(): App | null {
   if (cachedAdminApp) return cachedAdminApp;
 

@@ -3,7 +3,10 @@ import { getFirebaseAdminApp, getFirestoreDb, getAdminAuth } from '../api/_lib/f
 import orderHandler from '../api/orders.js';
 
 // Load service account from environment or user path if available
-const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || '/Users/hoainam/Downloads/moc-ngon-huong-firebase-adminsdk-fbsvc-5a08e425e5.json';
+let serviceAccountPath = '/Users/hoainam/Downloads/moc-ngon-huong-firebase-adminsdk-fbsvc-5a08e425e5.json';
+if (!fs.existsSync(serviceAccountPath) && process.env.GOOGLE_APPLICATION_CREDENTIALS && fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+  serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+}
 
 if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON && fs.existsSync(serviceAccountPath)) {
   const serviceAccountRaw = fs.readFileSync(serviceAccountPath, 'utf-8');

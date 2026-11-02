@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import fs from 'fs';
 import path from 'path';
-import { getFirestoreDb, verifyAuthToken, getIsProduction, getIsServerless } from './_lib/firebaseAdmin.js';
+import { getFirestoreDb, verifyAuthToken, getIsProduction, getIsServerless, cleanForFirestore } from './_lib/firebaseAdmin.js';
 import { sendOrderNotifications } from './_lib/notifications.js';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../src/data/products.js';
 import type { OrderRecord, OrderItemSnapshot, PaymentStatus, OrderStatus } from '../src/types';
@@ -290,14 +290,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const itemTotal = matchedProduct.price * quantity;
     calculatedSubtotal += itemTotal;
 
-    orderSnapshots.push({
+    const itemSnapshot: Record<string, any> = {
       productId: matchedProduct.id,
       productName: matchedProduct.name,
       price: matchedProduct.price,
       quantity,
       image: matchedProduct.image,
-      giftConfiguration: item.giftConfiguration || undefined,
-    });
+    };
+
+    if (item.giftConfiguration && typeof item.giftConfiguration === 'object') {
+      const cleanGift: Record<string, any> = {};
+      if (item.giftConfiguration.recipient && typeof item.giftConfiguration.recipient === 'string') {
+        cleanGift.recipient = item.giftConfiguration.recipient.trim();
+      }
+      if (item.giftConfiguration.message && typeof item.giftConfiguration.message === 'string') {
+        cleanGift.message = item.giftConfiguration.message.trim();
+      }
+      if (item.giftConfiguration.giftCardTemplate && typeof item.giftConfiguration.giftCardTemplate === 'string') {
+        cleanGift.giftCardTemplate = item.giftConfiguration.giftCardTemplate.trim();
+      }
+      if (item.giftConfiguration.boxColor && typeof item.giftConfiguration.boxColor === 'string') {
+        cleanGift.boxColor = item.giftConfiguration.boxColor.trim();
+      }
+      if (Object.keys(cleanGift).length > 0) {
+        itemSnapshot.giftConfiguration = cleanGift;
+      }
+    }
+
+    orderSnapshots.push(itemSnapshot as OrderItemSnapshot);
   }
 
   // 6. Validate Customer Information
@@ -389,26 +409,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const paymentStatus: PaymentStatus = 'pending';
   const orderStatus: OrderStatus = 'pending_confirmation';
 
-  const orderRecord: OrderRecord = {
+  const customerRecord: Record<string, any> = {
+    fullName,
+    phone: phoneClean,
+    email,
+    shippingMode,
+  };
+
+  if (shippingMode === 'delivery') {
+    if (address) customerRecord.address = address;
+    if (city) customerRecord.city = city;
+    if (district) customerRecord.district = district;
+    if (ward) customerRecord.ward = ward;
+  } else {
+    customerRecord.pickupStore = pickupStore || '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội';
+  }
+
+  if (note) {
+    customerRecord.note = note;
+  }
+
+  const rawOrderRecord: Record<string, any> = {
     id: orderId,
     orderCode,
-    userId: verifiedCustomerUid, // Cryptographically verified UID or null for guests
-    customerUid: verifiedCustomerUid, // Authoritative link for customer order history
-    customer: {
-      fullName,
-      phone: phoneClean,
-      email,
-      address: shippingMode === 'delivery' ? address : undefined,
-      city: shippingMode === 'delivery' ? city : undefined,
-      district: shippingMode === 'delivery' ? district : undefined,
-      ward: shippingMode === 'delivery' ? ward : undefined,
-      shippingMode,
-      pickupStore:
-        shippingMode === 'pickup'
-          ? pickupStore || '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội'
-          : undefined,
-      note,
-    },
+    userId: verifiedCustomerUid || null,
+    customerUid: verifiedCustomerUid || null,
+    customer: customerRecord,
     items: orderSnapshots,
     subtotal: calculatedSubtotal,
     shippingFee,
@@ -418,10 +444,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     paymentStatus,
     orderStatus,
     createdAt: timestampStr,
-    idempotencyKey: cleanIdempotencyKey || undefined,
     notificationSent: true,
     schemaVersion: '13.4',
   };
+
+  if (cleanIdempotencyKey) {
+    rawOrderRecord.idempotencyKey = cleanIdempotencyKey;
+  }
+
+  // Deep recursive sanitization to guarantee NO undefined values reach Firestore
+  const orderRecord: OrderRecord = cleanForFirestore(rawOrderRecord);
 
   // Execution wrapper for database-backed atomic creation & idempotency
   const executeOrderCreation = async (): Promise<{ statusCode: number; payload: any }> => {
@@ -430,10 +462,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!cleanIdempotencyKey) {
         // Direct order without idempotency key
         await db.collection('orders').doc(orderRecord.id).set(orderRecord);
-        // Trigger shop and customer transactional email notifications
-        sendOrderNotifications(orderRecord).catch((err) =>
-          console.error('[MNH Notification] Background email dispatch error:', err)
-        );
+        // Await transactional email notifications in serverless lifecycle before completing response
+        try {
+          await sendOrderNotifications(orderRecord);
+        } catch (emailErr) {
+          console.error('[MNH Notification] Email dispatch error:', emailErr);
+        }
         return {
           statusCode: 201,
           payload: {
@@ -487,18 +521,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // New order: Atomically write order AND idempotency lock in the same transaction
         transaction.set(orderRef, orderRecord);
-        transaction.set(idempotencyRef, {
-          orderId: orderRecord.id,
-          orderCode: orderRecord.orderCode,
-          fingerprint: currentFingerprint,
-          userId: orderRecord.userId || null,
-          customerUid: orderRecord.customerUid || null,
-          createdAt: orderRecord.createdAt,
-          total: orderRecord.total,
-          orderSnapshot: orderRecord,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          schemaVersion: '13.4',
-        });
+        transaction.set(
+          idempotencyRef,
+          cleanForFirestore({
+            orderId: orderRecord.id,
+            orderCode: orderRecord.orderCode,
+            fingerprint: currentFingerprint,
+            userId: orderRecord.userId || null,
+            customerUid: orderRecord.customerUid || null,
+            createdAt: orderRecord.createdAt,
+            total: orderRecord.total,
+            orderSnapshot: orderRecord,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            schemaVersion: '13.4',
+          })
+        );
 
         return {
           statusCode: 201,
@@ -511,11 +548,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
       });
 
-      // If a brand new order was committed (HTTP 201), dispatch email notifications
+      // If a brand new order was committed (HTTP 201), await email notifications in serverless lifecycle
       if (txResult.statusCode === 201) {
-        sendOrderNotifications(orderRecord).catch((err) =>
-          console.error('[MNH Notification] Background email dispatch error:', err)
-        );
+        try {
+          await sendOrderNotifications(orderRecord);
+        } catch (emailErr) {
+          console.error('[MNH Notification] Background email dispatch error:', emailErr);
+        }
       }
 
       return txResult;
@@ -589,7 +628,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.end(
       JSON.stringify({
         success: false,
-        error: err?.message || 'Đã xảy ra lỗi trong quá trình lưu trữ đơn hàng.',
+        error:
+          'Hệ thống gặp sự cố trong quá trình lưu trữ đơn hàng. Quý khách vui lòng thử lại hoặc liên hệ hotline Mộc Ngôn Hương (098.765.4321) để được hỗ trợ chu đáo nhất.',
       })
     );
   } finally {
