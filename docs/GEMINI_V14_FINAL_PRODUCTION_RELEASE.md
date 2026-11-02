@@ -16,14 +16,14 @@
 
 | Thông số | Giá trị thực tế | Trạng thái |
 | :--- | :--- | :--- |
-| **Release Commit** | `c7b2153` (`feat: integrate FIREBASE_SERVICE_ACCOUNT_JSON & Resend order confirmation and notification emails`) | `VERIFIED_LIVE` |
+| **Release Commit** | `7040ae8` (`fix: sanitize Firestore order serialization, omit undefined properties, await serverless email dispatch`) | `VERIFIED_LIVE` |
 | **Git Branches** | `codex/phase5-motion` & `main` (đồng bộ hoàn toàn trên `origin`) | `VERIFIED_LIVE` |
-| **Vercel Deployment ID** | `dpl_8PtfpKhf3rbNHXuM4CPxfGXZziCH` | `VERIFIED_LIVE` |
-| **Vercel Deployment URL** | `https://moc-ngon-huong-lnsavkkpr-hndzs-projects.vercel.app` | `VERIFIED_LIVE` |
+| **Vercel Deployment ID** | `dpl_EbN28NQng7o1yRdP1bZiaEokjqXj` | `VERIFIED_LIVE` |
+| **Vercel Deployment URL** | `https://moc-ngon-huong-il08qgqxu-hndzs-projects.vercel.app` | `VERIFIED_LIVE` |
 | **Production Aliases** | `https://mocngonhuong.com`, `https://www.mocngonhuong.com`, `https://moc-ngon-huong.vercel.app` | `VERIFIED_LIVE` |
 | **Chứng chỉ SSL/TLS** | Hợp lệ (Let's Encrypt / Vercel Edge TLS, HSTS 63072000s) | `VERIFIED_LIVE` |
-| **Trạng thái Build** | `● Ready` (Thời gian build: 1m 01s) | `VERIFIED_LIVE` |
-| **Serverless Functions** | `λ api/me/orders` (3.17 MB), `λ api/orders` (3.20 MB) | `VERIFIED_LIVE` |
+| **Trạng thái Build** | `● Ready` (Thời gian build: 1m 03s) | `VERIFIED_LIVE` |
+| **Serverless Functions** | `λ api/me/orders` (3.17 MB), `λ api/orders` (3.21 MB) | `VERIFIED_LIVE` |
 
 ---
 
