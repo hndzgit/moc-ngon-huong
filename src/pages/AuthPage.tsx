@@ -1,5 +1,6 @@
 import { assetUrl } from '../lib/assets';
-import { useDialogLifecycle } from '../components/useDialogLifecycle';
+import { MotionDialog } from '../motion/MotionDialog';
+import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState } from 'react';
 import { AuthStep, PageRoute } from '../types';
@@ -22,6 +23,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onNavigate,
 }) => {
   const [step, setStep] = useState<AuthStep>('login');
+  const stateMotion=useChangeMotion<HTMLDivElement>(step,'h1, form',.25);
 
   // Shared form states
   const [email, setEmail] = useState('');
@@ -51,7 +53,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setStep(next);
   };
 
-  useDialogLifecycle(step === 'forgot-otp' || step === 'forgot-success',()=>switchStep(step === 'forgot-success' ? 'login' : 'forgot-email'));
 
   const handleToggleAgreeAll = (checked: boolean) => {
     setAgreeAll(checked);
@@ -67,7 +68,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
     setLoading(true);
     try {
-      if (!hasLiveFirebaseKey) {
+      if (!hasLiveFirebaseKey || !auth) {
         setErrorMsg('Đăng nhập hiện chưa khả dụng. Vui lòng thử lại sau.');
         return;
       }
@@ -106,7 +107,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
     setLoading(true);
     try {
-      if (!hasLiveFirebaseKey) {
+      if (!hasLiveFirebaseKey || !auth) {
         setErrorMsg('Đăng ký hiện chưa khả dụng. Vui lòng thử lại sau.');
         return;
       }
@@ -128,7 +129,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       setErrorMsg('Vui lòng nhập địa chỉ email của bạn.');
       return;
     }
-    if (!hasLiveFirebaseKey) {
+    if (!hasLiveFirebaseKey || !auth) {
       setErrorMsg('Khôi phục mật khẩu hiện chưa khả dụng. Vui lòng thử lại sau.');
       return;
     }
@@ -171,7 +172,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     step === 'forgot-success';
 
   return (
-    <div className={`auth-page auth-${step} bg-white py-10 md:py-16`}>
+    <div ref={stateMotion} className={`auth-page auth-${step} bg-white py-10 md:py-16`}>
       <div className="figma-container max-w-[1680px] mx-auto">
         {/* Quick Figma State Switcher for QA Inspection */}
         {import.meta.env.DEV && new URLSearchParams(window.location.search).has('figma-qa') && <div className="qa-state-switcher mb-8 pb-4 border-b border-gray-100 flex flex-wrap items-center gap-2 text-[12px]">
@@ -646,7 +647,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       </div>
 
       {/* MODAL 1: 4-DIGIT OTP VERIFICATION OVERLAY (Figma 127:11621) */}
-      {step === 'forgot-otp' && (
+      <MotionDialog open={step === 'forgot-otp'} onClose={()=>switchStep('forgot-email')}>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fadeIn">
           <div role="dialog" aria-modal="true" aria-label="Xác thực mã OTP" className="auth-modal auth-otp-modal relative bg-[#faf7f2] rounded-[24px] max-w-[460px] w-full p-8 text-center shadow-2xl">
             <button type="button" onClick={() => switchStep('forgot-email')} aria-label="Đóng xác thực mã OTP" className="absolute right-6 top-6"><FigmaIcon name="closeModal" /></button>
@@ -704,10 +705,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </form>
           </div>
         </div>
-      )}
+      </MotionDialog>
 
       {/* MODAL 2: PASSWORD RESET SUCCESS OVERLAY (Figma 127:11871) */}
-      {step === 'forgot-success' && (
+      <MotionDialog open={step === 'forgot-success'} onClose={()=>switchStep('login')}>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fadeIn">
           <div role="dialog" aria-modal="true" aria-label="Xác thực tài khoản" className="auth-modal relative bg-[#faf7f2] rounded-[24px] max-w-[460px] w-full p-8 text-center shadow-2xl">
             <div className="flex items-center justify-center mx-auto mb-6">
@@ -728,7 +729,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </button>
           </div>
         </div>
-      )}
+      </MotionDialog>
     </div>
   );
 };

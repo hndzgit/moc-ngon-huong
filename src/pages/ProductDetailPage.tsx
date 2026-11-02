@@ -1,4 +1,7 @@
+import './ProductDetailPage.css';
 import { assetUrl } from '../lib/assets';
+import { MotionImage } from '../motion/MotionImage';
+import { useChangeMotion } from '../motion/motion';
 import { FIGMA_PRODUCT_MEDIA, FIGMA_PRODUCT_COPY, FIGMA_CARD_COPY, figmaImage } from '../data/figmaMedia';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState, useEffect } from 'react';
@@ -54,6 +57,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [buyQty, setBuyQty] = useState(1);
   const [selectedComboFlavor, setSelectedComboFlavor] = useState(EMOTION_CARDS[0]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'media'>('all');
+  const reviewsMotion=useChangeMotion<HTMLDivElement>(activeFilter,undefined,.25);
+  const quantityMotion=useChangeMotion<HTMLSpanElement>(buyQty,undefined,.18);
 
   useEffect(() => {
     setActiveImage(media ? figmaImage(media.main) : product.gallery[0] || product.image);
@@ -88,7 +93,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             {/* Left Column: Main Photo + 3 Thumbnails */}
             <div className="lg:col-span-6">
               <div className="w-full aspect-[4/3] rounded-[16px] overflow-hidden bg-[#f0ede6] mb-3.5 shadow-sm">
-                <img
+                <MotionImage
                   src={assetUrl(activeImage)}
                   alt={product.name}
                   className="w-full h-full object-cover"
@@ -101,6 +106,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setActiveImage(imgUrl)}
+                    aria-label={`Ảnh sản phẩm ${idx + 1}`}
+                    aria-pressed={activeImage === imgUrl}
                     className={`relative aspect-[4/3] rounded-[10px] overflow-hidden border-2 transition-all ${
                       activeImage === imgUrl
                         ? 'border-[#3e5641] shadow-xs'
@@ -150,7 +157,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   >
                     -
                   </button>
-                  <span className="min-w-[18px] text-center font-semibold text-[14px] text-[#222222]">
+                  <span ref={quantityMotion} className="min-w-[18px] text-center font-semibold text-[14px] text-[#222222]">
                     {buyQty}
                   </span>
                   <button
@@ -257,13 +264,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       </section>
 
       {/* 2. Dark-Green Storytelling Banner (#3e5641) */}
-      <section className="detail-story relative py-12 md:py-16 bg-[#3e5641] text-[#f7f4d5] overflow-hidden">
-        <img
-          src={assetUrl("/assets/figma/illus-lache-green.png")}
-          alt=""
-          aria-hidden="true"
-          className="hidden"
-        />
+      <section className="detail-story relative py-12 md:py-16 bg-[#3e5641] text-[#f7f4d5]">
         <img src={assetUrl("/assets/figma/illus-lache-green.png")} alt="" aria-hidden="true" className="detail-leaf-left pointer-events-none absolute" />
         <img src={assetUrl("/assets/figma/illus-lache-green.png")} alt="" aria-hidden="true" className="detail-leaf-right pointer-events-none absolute" />
         <img src={assetUrl("/assets/figma/illus-nui.png")} alt="" aria-hidden="true" className="detail-mountain pointer-events-none absolute" />
@@ -274,6 +275,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <img
                   src={assetUrl(storyData.image)}
                   alt={storyData.title}
+                  loading="lazy" decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -423,7 +425,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
 
             {/* Review Cards List matching Figma 35:3068 */}
-            <div className="review-list divide-y divide-gray-100">
+            <div ref={reviewsMotion} className="review-list divide-y divide-gray-100">
               {REVIEWS.filter((_, idx) => activeFilter !== 'media' || idx === 0).map((rev, idx) => (
                 <div key={rev.id} className="py-6 flex flex-col sm:flex-row gap-4 sm:gap-8">
                   <div className="sm:w-[180px] shrink-0 flex items-start gap-2.5">
@@ -460,7 +462,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     </p>
 
                     {idx === 0 && (
-                      <div className="review-photo relative w-[150px] h-[200px] overflow-hidden"><img
+                      <div className="review-photo relative w-[150px] h-[200px] overflow-hidden"><img loading="lazy" decoding="async"
                         src={assetUrl("/assets/figma/an-hand.png")}
                         alt="Ảnh thực tế khách hàng"
                         className="absolute max-w-none"

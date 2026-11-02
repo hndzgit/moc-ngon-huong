@@ -1,4 +1,5 @@
 import { assetUrl } from '../lib/assets';
+import { usePresenceMotion, useChangeMotion } from '../motion/motion';
 import { useDialogLifecycle } from './useDialogLifecycle';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useEffect } from 'react';
@@ -23,7 +24,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onNavigate,
   onCheckout,
 }) => {
-  useDialogLifecycle(isOpen,onClose);
+  const {ref,present,phase}=usePresenceMotion<HTMLDivElement>(isOpen,'cart');
+  useDialogLifecycle(present,onClose,ref);
+  const itemMotion=useChangeMotion<HTMLDivElement>(items.map(i=>`${i.product.id}:${i.quantity}`).join(','),'[data-quantity], [data-empty-copy]',.18,false,present);
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
 
   // Default newly added items to checked
@@ -35,7 +38,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     });
   }, [items]);
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   const toggleSelect = (productId: string) => {
     setSelectedIds((prev) => ({
@@ -50,7 +53,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   }, 0);
 
   return (
-    <div className="cart-drawer fixed inset-0 z-50 flex justify-end">
+    <div ref={ref} data-motion-phase={phase} inert={!isOpen} className="cart-drawer fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-[1px] transition-opacity"
@@ -59,7 +62,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
       {/* Slide-over Drawer Panel (Figma 127:8439 & 127:8870) */}
       <aside
-        className="relative z-10 w-full max-w-[558px] bg-white h-full shadow-2xl flex flex-col justify-between animate-slideLeft"
+        className="relative z-10 w-full max-w-[558px] bg-white h-full shadow-2xl flex flex-col justify-between"
         role="dialog" aria-modal="true" aria-label="Giỏ hàng"
       >
         {/* Drawer Header */}
@@ -80,11 +83,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         {/* Drawer Body */}
         {items.length === 0 ? (
           /* Variant 2: Empty Cart State (Figma 127:8870) */
-          <div className="flex-1 p-8 flex flex-col items-center justify-center text-center">
+          <div ref={itemMotion} className="flex-1 p-8 flex flex-col items-center justify-center text-center">
             <div className="w-[72px] h-[72px] rounded-full bg-[#f5f2ed] flex items-center justify-center mb-5 text-[#3e5641]">
               <FigmaIcon name="emptyCart" />
             </div>
-            <h3 className="font-philosopher font-bold text-[24px] text-[#222222] mb-2">
+            <h3 data-empty-copy className="font-philosopher font-bold text-[24px] text-[#222222] mb-2">
               Giỏ hàng trống
             </h3>
             <p className="text-[14px] md:text-[15px] text-[#666666] max-w-[280px] leading-[22px]">
@@ -94,7 +97,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
         ) : (
           /* Variant 1: Populated Cart Items List (Figma 127:8439) */
-          <div className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-gray-100">
+          <div ref={itemMotion} className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-gray-100">
             {items.map(({ product, quantity }) => {
               const checked = selectedIds[product.id] ?? true;
               return (
@@ -161,7 +164,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     >
                       -
                     </button>
-                    <span className="min-w-[14px] text-center text-[13px] font-semibold text-[#222222]">
+                    <span data-quantity className="min-w-[14px] text-center text-[13px] font-semibold text-[#222222]">
                       {quantity}
                     </span>
                     <button

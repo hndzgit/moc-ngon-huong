@@ -1,4 +1,5 @@
 import { isFigmaPreview } from '../lib/previewMode';
+import { useChangeMotion } from '../motion/motion';
 import { assetUrl } from '../lib/assets';
 import { OrderConfirmation } from '../components/OrderConfirmation';
 import { FigmaIcon } from '../components/FigmaIcon';
@@ -36,6 +37,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const [errorMsg, setErrorMsg] = useState('');
   const [orderComplete, setOrderComplete] = useState(false);
+  const shippingMotion=useChangeMotion<HTMLDivElement>(shippingMode,undefined,.25,false,!orderComplete);
   const [orderItems, setOrderItems] = useState<CartItem[]>([]);
   const [orderCode, setOrderCode] = useState('');
 
@@ -143,7 +145,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-[8px] bg-red-50 border border-red-200 text-red-700 text-[13.5px]">
+            <div role="alert" className="p-3.5 rounded-[8px] bg-red-50 border border-red-200 text-red-700 text-[13.5px]">
               {errorMsg}
             </div>
           )}
@@ -216,7 +218,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           </div>
 
           {/* 3. Delivery Method ("Hình thức nhận hàng") */}
-          <div className="checkout-shipping space-y-4">
+          <div ref={shippingMotion} className="checkout-shipping space-y-4">
             <h2 className="font-bold text-[15px] text-[#222222]">
               Hình thức nhận hàng
             </h2>

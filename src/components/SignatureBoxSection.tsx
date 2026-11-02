@@ -1,4 +1,5 @@
 import { assetUrl } from '../lib/assets';
+import { MotionImage } from '../motion/MotionImage';
 import { FigmaArtwork } from './FigmaArtwork';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState } from 'react';
@@ -18,7 +19,8 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
 }) => {
   const signatureProduct =
     PRODUCTS.find((p) => p.id === 'hop-qua-tam-y') || PRODUCTS[4];
-  const slides = ['/assets/figma/combo-slide-1.png', ...signatureProduct.gallery.slice(1)];
+  // Component 8 originals; product-detail galleries are a separate Figma slot.
+  const slides = ['/assets/figma/combo-slide-1.png', '/assets/figma/originals/gift-96-3129.jpg', '/assets/figma/originals/gift-96-3091.jpg', '/assets/figma/originals/gift-96-3111.jpg'];
   const [slideIdx, setSlideIdx] = useState(0);
 
   const prevSlide = () =>
@@ -31,10 +33,12 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Image Carousel with Arrows & Dots (Figma Component 8 - 96:3135) */}
           <div className="lg:col-span-6">
-            <div className="relative rounded-[18px] overflow-hidden shadow-xl aspect-[16/10] bg-[#203323]">
-              <img
+            <div className="relative rounded-[18px] overflow-hidden shadow-xl aspect-[16/10]">
+              <MotionImage
                 src={assetUrl(slides[slideIdx])}
+                data-figma-node={["96:2989","96:3129","96:3091","96:3111"][slideIdx]}
                 alt='Hộp Quà Trà Đa Hương — "TÂM Ý"'
+                loading="lazy" decoding="async"
                 onClick={() => onNavigate('detail', signatureProduct.id)}
                 className="w-full h-full object-cover cursor-pointer"
               />
@@ -43,7 +47,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
               <button
                 type="button"
                 onClick={prevSlide}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/35 hover:bg-black/55 text-white flex items-center justify-center text-[14px] transition-colors"
+                className="absolute left-4 top-1/2 lg:top-[51.90114%] -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(140,131,131,0.2)] lg:backdrop-blur-[19.3px] shadow-[0_-3px_20px_rgba(0,0,0,0.04)] text-white flex items-center justify-center"
                 aria-label="Ảnh trước"
               >
                 <FigmaIcon name="arrowLeft" />
@@ -51,7 +55,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
               <button
                 type="button"
                 onClick={nextSlide}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/35 hover:bg-black/55 text-white flex items-center justify-center text-[14px] transition-colors"
+                className="absolute right-4 top-1/2 lg:top-[51.90114%] -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(140,131,131,0.2)] lg:backdrop-blur-[19.3px] shadow-[0_-3px_20px_rgba(0,0,0,0.04)] text-white flex items-center justify-center"
                 aria-label="Ảnh tiếp"
               >
                 <FigmaIcon name="arrowRight" />
@@ -59,18 +63,19 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
             </div>
 
             {/* 4 Carousel Dots */}
-            <div className="flex items-center justify-center gap-2 mt-3.5">
+            <div data-figma-node={["96:3010","96:3076","96:3096","96:3116"][slideIdx]} className="signature-dots flex items-center justify-center gap-2 mt-6">
               {slides.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setSlideIdx(idx)}
-                  className={`h-2 rounded-full transition-all ${
+                  className={`h-3 w-3 rounded-full transition-colors ${
                     idx === slideIdx
-                      ? 'w-5 bg-[#c89f5d]'
-                      : 'w-2 bg-[#f7f4d5]/40'
+                      ? 'bg-[#8e6746]'
+                      : 'bg-white'
                   }`}
                   aria-label={`Slide ${idx + 1}`}
+                  aria-current={idx === slideIdx ? 'true' : undefined}
                 />
               ))}
             </div>

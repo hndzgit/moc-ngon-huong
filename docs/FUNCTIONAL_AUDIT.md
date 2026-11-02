@@ -1,3 +1,6 @@
+<!-- V7_CURRENT -->
+> **Cập nhật V7 — 02/11/2026:** [báo cáo/test hiện tại](CODEX_FULL_REPAIR_V7.md#5-responsive-motion-và-kiểm-thử-chức-năng). Hash routes/deep-link/refresh/back-forward đã kiểm tra trên build Pages; giỏ khách mới rỗng, fixture chỉ DEV QA. Production order/contact/newsletter **fail-closed**, không phải mock success. Success/OTP screens chỉ UI trong QA; Firebase thật chưa thử vì thiếu cấu hình an toàn. Chat vẫn rules local, reviews static. V7 regression36/36, functional12 nhóm, motion96 nhóm, touch390/360 và production3 viewport đã PASS. **Bảng bên dưới là lịch sử Phase3**; các dòng router/UI mock không đại diện production hiện tại.
+
 # Kiểm tra chức năng — 02/11/2026
 
 Các kiểm tra chạy bằng Chromium trong browser context riêng, với dữ liệu giả có địa chỉ `example.invalid`; không dùng tài khoản hoặc dữ liệu khách hàng thật.

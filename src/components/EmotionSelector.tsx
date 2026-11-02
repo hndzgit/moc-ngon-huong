@@ -1,6 +1,8 @@
 import { assetUrl } from '../lib/assets';
 import { FIGMA_PRODUCT_COPY } from '../data/figmaMedia';
-import { useDialogLifecycle } from './useDialogLifecycle';
+import { MotionDialog } from '../motion/MotionDialog';
+import { MotionImage } from '../motion/MotionImage';
+import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState } from 'react';
 import { EMOTION_CARDS, PRODUCTS } from '../data/products';
@@ -17,7 +19,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
 }) => {
   const [selectedEmotion, setSelectedEmotion] = useState<Exclude<EmotionKey, 'ALL' | 'COMBO'>>('AN');
   const [qrOpen, setQrOpen] = useState(false);
-  useDialogLifecycle(qrOpen,()=>setQrOpen(false));
+  const flavorMotion = useChangeMotion<HTMLDivElement>(selectedEmotion, '[data-flavor-copy]', .3);
 
   const activeItem =
     EMOTION_CARDS.find((item) => item.key === selectedEmotion) || EMOTION_CARDS[0];
@@ -69,6 +71,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                   <img
                     src={assetUrl(card.illustration)}
                     alt={card.teaName}
+                    loading="lazy" decoding="async"
                     className="w-[46px] h-[46px] object-contain"
                   />
                   <span
@@ -96,11 +99,11 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
         </div>
 
         {/* Main Flavor Card Showcase (Figma Component 6 - 80:4148) */}
-        <div className="bg-white rounded-[20px] border border-gray-200/80 shadow-[0_12px_36px_rgba(32,51,35,0.08)] p-6 sm:p-8 lg:p-10">
+        <div ref={flavorMotion} className="bg-white rounded-[20px] border border-gray-200/80 shadow-[0_12px_36px_rgba(32,51,35,0.08)] p-6 sm:p-8 lg:p-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* Left Column: Flavor Story, 2-Column Info Boxes & CTA */}
             <div className="lg:col-span-6 flex flex-col justify-between">
-              <div>
+              <div data-flavor-copy>
                 <span
                   className="inline-block px-3.5 py-1 rounded-full text-[12px] font-semibold mb-3"
                   style={{
@@ -172,9 +175,10 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
             {/* Right Column: Product Photo & Inline QR Overlay */}
             <div className="lg:col-span-6">
               <div className="relative w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[16px] overflow-hidden shadow-sm bg-[#203323]">
-                <img
+                <MotionImage
                   src={assetUrl(selectedEmotion === 'AN' ? '/assets/figma/originals/ae4e7.png' : activeItem.image)}
                   alt={storyCopy.storyTitle}
+                  loading="lazy" decoding="async"
                   className="w-full h-full object-cover"
                 />
 
@@ -182,14 +186,15 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                   <div className="absolute inset-x-0 bottom-5 flex justify-center px-4">
                     <button
                       type="button"
-                      onClick={() => setQrOpen(true)}
+                      onClick={event=>{event.currentTarget.focus({preventScroll:true});setQrOpen(true)}}
                       className="h-[38px] px-4 rounded-full bg-white/95 backdrop-blur-sm text-[#203323] font-medium text-[13px] shadow-md hover:bg-white transition-all flex items-center gap-2"
                     >
                       <FigmaIcon name="scan" />
                       <span>Quét QR nghe Audio chuyện trà</span>
                     </button>
                   </div>
-                ) : (
+                ) : null}
+                <MotionDialog open={qrOpen} onClose={()=>setQrOpen(false)}>
                   <div role="dialog" aria-modal="true" aria-label="Mã QR nghe chuyện trà" className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 animate-fadeIn">
                     <div className="bg-white p-3.5 rounded-[14px] shadow-2xl mb-4">
                       <img
@@ -207,7 +212,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                       <FigmaIcon name="closeModal" />
                     </button>
                   </div>
-                )}
+                </MotionDialog>
               </div>
             </div>
           </div>

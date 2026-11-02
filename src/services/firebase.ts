@@ -23,7 +23,9 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+// Avoid background Auth requests with the placeholder key on an unconfigured preview.
+// Configured builds continue to use the same Firebase Auth SDK and persistence.
+export const auth = import.meta.env.VITE_FIREBASE_API_KEY ? getAuth(app) : null;
 export const googleProvider = new GoogleAuthProvider();
 
 export {

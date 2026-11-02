@@ -1,9 +1,13 @@
 import { assetUrl } from './lib/assets';
+import { isFigmaPreview } from './lib/previewMode';
 import { readRoute, routeHash } from './lib/routes';
+import { usePageMotion, scrollBehavior } from './motion/motion';
+import { warmMotionEngine } from './motion/engine-loader';
+import { useRouteScroll } from './motion/useRouteScroll';
 import { FigmaArtwork } from './components/FigmaArtwork';
 import React, { useState, useMemo, useEffect } from 'react';
 import { CartItem, PageRoute, Product } from './types';
-import { PRODUCTS } from './data/products';
+import { PRODUCTS, LOOSE_TEA_PRODUCTS } from './data/products';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { EmotionSelector } from './components/EmotionSelector';
@@ -31,6 +35,9 @@ const DEFAULT_CART_ITEMS: CartItem[] = [
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageRoute>(()=>readRoute().page);
   const [selectedProductId, setSelectedProductId] = useState<string>(()=>readRoute().productId || 'buoi-an');
+  const motionScope = usePageMotion(`${currentPage}/${selectedProductId}`);
+  const rememberNavigation = useRouteScroll(`${currentPage}/${selectedProductId}`);
+  useEffect(warmMotionEngine,[]);
 
   useEffect(() => {
     const restoreRoute = () => {
@@ -39,26 +46,31 @@ export function App() {
       if (route.productId) setSelectedProductId(route.productId);
       setCartOpen(false);
       setSearchOpen(false);
-      window.scrollTo({top:0,behavior:'instant'});
     };
     window.addEventListener('hashchange',restoreRoute);
     return () => window.removeEventListener('hashchange',restoreRoute);
   },[]);
 
-  // Initialize Cart from localStorage with fallback to Figma 127:8439 default items
+  // Preserve saved carts; seed the Figma 127:8439 fixture only in explicit dev QA mode.
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed;
+          // Recover valid rows after a malformed/stale storage entry. Catalogue
+          // data stays authoritative; never trust stored prices or product shapes.
+          return parsed.flatMap(item => {
+            const product = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS].find(p => p.id === item?.product?.id);
+            return product && Number.isSafeInteger(item?.quantity) && item.quantity > 0
+              ? [{ product, quantity: item.quantity }] : [];
+          });
         }
       }
     } catch {
       // Ignore storage read errors
     }
-    return DEFAULT_CART_ITEMS;
+    return isFigmaPreview ? DEFAULT_CART_ITEMS : [];
   });
 
   const [cartOpen, setCartOpen] = useState(false);
@@ -95,13 +107,14 @@ export function App() {
   }, [userEmail]);
 
   const handleNavigate = (page: PageRoute, productId?: string) => {
+    rememberNavigation(routeHash(page,productId || selectedProductId));
     if (productId) {
       setSelectedProductId(productId);
     }
     if (page === 'checkout') { setCartOpen(false); setCheckoutProductIds(null); }
     setCurrentPage(page);
     window.location.hash = routeHash(page, productId || selectedProductId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   };
 
   // Map of productId -> quantity in cart for inline (- 0 +) steppers on ProductCards
@@ -163,7 +176,7 @@ export function App() {
   const homepageFourProducts = PRODUCTS.slice(0, 4);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#faf8f3] text-[#222222]">
+    <div ref={motionScope} className="min-h-screen flex flex-col bg-[#faf8f3] text-[#222222]">
       {/* Global Header (Figma 92:3684) */}
       <Navbar
         currentPage={currentPage}
@@ -358,6 +371,7 @@ export function App() {
                       <img
                         src={assetUrl("/assets/figma/originals/4f921.png")}
                         alt="Hộp quà Tâm Ý Mộc Ngôn Hương"
+                        loading="lazy" decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -365,6 +379,7 @@ export function App() {
                       <img
                         src={assetUrl("/assets/figma/combo-table.png")}
                         alt="Bộ sưu tập trà Mộc Ngôn Hương"
+                        loading="lazy" decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -435,7 +450,7 @@ export function App() {
         items={cartItems}
         onUpdateQuantity={handleUpdateCartById}
         onRemoveItem={handleRemoveCartItem}
-        onCheckout={(ids) => { setCheckoutProductIds(ids); setCartOpen(false); setCurrentPage('checkout'); window.location.hash = routeHash('checkout'); window.scrollTo({top:0,behavior:'instant'}); }}
+        onCheckout={(ids) => { rememberNavigation(routeHash('checkout')); setCheckoutProductIds(ids); setCartOpen(false); setCurrentPage('checkout'); window.location.hash = routeHash('checkout'); window.scrollTo({top:0,behavior:'instant'}); }}
         onNavigate={handleNavigate}
       />
 

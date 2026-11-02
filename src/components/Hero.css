@@ -1,0 +1,72 @@
+/* Figma 56:1033: gradient y148/h934, photo mask y164/h918,
+   copy x120/y433/w819. These are distinct layers, not a stretched photo. */
+.home-hero {
+  --hero-height: clamp(500px, calc(410.666667px + 27.256944vw), 934px);
+  height: var(--hero-height);
+}
+.hero-photo-mask {
+  position: absolute;
+  inset: calc(var(--hero-height) * 16 / 934) 0 0;
+  overflow: hidden;
+}
+.hero-photo-mask picture { display: block; width: 100%; height: 100%; }
+.home-hero .hero-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Original crop matrix ty=.237964004, sy=.717099965 → 84.115933%. */
+  object-position: calc(50% + .0259888126vw) 84.115933%;
+}
+.hero-overlay-turn {
+  position: absolute;
+  width: var(--hero-height);
+  height: 100vw;
+  max-width: none;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+.hero-content { padding-top: calc(var(--hero-height) * 285 / 934); }
+.hero-copy { width: 48.75%; }
+.home-hero h1 {
+  color: white;
+  font-size: clamp(42px, 5vw, 96px);
+  font-weight: 400;
+  line-height: 1.125;
+  margin-bottom: clamp(20px, 1.666667vw, 32px);
+}
+.home-hero .hero-description {
+  color: white;
+  font-size: clamp(15px, 1.666667vw, 32px);
+  line-height: 1.21875;
+  margin-bottom: clamp(24px, 2.083333vw, 40px);
+}
+.hero-cta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 1.25vw, 24px);
+}
+.home-hero .hero-button {
+  min-width: 0;
+  min-height: clamp(48px, 3.541667vw, 68px);
+  padding: clamp(12px, .833333vw, 16px) clamp(16px, 1.666667vw, 32px);
+  border-radius: 100px;
+  font: 400 clamp(16px, 1.25vw, 24px)/1.5 Roboto, sans-serif;
+  transition: background-color .2s ease, color .2s ease;
+}
+.hero-button-primary { background: #3e5641; color: white; }
+.hero-button-secondary { background: white; color: #3e5641; }
+@media (hover: hover) {
+  .hero-button-primary:hover { background: #c59a58; }
+  .hero-button-secondary:hover { background: #c59a58; color: white; }
+}
+@media (max-width: 1023px) {
+  .hero-copy { width: min(100%, 620px); }
+  .home-hero .hero-description { line-height: 1.6; }
+}
+@media (max-width: 767px) {
+  .home-hero .hero-photo { object-position: 65% 84.115933%; }
+}
+@media (max-width: 639px) {
+  .hero-cta { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+}

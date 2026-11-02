@@ -41,6 +41,7 @@ export const StoryPage: React.FC<StoryPageProps> = () => {
             <img
               src={assetUrl("/assets/figma/story-1.png")}
               alt="Một Mong Muốn Giản Dị — Hộp trà Mộc Ngôn Hương"
+              loading="lazy" decoding="async"
               className="w-full max-h-[720px] object-cover"
             />
           </div>
@@ -61,6 +62,7 @@ export const StoryPage: React.FC<StoryPageProps> = () => {
             <img
               src={assetUrl("/assets/figma/story-2.png")}
               alt="Gửi Gắm Những Điều Khó Nói — Khay trà Mộc Ngôn Hương"
+              loading="lazy" decoding="async"
               className="w-full max-h-[720px] object-cover"
             />
           </div>

@@ -1,0 +1,38 @@
+/* Motion changes presentation only; the unanimated/resting Figma layout is the default. */
+[data-motion-phase="closing"] { pointer-events:none; }
+.cart-drawer { overflow:hidden; }
+#mobile-navigation { position:absolute; inset-inline:0; top:100%; }
+
+@media (prefers-reduced-motion:no-preference) {
+  .site-header .header-main { animation:mnh-heading-in 300ms ease-out; }
+  main h1 { animation:mnh-heading-in 450ms cubic-bezier(.2,.65,.3,1); }
+  .home-hero .hero-cta { animation:mnh-heading-in 550ms cubic-bezier(.2,.65,.3,1); }
+  [data-motion-fallback][data-motion-phase="open"] { animation:mnh-overlay-in 220ms ease-out; }
+  [data-motion-fallback][data-motion-phase="closing"] { animation:mnh-overlay-out 200ms ease-in both; }
+  .cart-drawer[data-motion-fallback="cart"][data-motion-phase="open"] aside { animation:mnh-drawer-in 300ms ease-out; }
+  button:not(:disabled) { transition-property:color,background-color,border-color,box-shadow,opacity,scale; transition-duration:220ms; transition-timing-function:cubic-bezier(.2,.65,.3,1); }
+  button:not(:disabled):active { scale:.98; }
+  input,textarea,select { transition:border-color 220ms ease-out,box-shadow 220ms ease-out; }
+  .motion-nav-link::after { content:""; position:absolute; height:2px; bottom:0; left:0; width:100%; background:#3e5641; transform:scaleX(0); transform-origin:left; transition:transform 300ms ease-out; }
+  .motion-nav-link[class*="after:w-full"]::after,.motion-nav-link:hover::after,.motion-nav-link:focus-visible::after { transform:scaleX(1); }
+  .chat-message,[role="alert"],.search-card .product-card,.cart-item { animation:mnh-content-in 220ms ease-out; }
+}
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+  .product-card { transition:box-shadow 300ms ease-out,transform 300ms ease-out; }
+  .product-card:hover { transform:translateY(-2px); }
+  .product-card.group:hover > .relative > img { transform:scale(1.025); }
+}
+@keyframes mnh-content-in { from { opacity:.72; } to { opacity:1; } }
+@keyframes mnh-heading-in { from { opacity:.8; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes mnh-overlay-in { from { opacity:.6; } to { opacity:1; } }
+@keyframes mnh-overlay-out { to { opacity:0; } }
+@keyframes mnh-drawer-in { from { transform:translateX(100%); } to { transform:translateX(0); } }
+button:focus-visible,.site-header button:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+@media (prefers-reduced-motion:reduce) {
+  .product-card.group:hover > .relative > img { transform:none; }
+  button:not(:disabled):active { scale:1; }
+}
+@media (hover:none), (pointer:coarse) {
+  .product-card.group:hover > .relative > img { transform:none; }
+  .chat-widget > button:hover { transform:none; }
+}

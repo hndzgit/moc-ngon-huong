@@ -1,4 +1,5 @@
 import { assetUrl } from '../lib/assets';
+import { usePresenceMotion } from '../motion/motion';
 import { useDialogLifecycle } from './useDialogLifecycle';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useMemo } from 'react';
@@ -22,7 +23,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   cartQuantities,
   onUpdateQuantity,
 }) => {
-  useDialogLifecycle(isOpen,onClose);
+  const {ref,present,phase}=usePresenceMotion<HTMLDivElement>(isOpen,'search');
+  useDialogLifecycle(present,onClose,ref);
   const [query, setQuery] = useState('');
   const [recentViewed, setRecentViewed] = useState<Product[]>([
     PRODUCTS[0],
@@ -41,7 +43,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     );
   }, [query]);
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   const handleSelect = (productId: string) => {
     const found =
@@ -61,7 +63,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const noResults = hasQuery && filteredProducts.length === 0;
 
   return (
-    <div className="search-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 backdrop-blur-[2px] p-4 sm:p-6 md:pt-20 animate-fadeIn">
+    <div ref={ref} data-motion-phase={phase} inert={!isOpen} className="search-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 backdrop-blur-[2px] p-4 sm:p-6 md:pt-20">
       {/* Backdrop click receiver */}
       <div className="fixed inset-0" onClick={onClose} />
 

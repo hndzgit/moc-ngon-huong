@@ -1,4 +1,5 @@
 import { assetUrl } from '../lib/assets';
+import { usePresenceMotion, scrollBehavior } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
 import { BrandLogo } from './BrandLogo';
 import React, { useState, useRef, useEffect } from 'react';
@@ -25,6 +26,7 @@ const QUICK_REPLIES = [
 
 export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const panel = usePresenceMotion<HTMLDivElement>(isOpen,'chat');
   const [input, setInput] = useState('');
   const [showMore, setShowMore] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -35,13 +37,22 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
       time: 'Vừa xong',
     },
   ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamRef = useRef<HTMLDivElement>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const sequence = useRef(0);
 
   useEffect(() => {
     if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      const stream=streamRef.current;
+      stream?.scrollTo({top:stream.scrollHeight,behavior:scrollBehavior()});
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, panel.present]);
+  useEffect(()=>{
+    if (!isOpen) return;
+    const escape=(event:KeyboardEvent)=>{if(event.key==='Escape' && !document.querySelector('[role="dialog"]')){setIsOpen(false);launcherRef.current?.focus({preventScroll:true})}};
+    document.addEventListener('keydown',escape);
+    return ()=>document.removeEventListener('keydown',escape);
+  },[isOpen]);
 
   const generateBotReply = (query: string): Omit<ChatMessage, 'id' | 'time'> => {
     const q = query.toLowerCase();
@@ -104,7 +115,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
     if (!trimmed) return;
 
     const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: `user-${++sequence.current}`,
       sender: 'user',
       text: trimmed,
       time: 'Vừa xong',
@@ -112,7 +123,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
 
     const replyData = generateBotReply(trimmed);
     const botMsg: ChatMessage = {
-      id: `bot-${Date.now() + 1}`,
+      id: `bot-${++sequence.current}`,
       time: 'Vừa xong',
       ...replyData,
     };
@@ -124,8 +135,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
   return (
     <div className="chat-widget fixed bottom-6 right-6 z-40">
       {/* Expanded Chat Window (Figma 80:5091 - 410x555) */}
-      {isOpen && (
-        <div className="chat-panel bg-paper-texture mb-3 w-[340px] sm:w-[410px] h-[520px] sm:h-[555px] bg-[#faf7f2] rounded-[20px] shadow-[0_20px_60px_rgba(32,51,35,0.28)] border border-[#3e5641]/20 flex flex-col overflow-hidden animate-fadeIn">
+      {panel.present && (
+        <div ref={panel.ref} id="chat-panel" role="region" aria-label="Tư vấn Mộc Ngôn Hương" data-motion-phase={panel.phase} inert={!isOpen} className="chat-panel bg-paper-texture mb-3 w-[340px] sm:w-[410px] h-[520px] sm:h-[555px] bg-[#faf7f2] rounded-[20px] shadow-[0_20px_60px_rgba(32,51,35,0.28)] border border-[#3e5641]/20 flex flex-col overflow-hidden">
           {/* Header (#3e5641) */}
           <div className="bg-[#3e5641] text-[#f7f4d5] px-5 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
@@ -143,7 +154,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
             <button type="button" aria-label="Gợi ý tư vấn thêm" aria-expanded={showMore} onClick={() => setShowMore(v => !v)}><FigmaIcon name="more" className="rotate-90" /></button>
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {setIsOpen(false);launcherRef.current?.focus({preventScroll:true})}}
               className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-[#f7f4d5] transition-colors text-[18px]"
               aria-label="Đóng khung chat"
             >
@@ -153,11 +164,11 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
           </div>
 
           {/* Messages Stream */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          <div ref={streamRef} role="log" aria-live="polite" className="flex-1 p-4 overflow-y-auto space-y-4">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex items-start gap-2.5 ${
+                className={`chat-message flex items-start gap-2.5 ${
                   msg.sender === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
@@ -209,7 +220,6 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Bar */}
@@ -241,10 +251,13 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
 
       {/* Floating Circular Launcher Button (Figma 80:5091 - 68x68 circle) */}
       <button
+        ref={launcherRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-[60px] h-[60px] md:w-[88px] md:h-[88px] rounded-full bg-[#3e5641] text-[#f7f4d5] shadow-[0_8px_28px_rgba(32,51,35,0.35)] hover:bg-[#203323] hover:scale-105 transition-all flex items-center justify-center ml-auto"
         aria-label="Mở tư vấn trực tuyến Mộc Ngôn Hương"
+        aria-expanded={isOpen}
+        aria-controls="chat-panel"
       >
         <img src={assetUrl("/assets/figma/icon-chat.svg")} alt="Chat" className="w-[40px] h-[40px]" />
       </button>

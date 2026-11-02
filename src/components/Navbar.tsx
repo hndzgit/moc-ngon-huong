@@ -1,4 +1,5 @@
 import { assetUrl } from '../lib/assets';
+import { usePresenceMotion, useChangeMotion } from '../motion/motion';
 import { BrandLogo } from './BrandLogo';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useRef, useEffect } from 'react';
@@ -26,7 +27,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menu = usePresenceMotion<HTMLDivElement>(mobileMenuOpen,'menu');
+  const dropdown = usePresenceMotion<HTMLDivElement>(dropdownOpen,'menu');
+  const countMotion = useChangeMotion<HTMLSpanElement>(cartCount,undefined,.18);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(()=>{setMobileMenuOpen(false);setDropdownOpen(false)},[currentPage]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -39,7 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const navLinkClass = (active: boolean) =>
-    `relative py-1.5 text-[16px] xl:text-[24px] transition-colors duration-200 flex items-center gap-1.5 cursor-pointer ${
+    `motion-nav-link relative py-1.5 text-[16px] xl:text-[24px] transition-colors duration-200 flex items-center gap-1.5 cursor-pointer ${
       active
         ? 'text-[#222222] font-normal after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#3e5641]'
         : 'text-[#333333] hover:text-[#3e5641] font-normal'
@@ -103,8 +108,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>Sản phẩm</span>
               </button>
 
-              {dropdownOpen && (
-                <div className="absolute left-0 top-full pt-2 w-[290px] z-50">
+              {dropdown.present && (
+                <div ref={dropdown.ref} data-motion-phase={dropdown.phase} inert={!dropdownOpen} className="absolute left-0 top-full pt-2 w-[290px] z-50">
                   <div className="bg-white rounded-[12px] shadow-[0_12px_36px_rgba(32,51,35,0.16)] border border-[#3e5641]/15 py-2 overflow-hidden">
                     <button
                       type="button"
@@ -159,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-3 sm:gap-6">
           <button
             type="button"
-            onClick={onOpenSearch}
+            onClick={event=>{event.currentTarget.focus({preventScroll:true});onOpenSearch()}}
             className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
             aria-label="Tìm kiếm sản phẩm"
           >
@@ -182,13 +187,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             type="button"
-            onClick={onOpenCart}
+            onClick={event=>{event.currentTarget.focus({preventScroll:true});onOpenCart()}}
             className="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
             aria-label="Giỏ hàng"
           >
             <img src={assetUrl(currentPage === 'contact' ? '/assets/figma/originals/2dc38.svg' : '/assets/figma/icon-cart.svg')} alt="Giỏ hàng" className="w-[28px] h-[28px]" />
             {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#3e5641] text-[#f7f4d5] text-[10.5px] font-bold flex items-center justify-center">
+              <span ref={countMotion} className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#3e5641] text-[#f7f4d5] text-[10.5px] font-bold flex items-center justify-center">
                 {cartCount}
               </span>
             )}
@@ -200,6 +205,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/5 text-[#203323]"
             aria-label="Menu"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {mobileMenuOpen ? (
@@ -213,8 +220,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Navigation Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 space-y-3 shadow-lg">
+      {menu.present && (
+        <div id="mobile-navigation" ref={menu.ref} data-motion-phase={menu.phase} inert={!mobileMenuOpen} className="md:hidden bg-white border-t border-gray-100 px-6 py-4 space-y-3 shadow-lg">
           <button
             type="button"
             onClick={() => {

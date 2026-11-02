@@ -1,0 +1,30 @@
+/* Root canvas clips X; the story does not clip the original mountain at its
+   lower edge. Figma 77:4832 / 77:4826 / 85:2635 are visible root siblings. */
+.product-detail-page { overflow-x: clip; }
+.detail-leaf-left, .detail-leaf-right, .detail-mountain { display: none; }
+@media (min-width: 1024px) {
+  .detail-story { --art-size: min(26.041667vw, 500px); }
+  .detail-leaf-left, .detail-leaf-right, .detail-mountain {
+    display: block;
+    width: var(--art-size);
+    height: var(--art-size);
+    max-width: none;
+    transform-origin: 0 0;
+  }
+  .detail-leaf-left, .detail-leaf-right {
+    top: calc(50% + var(--art-size) * .274214844);
+  }
+  .detail-leaf-left {
+    left: calc(var(--art-size) * -.622);
+    transform: rotate(20.0797953deg) scaleY(-1);
+  }
+  .detail-leaf-right {
+    left: calc(100% + var(--art-size) * .590546875);
+    transform: rotate(159.9202047deg);
+  }
+  .detail-mountain {
+    left: calc(100% - var(--art-size) * .92);
+    bottom: calc(var(--art-size) * -.283852783);
+    transform: rotate(-.220743435deg);
+  }
+}

@@ -17,12 +17,13 @@ try {
   await context.route('**/*',r=>{if(!['GET','HEAD'].includes(r.request().method())){blockedWrites.push(r.request().method());return r.abort();}return r.continue();});
   async function ready(name){
    await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(async i=>{i.loading='eager';try{await i.decode();}catch{}}));});
-   const info=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,images:[...document.images].map(i=>({url:i.src,broken:!i.naturalWidth}))}));
+   const info=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,images:[...document.images].map(i=>({url:i.currentSrc||i.src,broken:!i.naturalWidth}))}));
    assert.equal(info.overflow,false,name+' overflow');assert.deepEqual(info.images.filter(i=>i.broken),[],name+' broken images');
    for(const image of info.images){const u=new URL(image.url);if(u.origin===site.origin)assert.ok(u.pathname.startsWith(prefix),name+' unrebased image '+u.pathname);}
    await page.screenshot({path:`${out}/${name}-${width}.png`,fullPage:false});
   }
   await page.goto(base);await page.locator('.home-hero').waitFor();await ready('home');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('mnh_cart_items_v1'))),[],'fresh production cart');
   await page.goto(base+'#/san-pham');await page.locator('.products-page').waitFor();await ready('products');
   await page.locator('.products-page .product-card h3').first().click();await page.locator('.product-detail-page').waitFor();
   assert.match(page.url(),/#\/san-pham\/buoi-an$/);await page.reload();await page.locator('.product-detail-page').waitFor();await ready('detail-refresh');
@@ -72,7 +73,7 @@ try {
   results.push({width,status:'PASS',hashRoutesAndRefresh:'PASS',backForward:'PASS',cartPersistence:'PASS',assets:'PASS',errors,consoleErrors,badResponses,blockedWrites});
   await context.close();
  }
- const files=(await fs.readdir('public/assets/figma',{recursive:true,withFileTypes:true})).filter(e=>e.isFile());const assetResponses=[];
+ const files=(await Promise.all(['public/assets/figma','public/assets/optimized'].map(root=>fs.readdir(root,{recursive:true,withFileTypes:true})))).flat().filter(e=>e.isFile());const assetResponses=[];
  for(let i=0;i<files.length;i+=4)await Promise.all(files.slice(i,i+4).map(async e=>{const relative=(e.parentPath||e.path).replace('public/','')+'/'+e.name;const r=await fetch(new URL(relative,base),{method:'HEAD'});assetResponses.push({path:relative,status:r.status,bytes:Number(r.headers.get('content-length'))});}));
  assert.ok(assetResponses.every(r=>r.status===200&&r.bytes>0));
  await fs.writeFile(`${out}/results.json`,JSON.stringify({base,results,assetResponses,realOrdersSubmitted:false},null,2));console.log({base,viewports:results.length,assetChecks:assetResponses.length,status:'PASS'});

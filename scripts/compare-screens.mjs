@@ -6,6 +6,7 @@ const ids=['56:1033','127:12938','127:13466','127:13960','77:2583','35:3068','12
 const metrics=[];
 const inputDir=process.env.MNH_COMPARE_INPUT || 'docs/evidence/current';
 const prefix=process.env.MNH_COMPARE_PREFIX || '';
+const referenceOverrides=process.env.MNH_REFERENCE_OVERRIDES?JSON.parse(process.env.MNH_REFERENCE_OVERRIDES):{};
 for(let group=0;group<4;group++){
  const entries=[];
  for(let j=0;j<6;j++){
@@ -13,6 +14,7 @@ for(let group=0;group<4;group++){
   const native=`docs/evidence/figma-${id.replace(':','-')}-native.png`;
   let ref=id==='56:1033'?'docs/evidence/figma-home-1920.png':'figma-reference/'+frame.screenshotPath;
   try{await fs.access(native);ref=native;}catch{}
+  if(referenceOverrides[id])ref=referenceOverrides[id];
   const current=`${inputDir}/${id.replace(':','-')}-1920.png`;
   try{
    const rm=await sharp(ref).metadata(),cm=await sharp(current).metadata();
@@ -30,7 +32,7 @@ for(let group=0;group<4;group++){
    const visibleHeight=Math.min(resizedMeta.height,rm.height);
    const cur=await sharp(resized).extract({left:0,top:0,width:rm.width,height:visibleHeight}).extend({bottom:rm.height-visibleHeight,background:'#fff'}).removeAlpha().raw().toBuffer();
    let sum=0,differing=0;for(let p=0;p<target.length;p+=3){const d=Math.abs(target[p]-cur[p])+Math.abs(target[p+1]-cur[p+1])+Math.abs(target[p+2]-cur[p+2]);sum+=d;if(d>45)differing++;}
-   metrics.push({id,referencePixels:[rm.width,rm.height],implementationPixels:[cm.width,cm.height],normalizedMeanAbsoluteError:sum/target.length/255,percentPixelsOver15PerChannel:differing/(target.length/3)*100});
+   metrics.push({id,referencePath:ref,referencePixels:[rm.width,rm.height],implementationPixels:[cm.width,cm.height],normalizedMeanAbsoluteError:sum/target.length/255,percentPixelsOver15PerChannel:differing/(target.length/3)*100});
   }catch(e){metrics.push({id,error:String(e)});}
  }
  await sharp({create:{width:1000,height:2460,channels:3,background:'#eeeeee'}}).composite(entries).png().toFile(`docs/evidence/${prefix}comparison-sheet-${group+1}.png`);

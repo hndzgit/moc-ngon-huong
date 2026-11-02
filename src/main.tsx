@@ -10,3 +10,4 @@ createRoot(document.getElementById('root')!).render(
 );
 
 import './figma-repair.css';
+import './motion/motion.css';

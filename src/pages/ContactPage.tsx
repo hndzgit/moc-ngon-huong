@@ -1,5 +1,5 @@
 import { isFigmaPreview } from '../lib/previewMode';
-import { useDialogLifecycle } from '../components/useDialogLifecycle';
+import { MotionDialog } from '../motion/MotionDialog';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState } from 'react';
 import { PageRoute } from '../types';
@@ -17,7 +17,6 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  useDialogLifecycle(showSuccessModal,()=>setShowSuccessModal(false));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +66,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
           </p>
 
           {/* 2 Inline Contact Info Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mt-6 text-[14.5px] md:text-[15.5px] font-medium text-[#222222]">
+          <div className="contact-info grid grid-cols-1 sm:grid-cols-2 items-center text-left gap-5 mt-6 text-[14.5px] md:text-[15.5px] font-medium text-[#222222]">
             <div className="flex items-center gap-2">
               <span className="w-7 h-7 rounded-full bg-[#3e5641]/10 text-[#3e5641] flex items-center justify-center text-[13px]">
                 <FigmaIcon name="call" />
@@ -90,7 +89,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
           noValidate
         >
           {error && (
-            <div className="p-3.5 rounded-[10px] bg-red-50 border border-red-200 text-red-700 text-[14px]">
+            <div role="alert" className="p-3.5 rounded-[10px] bg-red-50 border border-red-200 text-red-700 text-[14px]">
               {error}
             </div>
           )}
@@ -172,7 +171,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Contact Success Modal (Figma 127:10079) */}
-      {showSuccessModal && (
+      <MotionDialog open={showSuccessModal} onClose={()=>setShowSuccessModal(false)}>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fadeIn">
           <div role="dialog" aria-modal="true" aria-label="Thông báo gửi yêu cầu" className="contact-success relative bg-paper-texture bg-[#faf7f2] rounded-[24px] max-w-[460px] w-full p-8 text-center shadow-2xl">
             <button type="button" onClick={() => setShowSuccessModal(false)} aria-label="Đóng thông báo" className="absolute right-6 top-6"><FigmaIcon name="closeModal" /></button>
@@ -194,7 +193,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
             </button>
           </div>
         </div>
-      )}
+      </MotionDialog>
     </div>
   );
 };

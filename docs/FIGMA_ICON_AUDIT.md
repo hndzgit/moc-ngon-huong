@@ -1,3 +1,6 @@
+<!-- V7_CURRENT -->
+> **Cập nhật V7 — 02/11/2026:** xác minh40 node/file trong registry `FigmaIcon` và227 public files giữ nguyên byte; không thay path/viewBox/stroke/fill của SVG đúng sẵn có. Sửa node-ID arrowLeft/arrowRight thành icon child24px `96:2991`/`96:2993`, không nhầm với Button frame40px `96:2990`/`96:2992`. Sửa selector khung icon giỏ trống để không ép CTA thành vòng tròn; phục hồi artwork thật của detail. [Hash/mapping V7](evidence/v7/safety-assets.json), [báo cáo](CODEX_FULL_REPAIR_V7.md). Đây không phải chứng nhận mọi hover/active của482 node lịch sử đã hoàn tất. Menu mobile/mũi tên phụ thiếu source desktop tương ứng vẫn NOT_VERIFIED; không thay bằng asset chỉ trùng tên. Inventory bên dưới được giữ nguyên như bằng chứng lịch sử.
+
 # FIGMA ICON AUDIT — 02/11/2026
 
 ## Phạm vi và bằng chứng

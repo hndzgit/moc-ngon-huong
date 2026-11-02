@@ -15,35 +15,15 @@
   }
 }
 
-/* Custom utility classes matching Figma 1920px layout (1680px content container with 120px side padding on desktop) */
+/* One continuous content grid: 40px gutters at 768, 120px at 1920.
+   Full-bleed sections and narrower form wrappers keep their own geometry. */
+:root {
+  --page-gutter: clamp(20px, calc(6.944444vw - 13.333333px), 120px);
+}
 .figma-container {
-  width: 100%;
+  width: calc(100% - 2 * var(--page-gutter));
   max-width: 1680px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-}
-
-@media (min-width: 768px) {
-  .figma-container {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .figma-container {
-    padding-left: 4rem;
-    padding-right: 4rem;
-  }
-}
-
-@media (min-width: 1600px) {
-  .figma-container {
-    padding-left: 0;
-    padding-right: 0;
-  }
+  margin-inline: auto;
 }
 
 /* Custom subtle scrollbars */

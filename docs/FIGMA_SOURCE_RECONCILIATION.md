@@ -1,3 +1,6 @@
+<!-- V7_CURRENT -->
+> **Đối chiếu lại V7 — 02/11/2026:**250 image-fill rows UI của A/B/C trùng nhau và trùng snapshot cũ trong toàn bộ trường đã so. Component page được quét trực tiếp ở cả ba file:11 set/50 variant +2 component độc lập; các IDs/tên/children giống nhau. Manifest cũ ghi51, báo cáo49 không phải inventory đầy đủ: Header là COMPONENT, gift có4 variant, Button12, set thật `120:7121`, có input set `132:4216`. [Raw UI](evidence/v7/source-reverification.json), [Component C](evidence/v7/live-component-page.json), [V7](CODEX_FULL_REPAIR_V7.md). Không suy rộng ra mọi paint/text/prototype. Các checksum XML và ghi chú dưới đây thuộc lần audit trước, không bị sửa để hợp thức hóa số liệu mới.
+
 # Đối chiếu nguồn trực tiếp — 02/11/2026
 
 Đã đọc cả ba file qua Figma MCP, không chỉ dùng báo cáo cũ.

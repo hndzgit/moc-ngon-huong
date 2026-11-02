@@ -1,3 +1,29 @@
+<!-- V7_CURRENT -->
+> **Bổ sung mapping V7 — 02/11/2026:** xem [audit đầy đủ](CODEX_FULL_REPAIR_V7.md).205 original manifest hashes và227 public originals không đổi;40 SVG registry giữ geometry gốc. Không dùng URL Figma tạm ở runtime.
+
+| Node nguồn → asset gốc | File giao diện V7 | React/rendered slot | Xác minh |
+|---|---|---|---|
+| `61:1165` → `hero-banner.png` / `originals/c1a60.png` | `public/assets/optimized/hero-{768,1280,1920,2560,3840}.webp`, fallback original | `Hero.tsx` picture → `.hero-photo-mask .hero-photo` | Crop matrix live; mask y164/h918 tại1920; PSNR/MAE trong `evidence/v7/hero-derivatives.json` |
+| `70:3225`, `70:3224` → `originals/4ce5c.png`, `3ee72.png` | Giữ nguyên | `.hero-overlay-turn` và overlay thứ hai | Gradient y148/h934, khác mask ảnh; không kéo méo photography |
+| `7:472` Lá chè màu → `illus-lache-green.png` | Giữ nguyên | `ProductDetailPage` `.detail-leaf-left/right`, 5 variants | AN instances `77:4832`/`77:4826`; visibility/transform từng frame trong `evidence/v7/figma-detail-artwork.json` |
+| `7:474` Núi → `illus-nui.png` | Giữ nguyên | `.detail-mountain`, 5 variants | AN instance `85:2635`; không clip phần spill xuống khoảng trống related |
+| `33:2852` / `33:2856` / `33:2858` | Giữ nguyên `story-hero.png` / `story-1.png` / `story-2.png` | `StoryPage`, crop cover theo matrix gốc | `evidence/v7/figma-story-auth-context.json` |
+| `127:12100` banner registration → `originals/c1a60.png` | Giữ nguyên | `.auth-register .mt-12 > img` | Crop ty/sy từ live context, object-position78,10388% |
+
+Ba ảnh carousel phục hồi V7 (A/B/C trùng imageHash, không trùng file nào có sẵn):
+
+| Component variant → image node | File original mới | Figma imageHash = SHA1 file | React |
+|---|---|---|---|
+| `96:3132` → `96:3129` | `public/assets/figma/originals/gift-96-3129.jpg` | `79a463de7996d798eb8d772fc111ca6ff8242c2e` | SignatureBoxSection slide2 |
+| `96:3133` → `96:3091` | `public/assets/figma/originals/gift-96-3091.jpg` | `a39e9bbf1e5b6fccd954d546ff7892f23704679c` | SignatureBoxSection slide3 |
+| `96:3134` → `96:3111` | `public/assets/figma/originals/gift-96-3111.jpg` | `27f80a697dd5a3d24449d84d28e10084f3adcbcf` | SignatureBoxSection slide4 |
+
+Cả ba JPEG4096×2731, FILL/identity crop. SHA256/size trong `evidence/v7/recovered-gift-assets.json`. Chỉ sửa carousel; giữ nguyên các ảnh đã được product-detail gallery dùng. Existing227 public files không đổi; thêm3 original và5 hero derivative thành235 asset được kiểm tra HTTP.
+
+Các derivative là tối ưu delivery có sai số nén đã đo; không gọi chúng là file export nguyên byte từ Figma. Thư viện source gốc được giữ để truy vết/fallback. Lá đơn sắc `7:473` không được dùng thay lá màu `7:472` trong detail story.
+
+Phần dưới là inventory/mapping lịch sử; các sửa sai nhãn component hiện tại xem V7.
+
 # FIGMA ASSET MAPPING — 02/11/2026
 
 A = `TKRa7opPooD1iBxlr3E0SU`; B = `jGNXZhtdoyrsEdaX3NgasR`; C = `S0TdOYTDdDR3IznouUu0cV`.

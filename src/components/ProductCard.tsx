@@ -1,4 +1,5 @@
 import { assetUrl } from '../lib/assets';
+import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
 import React from 'react';
 import { Product } from '../types';
@@ -28,6 +29,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   displayDescription,
   displayNote,
 }) => {
+  const quantityMotion = useChangeMotion<HTMLSpanElement>(quantity, undefined, .18);
   const detailId = product.id.endsWith('-le')
     ? product.id === 'combo-tam-y-le'
       ? 'hop-qua-tam-y'
@@ -51,7 +53,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           src={assetUrl(imageSrc || product.image)}
           alt={product.shortName || product.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
+          loading="lazy" decoding="async"
         />
       </div>
 
@@ -107,7 +109,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             >
               <FigmaIcon name={large ? 'minusLarge' : 'minus'} />
             </button>
-            <span className="min-w-[14px] text-center text-[12.5px] font-semibold text-[#222222]">
+            <span ref={quantityMotion} className="min-w-[14px] text-center text-[12.5px] font-semibold text-[#222222]">
               {quantity}
             </span>
             <button

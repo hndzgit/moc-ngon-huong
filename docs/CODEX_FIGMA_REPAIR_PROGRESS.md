@@ -1,3 +1,6 @@
+<!-- V7_CURRENT -->
+> **Cập nhật V7 — 02/11/2026:** kết quả hiện tại ở [CODEX_FULL_REPAIR_V7.md](CODEX_FULL_REPAIR_V7.md). Đã audit24/24 state, chụp360 trường hợp/15 viewport, sửa Hero/container/crop/Hotline/artwork/cart và kiểm tra lại motion. Chưa nghiệm thu pixel-perfect toàn màn:0/24. Git checkout hiện tại là repo `hndzgit/moc-ngon-huong`, nhánh `codex/phase5-motion`; baseline V7 giữ cả thay đổi Phase5. GSAP hiện hoạt động, không dùng ScrollTrigger. **Các mục bên dưới là snapshot Phase3**, gồm Git root cũ, số viewport cũ và ghi chú chưa có GSAP; không dùng thay cho trạng thái V7. Chưa push/deploy.
+
 # Tiến độ phục dựng Figma — 02/11/2026
 
 ## Trạng thái thực tế
