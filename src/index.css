@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: #fbfaf5;
+    color: #222222;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-philosopher {
+    font-family: 'Philosopher', serif;
+  }
+}
+
+/* Custom utility classes matching Figma 1920px layout (1680px content container with 120px side padding on desktop) */
+.figma-container {
+  width: 100%;
+  max-width: 1680px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .figma-container {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .figma-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .figma-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fbfaf5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3e5641;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2f4232;
+}
+
+/* Paper texture overlay helper */
+.bg-paper-texture {
+  background-image: url('/assets/figma/paper-texture.png');
+  background-size: cover;
+  background-position: center;
+}
