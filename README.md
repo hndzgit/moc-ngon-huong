@@ -2,6 +2,8 @@
 
 Website React + TypeScript + Vite hiện có, sử dụng ảnh, SVG và icon gốc từ Figma. Không thay đổi giá sản phẩm để phục vụ triển khai.
 
+Website: **https://hndzgit.github.io/moc-ngon-huong/** — GitHub Pages, triển khai từ nhánh `main`. Xem giới hạn chức năng bên dưới trước khi kiểm tra đặt hàng hoặc xác thực.
+
 ## Chạy cục bộ
 
 Yêu cầu Node.js 22 và npm tương thích với lockfile.

@@ -4,7 +4,9 @@
 
 Yêu cầu deployment mới thay thế mục tiêu Vercel-only: GitHub repository + GitHub Pages. Không đổi DNS, không thêm hosting/CDN khác. Không xóa cấu hình Vercel; dự án ban đầu không có `vercel.json` hoặc liên kết `.vercel`.
 
-Repository đã tạo: https://github.com/hndzgit/moc-ngon-huong — **private**. Tài khoản `hndzgit` đang dùng GitHub Free. Pages cho repository private cần gói phù hợp; phải có sự đồng ý của chủ dự án trước khi chuyển public. Chưa được phép chuyển public và chưa công bố website. URL dự kiến `https://hndzgit.github.io/moc-ngon-huong/` chưa phải bằng chứng triển khai thành công.
+Repository: https://github.com/hndzgit/moc-ngon-huong — **public**, sau xác nhận rõ ràng của chủ dự án “Cho phép chuyển public và xuất bản Pages” ngày 02/11/2026. Nhánh mặc định và phát hành: `main`; nhánh chuẩn bị `codex/github-pages` được giữ nguyên.
+
+Website thực tế: **https://hndzgit.github.io/moc-ngon-huong/**. GitHub Pages dùng `build_type: workflow`, HTTPS được bật. Không đổi DNS hoặc tên miền riêng.
 
 Không sử dụng remote `Focus-Pet-Pro` của Git root ở thư mục người dùng. Dự án được khởi tạo Git riêng với remote duy nhất `hndzgit/moc-ngon-huong`; nhánh chuẩn bị là `codex/github-pages`. Baseline trước sửa nằm tại `.codex-baseline/github-pages/before-20261102-105255.tar.gz`, không đưa lên Git.
 
@@ -13,6 +15,8 @@ Không sử dụng remote `Focus-Pet-Pro` của Git root ở thư mục người
 `.github/workflows/deploy.yml` dùng official Actions được pin commit SHA. Node 22, `npm ci`, `npm run build` (bao gồm TypeScript), upload duy nhất `dist/`. Quyền mặc định `contents: read`; chỉ job deploy có `pages: write` và `id-token: write`.
 
 Push nhánh `codex/**` chỉ build và upload artifact. Deploy chỉ chạy trên `main`, sau khi Pages được bật và quyền repository được giải quyết. Không tự chuyển visibility. Theo dõi kết quả thật tại tab Actions của repository; không dùng một bản local build thay cho trạng thái deploy.
+
+Môi trường `github-pages` chỉ cho phép nhánh `main`. Khi bật Pages lúc nhánh mặc định còn là `codex/github-pages`, GitHub tự tạo policy theo nhánh đó; lần deploy đầu bị từ chối đúng quy tắc. Đã cập nhật policy thành `main` và chạy lại job lỗi thành công, giữ giới hạn nhánh thay vì bỏ bảo vệ.
 
 Base được đặt từ `VITE_BASE_PATH`, mặc định `/`. Workflow dùng `/<repository-name>/`. Helper `assetUrl` xử lý mọi ảnh runtime, kể cả đường dẫn cũ trong giỏ hàng localStorage. CSS/font/imported assets do Vite xử lý. Không sửa hình học SVG, ảnh hay giá sản phẩm để hỗ trợ Pages.
 
@@ -63,6 +67,25 @@ Kết quả thực tế trước push:
 
 Một lượt browser khi tải song song với các bài test khác có ảnh tải thất bại; kiểm tra HEAD ban đầu cũng vượt backlog của static server. Đã giảm HEAD concurrency còn 4 và chạy lại trọn bộ thành công trên cùng nội dung build. Không bỏ kiểm tra ảnh để che lỗi. Cần tiếp tục kiểm tra trên URL Pages thật sau deployment.
 
+## Kiểm chứng website công khai
+
+Runtime commit: `f87ce3f88e38f981f84befa7314ae5bffe0815b0`, phát hành trên `main`. [GitHub Actions run 41387747865](https://github.com/hndzgit/moc-ngon-huong/actions/runs/41387747865), attempt 2: **success**, build và deploy đều thành công.
+
+| Kiểm tra trực tiếp | Kết quả |
+|---|---|
+| HTTPS homepage | HTTP 200; index HTML hash khớp bản Pages đã test local |
+| Browser 1920/390/360px | PASS cả 3 viewport, không horizontal overflow trong các trạng thái test |
+| Trang chủ, sản phẩm, chi tiết, câu chuyện, liên hệ, login, checkout | Mở đúng route/state; screenshot bằng chứng |
+| Direct hash link, refresh, back/forward, route sản phẩm không tồn tại | PASS |
+| Tìm kiếm default/results, giỏ hàng, đổi số lượng và persistence | PASS |
+| Giao tận nơi/lấy tại cửa hàng, validation checkout | PASS |
+| Form contact/checkout/newsletter có dữ liệu hợp lệ | Báo chưa khả dụng; không xác nhận giả; giữ dữ liệu contact và giỏ hàng |
+| Ảnh hiển thị, icon và đường dẫn asset | Không ảnh hỏng; đúng prefix; cả 227 asset trả HTTP 200, content-length > 0 |
+| Console errors / page errors / same-origin HTTP >=400 | 0 / 0 / 0 |
+| Request ghi / đơn hàng thật | 0 / không thực hiện |
+
+Bằng chứng local không chứa credential: `docs/evidence/github-pages-live/results.json`, `http-index.json`, các screenshot trong cùng thư mục; `docs/evidence/github-pages/public-run.json` và `public-pages.json`. Kết quả này là smoke test storefront công khai, không phải chứng nhận toàn bộ Phase 4 hoặc backend thương mại.
+
 Minion Pro gốc chưa được cung cấp; vẫn dùng fallback đã ghi trong audit Figma. 24 trạng thái có bảng theo dõi, chưa màn nào được nghiệm thu đầy đủ mọi tiêu chí visual. Đợt deployment không thay thế đo Lighthouse/CWV, audit accessibility/security toàn diện hoặc kiểm tra Firebase/backend thật của Phase 4.
 
-Trước công khai: chủ dự án chấp thuận chuyển public hoặc tự cung cấp gói GitHub hỗ trợ private Pages; bật Pages nguồn GitHub Actions; đẩy commit đã kiểm tra sang `main`; chờ cả build/deploy thành công; lấy URL từ deployment và chạy lại smoke trên URL đó. Không tuyên bố online trước hai kiểm chứng cuối này.
+Trước khi nhận đơn/xác thực thật: cung cấp Firebase client config qua Actions Variables, thêm authorized domain, kiểm tra Auth provider; triển khai và kiểm thử dịch vụ nhận đơn/liên hệ/newsletter bằng môi trường an toàn. Không coi website tĩnh đã xuất bản là backend đã hoạt động. Đợt triển khai giữ nguyên artwork, icon, giá và Firebase SDK; không thay đổi dữ liệu khách hàng.
