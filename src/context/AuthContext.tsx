@@ -117,29 +117,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (fullName.trim()) {
       await updateProfile(cred.user, { displayName: fullName.trim() });
     }
-    // Real email verification via branded email with fallback
-    try {
-      const idToken = await cred.user.getIdToken();
-      const res = await fetch('/api/auth/send-verification', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        // Fallback to standard Firebase email if custom endpoint fails
-        await sendEmailVerification(cred.user);
-      }
-    } catch (err) {
-      console.warn('Custom verification email failed, falling back to Firebase Auth default:', err);
-      try {
-        await sendEmailVerification(cred.user);
-      } catch (fbErr) {
-        console.warn('Could not send verification email via fallback:', fbErr);
-      }
-    }
 
     const newProfile: CustomerProfile = {
       fullName: fullName.trim(),
@@ -151,6 +128,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
     setProfile(newProfile);
     setUser(cred.user);
+
+    // Send brand-aligned welcome email via Resend in the background
+    try {
+      const idToken = await cred.user.getIdToken();
+      await fetch('/api/auth/send-welcome-email', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fullName: fullName.trim() }),
+      });
+    } catch (err) {
+      // Email delivery failure must never invalidate the newly created account
+      console.warn('[MNH Auth] Welcome email dispatch failed in background:', err);
+    }
+
     return cred.user;
   };
 

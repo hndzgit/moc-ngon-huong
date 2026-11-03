@@ -2,9 +2,10 @@
 // Automated verification for Mộc Ngôn Hương Branded Authentication Emails
 
 import assert from 'node:assert';
-import { renderVerificationEmail, renderPasswordResetEmail } from '../api/_lib/authEmailTemplates.js';
+import { renderVerificationEmail, renderPasswordResetEmail, renderWelcomeEmail } from '../api/_lib/authEmailTemplates.js';
 import verificationHandler from '../api/auth/send-verification.js';
 import resetHandler from '../api/auth/send-reset-password.js';
+import welcomeHandler from '../api/auth/send-welcome-email.js';
 
 console.log('=== [TEST] Mộc Ngôn Hương Authentication Emails & Security ===\n');
 
@@ -177,8 +178,67 @@ async function runTests() {
     console.log('✓ PASS: Rate limiting protects against spam and open-relay abuse with HTTP 429.');
   }
 
+  // 8. Welcome Email Template Rendering Check
+  {
+    console.log('[8/11] Testing Welcome Email Template rendering...');
+    const result = renderWelcomeEmail({
+      customerName: 'Hoài Nam',
+    });
+
+    assert.strictEqual(result.subject, 'Chào mừng bạn đến với Mộc Ngôn Hương!');
+    assert(result.html.includes('Chào mừng bạn đến với Mộc Ngôn Hương!'), 'Must include correct headline');
+    assert(result.html.includes('Hoài Nam'), 'Must include customer name');
+    assert(result.html.includes('Tài khoản của bạn đã được đăng ký thành công.'), 'Must include registration success message');
+    assert(result.html.includes('Từ hôm nay, bạn có thể khám phá những hương trà Việt tinh tế'), 'Must include brand intro');
+    assert(result.html.includes('Trao hương, gửi lời thương.'), 'Must include brand slogan');
+    assert(result.html.includes('Khám Phá Hương Trà'), 'Must include CTA text');
+    assert(result.html.includes('#3E5641'), 'Must include Forest green');
+    assert(result.html.includes('#FAF8F3'), 'Must include Warm ivory');
+    assert(result.html.includes('#C89F5D'), 'Must include Muted gold');
+    assert(result.html.includes('logo-header.png'), 'Must include brand logo');
+    assert(result.text.includes('Chào mừng bạn đến với Mộc Ngôn Hương!'), 'Plain text must be populated');
+    assert(result.text.includes('Trao hương, gửi lời thương.'), 'Plain text must include slogan');
+    console.log('✓ PASS: Welcome email template matches all visual, copy, and brand requirements.');
+  }
+
+  // 9. Welcome Email Endpoint: Anonymous Request -> 401
+  {
+    console.log('[9/11] Testing Welcome Email Endpoint anonymous request...');
+    const { req, res } = createMockReqRes({ method: 'POST' });
+    await welcomeHandler(req, res);
+    const out = res.getOutput();
+    assert.strictEqual(out.statusCode, 401, 'Anonymous request must return 401');
+    assert.strictEqual(out.data.success, false);
+    console.log('✓ PASS: Welcome email endpoint strictly rejects unauthenticated requests with 401.');
+  }
+
+  // 10. Welcome Email Endpoint: Invalid Bearer Token -> 401
+  {
+    console.log('[10/11] Testing Welcome Email Endpoint invalid token...');
+    const { req, res } = createMockReqRes({
+      method: 'POST',
+      headers: { authorization: 'Bearer invalid_forged_token' },
+    });
+    await welcomeHandler(req, res);
+    const out = res.getOutput();
+    assert.strictEqual(out.statusCode, 401, 'Invalid token must return 401');
+    assert.strictEqual(out.data.success, false);
+    console.log('✓ PASS: Welcome email endpoint rejects forged tokens with 401.');
+  }
+
+  // 11. Welcome Email Endpoint: Method Not Allowed (GET) -> 405
+  {
+    console.log('[11/11] Testing Welcome Email Endpoint invalid HTTP method...');
+    const { req, res } = createMockReqRes({ method: 'GET' });
+    await welcomeHandler(req, res);
+    const out = res.getOutput();
+    assert.strictEqual(out.statusCode, 405, 'GET method must return 405');
+    assert.strictEqual(out.data.success, false);
+    console.log('✓ PASS: Welcome email endpoint enforces POST-only with HTTP 405.');
+  }
+
   console.log('\n======================================================');
-  console.log('ALL 7 AUTHENTICATION EMAIL & SECURITY TESTS PASSED!');
+  console.log('ALL 11 AUTHENTICATION & WELCOME EMAIL TESTS PASSED!');
   console.log('======================================================\n');
 }
 
