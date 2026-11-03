@@ -77,7 +77,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
               <span className="w-7 h-7 rounded-full bg-[#3e5641]/10 text-[#3e5641] flex items-center justify-center text-[13px]">
                 <FigmaIcon name="sms" />
               </span>
-              <div><h3 className="font-philosopher font-bold text-[#3e5641]">Email</h3><p className="text-[#666]">Mocngonhuong@gmail.com</p></div>
+              <div><h3 className="font-philosopher font-bold text-[#3e5641]">Email</h3><p className="text-[#666]">mocngonhuong@gmail.com</p></div>
             </div>
           </div>
         </div>
