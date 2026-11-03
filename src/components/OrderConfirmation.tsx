@@ -25,7 +25,7 @@ export function OrderConfirmation({
   paymentMethod = 'cod',
   orderCode,
   orderDate,
-  orderStatus = 'Chờ xác nhận',
+  orderStatus = 'Đang chuẩn bị',
   onNavigate,
 }: OrderConfirmationProps) {
   const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -39,7 +39,7 @@ export function OrderConfirmation({
           Đặt Hàng Thành Công
         </h1>
         <p className="mt-2 text-[#666]">
-          Trong vòng 60 phút nhân viên sẽ liên hệ qua SMS hoặc cuộc gọi để xác nhận đơn hàng.
+          Đơn hàng của bạn đã được ghi nhận. Mộc Ngôn Hương đang chuẩn bị đơn hàng để sớm trao gửi đến bạn.
         </p>
       </div>
 

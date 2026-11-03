@@ -29,6 +29,7 @@ import { useAuth } from './context/AuthContext';
 const GiftJourneyPage=lazy(()=>import('./pages/GiftJourneyPage'));
 const CorporateGiftingPage=lazy(()=>import('./pages/CorporateGiftingPage').then(module=>({default:module.CorporateGiftingPage})));
 const StoryPage=lazy(()=>import('./pages/StoryPage').then(module=>({default:module.StoryPage})));
+const AdminPage=lazy(()=>import('./pages/AdminPage').then(module=>({default:module.AdminPage})));
 
 const CART_STORAGE_KEY = 'mnh_cart_items_v1';
 const USER_STORAGE_KEY = 'mnh_user_email_v1';
@@ -457,6 +458,18 @@ export function App() {
             }}
             onNavigate={handleNavigate}
           />
+        )}
+
+        {currentPage === 'admin' && (
+          <Suspense
+            fallback={
+              <div className="figma-container py-16 text-center text-[#3e5641]" role="status">
+                Đang mở không gian quản lý đơn hàng...
+              </div>
+            }
+          >
+            <AdminPage onNavigate={handleNavigate} />
+          </Suspense>
         )}
       </main>
 

@@ -407,7 +407,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const orderId = `order_${now.getTime()}_${Math.random().toString(36).substring(2, 9)}`;
 
   const paymentStatus: PaymentStatus = 'pending';
-  const orderStatus: OrderStatus = 'pending_confirmation';
+  const orderStatus: OrderStatus = 'preparing';
 
   const customerRecord: Record<string, any> = {
     fullName,

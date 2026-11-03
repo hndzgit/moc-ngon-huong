@@ -201,3 +201,85 @@ export async function verifyAuthToken(
 
   return null;
 }
+
+export interface AdminAuthResult {
+  uid: string;
+  email?: string;
+}
+
+export interface AdminVerificationOutcome {
+  authorized: boolean;
+  statusCode?: 401 | 403;
+  errorCode?: string;
+  errorMessage?: string;
+  admin?: AdminAuthResult;
+}
+
+export function getAdminUids(): string[] {
+  const raw = process.env.ADMIN_UIDS || '';
+  if (!raw.trim()) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export async function verifyAdminAuth(
+  authHeader: string | undefined
+): Promise<AdminVerificationOutcome> {
+  if (!authHeader || typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+    return {
+      authorized: false,
+      statusCode: 401,
+      errorCode: 'UNAUTHENTICATED',
+      errorMessage: 'Yêu cầu đăng nhập quản trị viên (Thiếu Authorization header).',
+    };
+  }
+
+  let user: { uid: string; email?: string } | null = null;
+  try {
+    user = await verifyAuthToken(authHeader);
+  } catch (err: any) {
+    return {
+      authorized: false,
+      statusCode: 401,
+      errorCode: 'TOKEN_INVALID',
+      errorMessage: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
+    };
+  }
+
+  if (!user || !user.uid) {
+    return {
+      authorized: false,
+      statusCode: 401,
+      errorCode: 'UNAUTHENTICATED',
+      errorMessage: 'Không xác định được danh tính tài khoản quản trị.',
+    };
+  }
+
+  const allowedUids = getAdminUids();
+  if (allowedUids.length === 0) {
+    console.error('[MNH Admin Auth] ADMIN_UIDS is missing or empty. Refusing all admin access (FAIL CLOSED).');
+    return {
+      authorized: false,
+      statusCode: 403,
+      errorCode: 'ADMIN_NOT_CONFIGURED',
+      errorMessage: 'Hệ thống quản trị chưa được cấu hình danh sách quản trị viên (ADMIN_UIDS). Vui lòng cấu hình biến môi trường ADMIN_UIDS trên Vercel.',
+    };
+  }
+
+  if (!allowedUids.includes(user.uid)) {
+    console.warn(`[MNH Admin Auth] Forbidden: UID ${user.uid} is not in ADMIN_UIDS.`);
+    return {
+      authorized: false,
+      statusCode: 403,
+      errorCode: 'FORBIDDEN',
+      errorMessage: 'Tài khoản của bạn không nằm trong danh sách quản trị viên.',
+    };
+  }
+
+  return {
+    authorized: true,
+    admin: user,
+  };
+}

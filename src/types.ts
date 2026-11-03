@@ -1,6 +1,6 @@
 export type EmotionKey = 'ALL' | 'AN' | 'THUONG' | 'CAM' | 'NHO' | 'COMBO';
 
-export type PageRoute = 'home' | 'story' | 'products' | 'detail' | 'contact' | 'checkout' | 'auth' | 'gift-journey' | 'corporate' | 'not-found';
+export type PageRoute = 'home' | 'story' | 'products' | 'detail' | 'contact' | 'checkout' | 'auth' | 'gift-journey' | 'corporate' | 'admin' | 'not-found';
 
 export type AuthStep =
   | 'login'
@@ -58,7 +58,11 @@ export interface OrderRecord {
   paymentMethod: 'cod' | 'bank';
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+  status?: OrderStatus;
   createdAt: string;
+  statusUpdatedAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
   idempotencyKey?: string;
   schemaVersion?: string;
 }

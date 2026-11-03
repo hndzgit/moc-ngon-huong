@@ -314,8 +314,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         orderCode={serverOrder.orderCode}
         orderDate={serverOrder.createdAt}
         orderStatus={
-          serverOrder.orderStatus === 'pending_confirmation'
-            ? 'Chờ xác nhận'
+          serverOrder.orderStatus === 'preparing' || serverOrder.orderStatus === 'pending_confirmation'
+            ? (serverOrder.customer?.shippingMode === 'pickup' ? 'Đang chuẩn bị đơn' : 'Đang chuẩn bị giao')
+            : serverOrder.orderStatus === 'ready_for_pickup'
+            ? 'Sẵn sàng nhận tại tiệm'
+            : serverOrder.orderStatus === 'shipping'
+            ? 'Đang giao hàng'
+            : serverOrder.orderStatus === 'completed'
+            ? (serverOrder.customer?.shippingMode === 'pickup' ? 'Đã nhận hàng' : 'Đã giao hàng')
+            : serverOrder.orderStatus === 'cancelled'
+            ? 'Đã hủy'
             : serverOrder.orderStatus
         }
         onNavigate={onNavigate}

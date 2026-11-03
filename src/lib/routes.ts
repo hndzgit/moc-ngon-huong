@@ -5,6 +5,7 @@ const paths: Partial<Record<PageRoute, string>> = {
   home: '/', story: '/cau-chuyen', products: '/san-pham',
   contact: '/lien-he', checkout: '/thanh-toan', auth: '/tai-khoan',
   'gift-journey': '/chon-qua', corporate: '/qua-doanh-nghiep',
+  admin: '/admin',
 };
 
 export function routeHash(page: PageRoute, productId = 'buoi-an'): string {
