@@ -331,7 +331,7 @@ export const REVIEWS: ReviewItem[] = [
     comment:
       'Hộp quà rất đẹp và chỉn chu. Mở nắp hộp ra là thấy ngay mùi hoa tự nhiên rất dễ chịu. Mình mua biếu bố mẹ ai cũng khen tấm tắc!',
     verified: true,
-    images: ['/assets/figma/an-hand.png', '/assets/figma/an-hand.png', '/assets/figma/an-hand.png'],
+    images: ['/assets/optimized/an-hand-800.webp', '/assets/optimized/an-hand-800.webp', '/assets/optimized/an-hand-800.webp'],
     likes: 24
   },
   {
@@ -345,7 +345,7 @@ export const REVIEWS: ReviewItem[] = [
     comment:
       'Set quà đóng gói cực kỳ cẩn thận, có cả túi vải đay, muỗng gỗ và kẹo lạc ăn kèm rất hợp vị trà. Quét mã QR nghe chuyện trà buổi tối rất thư giãn.',
     verified: true,
-    images: ['/assets/figma/an-hand.png', '/assets/figma/an-hand.png', '/assets/figma/an-hand.png'],
+    images: ['/assets/optimized/an-hand-800.webp', '/assets/optimized/an-hand-800.webp', '/assets/optimized/an-hand-800.webp'],
     likes: 19
   }
 ];
