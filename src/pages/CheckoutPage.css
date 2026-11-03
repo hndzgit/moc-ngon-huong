@@ -1,0 +1,214 @@
+/* src/pages/CheckoutPage.css
+ * Mộc Ngôn Hương — Premium Editorial Checkout & Motion Experience
+ */
+
+.checkout-page {
+  min-height: 100vh;
+  background-color: #FAF8F3;
+  color: #222222;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Card Foundations */
+.checkout-card {
+  background: #FFFFFF;
+  border: 1px solid #E5DFD5;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(62, 86, 65, 0.03);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.checkout-card:hover {
+  box-shadow: 0 6px 30px rgba(62, 86, 65, 0.06);
+}
+
+/* Interactive Selection Cards (Delivery & Payment) */
+.checkout-select-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1.5px solid #E5DFD5;
+  background: #FFFFFF;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.checkout-select-card:hover {
+  border-color: rgba(62, 86, 65, 0.45);
+  background: #FDFCF9;
+  transform: translateY(-1px);
+}
+
+.checkout-select-card.active {
+  border-color: #3E5641;
+  background: #F7F5EE;
+  box-shadow: 0 4px 16px rgba(62, 86, 65, 0.08);
+}
+
+/* Custom Checkmark Radio Circle */
+.checkout-radio-indicator {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #C8BFB3;
+  background: #FFFFFF;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkout-select-card:hover .checkout-radio-indicator {
+  border-color: #3E5641;
+}
+
+.checkout-select-card.active .checkout-radio-indicator {
+  border-color: #3E5641;
+  background: #3E5641;
+}
+
+.checkout-radio-indicator::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #FAF8F3;
+  transform: scale(0);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.checkout-select-card.active .checkout-radio-indicator::after {
+  transform: scale(1);
+}
+
+/* Form Inputs & Selects */
+.checkout-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid #D9D2C7;
+  background: #FFFFFF;
+  font-size: 14.5px;
+  color: #222222;
+  transition: all 0.2s ease;
+}
+
+.checkout-input::placeholder {
+  color: #9E968B;
+  font-size: 13.5px;
+}
+
+.checkout-input:focus {
+  outline: none;
+  border-color: #3E5641;
+  box-shadow: 0 0 0 3px rgba(62, 86, 65, 0.12);
+}
+
+.checkout-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233E5641'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px 18px;
+  padding-right: 40px;
+}
+
+/* Sticky Summary on Desktop */
+@media (min-width: 1024px) {
+  .checkout-sticky-summary {
+    position: sticky;
+    top: 96px;
+    align-self: flex-start;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #E5DFD5 transparent;
+  }
+}
+
+/* Smooth Entrance Animation */
+@keyframes checkoutFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.checkout-section-animate {
+  animation: checkoutFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Order Confirmation Animations */
+@keyframes checkmarkPop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGoldRing {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(200, 159, 93, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(200, 159, 93, 0);
+  }
+}
+
+.order-success-badge {
+  animation: checkmarkPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.order-gold-ring {
+  animation: pulseGoldRing 2.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.animate-spin-slow {
+  animation: spin 8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .checkout-section-animate,
+  .checkout-select-card,
+  .checkout-radio-indicator,
+  .checkout-input,
+  .order-success-badge,
+  .order-gold-ring,
+  .animate-spin-slow {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
