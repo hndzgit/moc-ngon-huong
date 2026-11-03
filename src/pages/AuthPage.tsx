@@ -60,6 +60,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   // Feedback states
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Verification resend cooldown
@@ -244,19 +245,27 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // 2. Register Step 1 Submit (Figma 127:12046)
-  const handleRegisterStep1 = (e: React.FormEvent) => {
+  // 2. Simplified Autonomous Registration Submit (V17.0B)
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setInfoMsg('');
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!fullName.trim() || !email.trim() || !address.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ Họ tên, Email và Địa chỉ.');
+    if (!fullName.trim() || !email.trim()) {
+      setErrorMsg('Vui lòng điền đầy đủ Họ và tên cùng địa chỉ Email.');
       return;
     }
     if (!emailRegex.test(email.trim())) {
       setErrorMsg('Định dạng email không hợp lệ. Vui lòng kiểm tra lại.');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg('Mật khẩu phải có tối thiểu 8 ký tự.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('Mật khẩu xác nhận không khớp.');
       return;
     }
     if (!agreeAll) {
@@ -264,10 +273,34 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       return;
     }
 
-    switchStep('activate');
+    setLoading(true);
+    try {
+      if (!isAuthAvailable) {
+        setErrorMsg('Dịch vụ tạo tài khoản đang được bảo trì. Vui lòng thử lại sau.');
+        return;
+      }
+      const newUser = await register(email.trim(), password, fullName.trim(), address.trim());
+      onLoginSuccess(newUser.email || email.trim());
+      setRegistrationSuccess(true);
+      setInfoMsg(
+        'Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!'
+      );
+      setStep('profile');
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        setErrorMsg('Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng chức năng Quên mật khẩu.');
+      } else if (code === 'auth/weak-password') {
+        setErrorMsg('Mật khẩu quá yếu. Vui lòng dùng mật khẩu có độ bảo mật cao hơn.');
+      } else {
+        setErrorMsg(err.message || 'Không thể tạo tài khoản. Vui lòng thử lại sau.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 3. Account Activation Submit (Figma 127:12445)
+  // 3. Account Activation Submit (Retained for backward compatibility)
   const handleActivateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -290,7 +323,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       }
       const newUser = await register(email.trim(), password, fullName.trim(), address.trim());
       onLoginSuccess(newUser.email || email.trim());
-      setInfoMsg('Đăng ký tài khoản thành công! Chúng tôi đã gửi email xác thực đến hộp thư của bạn.');
+      setRegistrationSuccess(true);
+      setInfoMsg(
+        'Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!'
+      );
       setStep('profile');
     } catch (err: any) {
       const code = err?.code || '';
@@ -619,35 +655,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {(user ? isEmailVerified : activeUser.emailVerified) ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[13px] font-medium">
-                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Email đã xác thực
-                    </span>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[13px] font-medium">
-                        Chưa xác thực email
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleResendVerification}
-                        disabled={resendCooldown > 0}
-                        className="text-[13px] text-[#3e5641] underline font-medium hover:text-[#203323] disabled:text-gray-400 disabled:no-underline"
-                      >
-                        {resendCooldown > 0 ? `Gửi lại sau ${resendCooldown}s` : 'Gửi lại email xác thực'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={reloadUser}
-                        className="text-[12px] px-2 py-1 rounded bg-[#3e5641]/10 text-[#3e5641] hover:bg-[#3e5641]/20"
-                      >
-                        Làm mới
-                      </button>
-                    </div>
-                  )}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#3e5641]/10 text-[#3e5641] border border-[#3e5641]/20 text-[13px] font-medium">
+                    <svg className="w-4 h-4 text-[#3e5641]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Thành viên thân thiết
+                  </span>
 
                   <button
                     type="button"
@@ -659,11 +672,35 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 </div>
               </div>
 
-              {infoMsg && (
+              {registrationSuccess ? (
+                <div className="mt-6 p-5 rounded-[14px] bg-[#f7f9f7] border border-[#3e5641]/20 shadow-xs flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-[#3e5641] text-[#f7f4d5] flex items-center justify-center shrink-0 mt-0.5">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-philosopher font-bold text-[18px] text-[#203323] mb-1">
+                      Đăng ký tài khoản thành công!
+                    </h3>
+                    <p className="text-[14px] leading-relaxed text-[#4a554d]">
+                      Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRegistrationSuccess(false)}
+                    className="text-gray-400 hover:text-gray-600 text-[20px] leading-none p-1"
+                    aria-label="Đóng thông báo"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : infoMsg ? (
                 <div className="mt-6 p-4 rounded-[12px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-[14px]">
                   {infoMsg}
                 </div>
-              )}
+              ) : null}
               {errorMsg && (
                 <div className="mt-6 p-4 rounded-[12px] bg-red-50 border border-red-200 text-red-700 text-[14px]">
                   {errorMsg}
@@ -1125,7 +1162,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   </div>
                 )}
 
-                <form onSubmit={handleRegisterStep1} className="space-y-4" noValidate>
+                <form onSubmit={handleRegister} className="space-y-4" noValidate>
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
                       Họ và tên <span className="text-red-500">*</span>
@@ -1156,15 +1193,60 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                      Địa chỉ <span className="text-red-500">*</span>
+                      Mật khẩu <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPass ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Tạo mật khẩu (tối thiểu 8 ký tự)"
+                        className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
+                      >
+                        {showPass ? 'Ẩn' : 'Hiện'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
+                      Xác nhận mật khẩu <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPass ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Nhập lại mật khẩu"
+                        className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
+                      >
+                        {showConfirmPass ? 'Ẩn' : 'Hiện'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
+                      Địa chỉ nhận trà
                     </label>
                     <input
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Nhập địa chỉ nhận trà của bạn"
+                      placeholder="Nhập địa chỉ nhận trà của bạn (tùy chọn)"
                       className="w-full h-[46px] px-4 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
-                      required
                     />
                   </div>
 
@@ -1180,9 +1262,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   <button
                     type="submit"
-                    className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm mt-2"
+                    disabled={loading}
+                    className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm disabled:opacity-60 mt-2"
                   >
-                    Tạo Mật Khẩu
+                    {loading ? 'Đang tạo tài khoản...' : 'Đăng Ký Tài Khoản'}
                   </button>
                 </form>
               </div>
