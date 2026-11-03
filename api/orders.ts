@@ -157,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         success: false,
         code: 'DATABASE_UNAVAILABLE',
         error:
-          'Hệ thống tiếp nhận đơn hàng đang bảo trì hoặc chưa sẵn sàng cơ sở dữ liệu. Quý khách vui lòng liên hệ trực tiếp hotline hoặc fanpage Mộc Ngôn Hương để được hỗ trợ đặt hàng chu đáo nhất.',
+          'Hệ thống tiếp nhận đơn hàng đang bảo trì hoặc chưa sẵn sàng cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline Mộc Ngôn Hương (0889 742 556) để được hỗ trợ đặt hàng chu đáo nhất.',
       })
     );
     return;
@@ -629,7 +629,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       JSON.stringify({
         success: false,
         error:
-          'Hệ thống gặp sự cố trong quá trình lưu trữ đơn hàng. Quý khách vui lòng thử lại hoặc liên hệ hotline Mộc Ngôn Hương (0889742556) để được hỗ trợ chu đáo nhất.',
+          'Hệ thống gặp sự cố trong quá trình lưu trữ đơn hàng. Quý khách vui lòng thử lại hoặc liên hệ hotline Mộc Ngôn Hương (0889 742 556) để được hỗ trợ chu đáo nhất.',
       })
     );
   } finally {

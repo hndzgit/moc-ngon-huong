@@ -245,7 +245,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         setCheckoutStatus('failed');
         setErrorMsg(
           data?.error ||
-            'Hệ thống tiếp nhận đơn hàng đang bảo trì cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline Mộc Ngôn Hương. Giỏ hàng của bạn vẫn được lưu giữ an toàn.'
+            'Hệ thống tiếp nhận đơn hàng đang bảo trì cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline Mộc Ngôn Hương (0889 742 556). Giỏ hàng của bạn vẫn được lưu giữ an toàn.'
         );
         return;
       }

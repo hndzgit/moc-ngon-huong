@@ -1009,7 +1009,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           type="tel"
                           value={editPhone}
                           onChange={(e) => setEditPhone(e.target.value)}
-                          placeholder="0987 654 321"
+                          placeholder="Ví dụ: 0912 345 678"
                           className="w-full h-[42px] px-3.5 rounded-[8px] border border-gray-300 text-[14px] focus:outline-none focus:border-[#3e5641]"
                         />
                       </div>
@@ -1807,15 +1807,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <h4 className="font-philosopher font-bold text-[17px] text-[#3e5641]">
                     Thông tin chuyển khoản ngân hàng
                   </h4>
-                  <p className="text-[#666666] text-[13px]">
-                    Quý khách vui lòng chuyển khoản theo thông tin dưới đây để tiệm tiến hành chuẩn bị đơn:
+                  <p className="text-[#666666] text-[13px] leading-[20px]">
+                    Đơn hàng của Quý khách đang ở trạng thái chờ thanh toán chuyển khoản. Chuyên viên chăm sóc khách hàng Mộc Ngôn Hương sẽ trực tiếp liên hệ qua điện thoại (<strong>0889 742 556</strong>) để xác nhận đơn và cung cấp số tài khoản ngân hàng chính thức của công ty.
                   </p>
-                  <div className="bg-white p-3.5 rounded-[12px] border border-[#e8e2d5] space-y-1.5 font-mono text-[13px]">
-                    <p><span className="text-[#888]">Ngân hàng:</span> <strong>Vietcombank (Chi nhánh Thăng Long)</strong></p>
-                    <p><span className="text-[#888]">Số tài khoản:</span> <strong>0987 654 321</strong></p>
-                    <p><span className="text-[#888]">Chủ tài khoản:</span> <strong>MỘC NGÔN HƯƠNG</strong></p>
-                    <p><span className="text-[#888]">Số tiền:</span> <strong className="text-[#3e5641]">{selectedOrder.total?.toLocaleString('vi-VN')} đ</strong></p>
-                    <p><span className="text-[#888]">Nội dung:</span> <strong className="text-[#8e6746]">MNH {selectedOrder.orderCode} {selectedOrder.customer?.phone}</strong></p>
+                  <div className="bg-white p-3.5 rounded-[12px] border border-[#e8e2d5] space-y-1.5 text-[13px]">
+                    <p><span className="text-[#888]">Số tiền thanh toán:</span> <strong className="text-[#3e5641]">{selectedOrder.total?.toLocaleString('vi-VN')} đ</strong></p>
+                    <p><span className="text-[#888]">Cú pháp chuyển khoản:</span> <strong className="font-mono text-[#8e6746]">MNH {selectedOrder.orderCode} {selectedOrder.customer?.phone}</strong></p>
+                    <p className="text-[12px] text-[#888] italic pt-1">
+                      * Quý khách vui lòng chỉ thực hiện chuyển tiền theo thông tin tài khoản doanh nghiệp được chuyên viên Mộc Ngôn Hương xác nhận chính thức.
+                    </p>
                   </div>
                 </div>
               )}

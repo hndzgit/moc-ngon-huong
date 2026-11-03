@@ -327,7 +327,7 @@ export async function sendCustomerOrderConfirmation(order: OrderRecord): Promise
         <!-- Footer -->
         <div style="background: #f0ebe1; padding: 16px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #e0d8cc;">
           <strong>MỘC NGÔN HƯƠNG — VĂN HÓA TRÀ VIỆT & QUÀ TẶNG TINH HOA</strong><br>
-          Website: <a href="https://mocngonhuong.com" style="color: #3e5641; text-decoration: none;">https://mocngonhuong.com</a> | Hotline: 0889742556
+          Website: <a href="https://mocngonhuong.com" style="color: #3e5641; text-decoration: none;">mocngonhuong.com</a> | Hotline: <a href="tel:+84889742556" style="color: #3e5641; text-decoration: none; font-weight: bold;">0889 742 556</a> | Email: <a href="mailto:mocngonhuong@gmail.com" style="color: #3e5641; text-decoration: none;">mocngonhuong@gmail.com</a>
         </div>
       </div>
     </body>

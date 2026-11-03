@@ -148,7 +148,9 @@ export function renderVerificationEmail(params: {
                 <p style="margin: 0 0 8px 0; font-size: 12px; color: #8C7B6B;">
                   <a href="https://mocngonhuong.com" target="_blank" style="color: #C89F5D; text-decoration: none; font-weight: 600;">mocngonhuong.com</a>
                   &nbsp;•&nbsp;
-                  <a href="https://mocngonhuong.com/#/lien-he" target="_blank" class="text-muted" style="color: #8C7B6B; text-decoration: none;">Không gian tiệm trà</a>
+                  <a href="tel:+84889742556" style="color: #3E5641; text-decoration: none; font-weight: 600;">0889 742 556</a>
+                  &nbsp;•&nbsp;
+                  <a href="mailto:mocngonhuong@gmail.com" style="color: #3E5641; text-decoration: none;">mocngonhuong@gmail.com</a>
                 </p>
                 <p class="text-muted" style="margin: 0; font-size: 11px; line-height: 16px; color: #A69B8D;">
                   42 Phố Hàng Điếu, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội<br/>
@@ -184,6 +186,8 @@ Nếu bạn không đăng ký tài khoản, bạn có thể bỏ qua email này.
 ---
 Mộc Ngôn Hương — Vị Trà Đong Đầy Yêu Thương
 Website: https://mocngonhuong.com
+Hotline: 0889 742 556
+Email: mocngonhuong@gmail.com
 Địa chỉ: 42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội`;
 
   return { subject, html, text };
@@ -321,7 +325,9 @@ export function renderPasswordResetEmail(params: {
                 <p style="margin: 0 0 8px 0; font-size: 12px; color: #8C7B6B;">
                   <a href="https://mocngonhuong.com" target="_blank" style="color: #C89F5D; text-decoration: none; font-weight: 600;">mocngonhuong.com</a>
                   &nbsp;•&nbsp;
-                  <a href="https://mocngonhuong.com/#/lien-he" target="_blank" class="text-muted" style="color: #8C7B6B; text-decoration: none;">Không gian tiệm trà</a>
+                  <a href="tel:+84889742556" style="color: #3E5641; text-decoration: none; font-weight: 600;">0889 742 556</a>
+                  &nbsp;•&nbsp;
+                  <a href="mailto:mocngonhuong@gmail.com" style="color: #3E5641; text-decoration: none;">mocngonhuong@gmail.com</a>
                 </p>
                 <p class="text-muted" style="margin: 0; font-size: 11px; line-height: 16px; color: #A69B8D;">
                   42 Phố Hàng Điếu, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội<br/>
@@ -357,6 +363,8 @@ Nếu bạn không yêu cầu thay đổi mật khẩu, bạn có thể bỏ qua
 ---
 Mộc Ngôn Hương — Vị Trà Đong Đầy Yêu Thương
 Website: https://mocngonhuong.com
+Hotline: 0889 742 556
+Email: mocngonhuong@gmail.com
 Địa chỉ: 42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội`;
 
   return { subject, html, text };

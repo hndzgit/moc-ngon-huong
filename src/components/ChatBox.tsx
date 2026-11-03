@@ -75,7 +75,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onNavigate }) => {
     if (q.includes('doanh nghiệp') || q.includes('số lượng lớn') || q.includes('đối tác')) {
       return {
         sender: 'bot',
-        text: 'Mộc Ngôn Hương hỗ trợ thiết kế thiệp riêng, in logo doanh nghiệp và chiết khấu ưu đãi cho đơn hàng quà tặng số lượng lớn. Bạn có thể liên hệ Hotline/Zalo 0889 742 556 (Ms. My) hoặc để lại thông tin tại trang Liên hệ nhé!',
+        text: 'Mộc Ngôn Hương hỗ trợ thiết kế thiệp riêng, in logo doanh nghiệp và chiết khấu ưu đãi cho đơn hàng quà tặng số lượng lớn. Bạn có thể liên hệ Hotline/Zalo 0889 742 556 hoặc để lại thông tin tại trang Liên hệ nhé!',
       };
     }
     if (q.includes('nhài') || q.includes('thương')) {
