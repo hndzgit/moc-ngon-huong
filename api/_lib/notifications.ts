@@ -15,30 +15,47 @@ export interface NotificationResult {
  * Helper to dispatch an email via Resend with automatic fallback
  * to onboarding@resend.dev if custom sender domain is unverified.
  */
-export async function dispatchResendEmail(options: {
+export interface ResendDispatchOptions {
   from: string;
   to: string[];
   subject: string;
   html: string;
   text?: string;
-}): Promise<{ success: boolean; error?: string }> {
+  idempotencyKey?: string;
+}
+
+export interface ResendDispatchResult {
+  success: boolean;
+  error?: string;
+  id?: string;
+}
+
+export async function dispatchResendEmail(options: ResendDispatchOptions): Promise<ResendDispatchResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return { success: false, error: 'RESEND_API_KEY not configured' };
   }
 
+  const { idempotencyKey, ...emailPayload } = options;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  };
+
+  if (idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey;
+  }
+
   try {
     let res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(options),
+      headers,
+      body: JSON.stringify(emailPayload),
     });
 
     if (res.ok) {
-      return { success: true };
+      const data = await res.json().catch(() => ({}));
+      return { success: true, id: data?.id };
     }
 
     const errData = await res.json().catch(() => ({}));
@@ -53,18 +70,16 @@ export async function dispatchResendEmail(options: {
       console.warn('[MNH Resend] Custom sender unverified on Resend. Retrying with onboarding@resend.dev...');
       const fallbackRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
+        headers,
         body: JSON.stringify({
-          ...options,
+          ...emailPayload,
           from: 'Mộc Ngôn Hương <onboarding@resend.dev>',
         }),
       });
 
       if (fallbackRes.ok) {
-        return { success: true };
+        const data = await fallbackRes.json().catch(() => ({}));
+        return { success: true, id: data?.id };
       }
       const fallbackErr = await fallbackRes.json().catch(() => ({}));
       return { success: false, error: JSON.stringify(fallbackErr) };

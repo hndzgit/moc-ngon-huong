@@ -17,13 +17,47 @@ export interface EmailTemplateResult {
 }
 
 /**
+ * Safely escapes HTML special characters to prevent HTML/XSS injection.
+ * Preserves Vietnamese Unicode characters and standard punctuation.
+ */
+export function escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Normalizes customer-controlled name text:
+ * - Trims whitespace
+ * - Strips control characters (\x00-\x1F, \x7F) and unexpected newlines
+ * - Collapses consecutive spaces
+ * - Caps maximum length to 100 characters to prevent layout breaking
+ * - Falls back to a safe default if empty
+ */
+export function sanitizeCustomerName(rawName?: string, defaultName: string = 'Quý khách'): string {
+  if (!rawName || typeof rawName !== 'string') {
+    return defaultName;
+  }
+  const cleaned = rawName.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!cleaned) {
+    return defaultName;
+  }
+  return cleaned.slice(0, 100);
+}
+
+/**
  * Builds the HTML for the Email Verification message.
  */
 export function renderVerificationEmail(params: {
   customerName?: string;
   verificationLink: string;
 }): EmailTemplateResult {
-  const name = params.customerName?.trim() || 'bạn';
+  const plainName = sanitizeCustomerName(params.customerName, 'bạn');
+  const escapedName = escapeHtml(plainName);
   const actionUrl = params.verificationLink;
 
   const subject = 'Xác minh tài khoản Mộc Ngôn Hương';
@@ -94,7 +128,7 @@ export function renderVerificationEmail(params: {
               </h1>
 
               <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;">
-                Chào <strong>${name}</strong>,
+                Chào <strong>${escapedName}</strong>,
               </p>
 
               <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">
@@ -174,7 +208,7 @@ export function renderVerificationEmail(params: {
 
   const text = `Chào mừng bạn đến với Mộc Ngôn Hương!
 
-Chào ${name},
+Chào ${plainName},
 
 Cảm ơn bạn đã lựa chọn đồng hành cùng Mộc Ngôn Hương trong hành trình trao gửi những điều ý nghĩa.
 Chỉ còn một bước nhỏ để hoàn tất tài khoản của bạn. Vui lòng xác minh địa chỉ email bằng liên kết bên dưới:
@@ -200,7 +234,8 @@ export function renderPasswordResetEmail(params: {
   customerName?: string;
   resetLink: string;
 }): EmailTemplateResult {
-  const name = params.customerName?.trim() || 'bạn';
+  const plainName = sanitizeCustomerName(params.customerName, 'bạn');
+  const escapedName = escapeHtml(plainName);
   const actionUrl = params.resetLink;
 
   const subject = 'Khôi phục mật khẩu Mộc Ngôn Hương';
@@ -271,7 +306,7 @@ export function renderPasswordResetEmail(params: {
               </h1>
 
               <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;">
-                Chào <strong>${name}</strong>,
+                Chào <strong>${escapedName}</strong>,
               </p>
 
               <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">
@@ -351,7 +386,7 @@ export function renderPasswordResetEmail(params: {
 
   const text = `Đặt lại mật khẩu tài khoản của bạn
 
-Chào ${name},
+Chào ${plainName},
 
 Chúng mình đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản Mộc Ngôn Hương của bạn.
 Nhấn vào liên kết bên dưới để tiếp tục:
@@ -376,7 +411,8 @@ Email: mocngonhuong@gmail.com
 export function renderWelcomeEmail(params: {
   customerName?: string;
 }): EmailTemplateResult {
-  const name = params.customerName?.trim() || 'Quý khách';
+  const plainName = sanitizeCustomerName(params.customerName, 'Quý khách');
+  const escapedName = escapeHtml(plainName);
   const shopUrl = 'https://mocngonhuong.com/#/san-pham';
 
   const subject = 'Chào mừng bạn đến với Mộc Ngôn Hương!';
@@ -447,7 +483,7 @@ export function renderWelcomeEmail(params: {
               </h1>
 
               <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;">
-                Xin chào <strong>${name}</strong>,
+                Xin chào <strong>${escapedName}</strong>,
               </p>
 
               <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">
@@ -518,7 +554,7 @@ export function renderWelcomeEmail(params: {
 </body>
 </html>`;
 
-  const text = `Xin chào ${name},
+  const text = `Xin chào ${plainName},
 
 Chào mừng bạn đến với Mộc Ngôn Hương!
 Tài khoản của bạn đã được đăng ký thành công.

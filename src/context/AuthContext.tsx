@@ -129,21 +129,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(newProfile);
     setUser(cred.user);
 
-    // Send brand-aligned welcome email via Resend in the background
-    try {
-      const idToken = await cred.user.getIdToken();
-      await fetch('/api/auth/send-welcome-email', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fullName: fullName.trim() }),
-      });
-    } catch (err) {
-      // Email delivery failure must never invalidate the newly created account
-      console.warn('[MNH Auth] Welcome email dispatch failed in background:', err);
-    }
+    // Send brand-aligned welcome email asynchronously without blocking registration completion
+    // Uses keepalive: true so client-side navigation does not abort the in-flight request
+    (async () => {
+      try {
+        const idToken = await cred.user.getIdToken();
+        const res = await fetch('/api/auth/send-welcome-email', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fullName: fullName.trim() }),
+          keepalive: true,
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('[MNH Auth] Welcome email API response status:', res.status, errData?.error);
+        }
+      } catch (err) {
+        // Email delivery failure must never invalidate the newly created account
+        console.warn('[MNH Auth] Welcome email dispatch failed in background:', err);
+      }
+    })();
 
     return cred.user;
   };
