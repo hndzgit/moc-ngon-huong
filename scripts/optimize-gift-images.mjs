@@ -16,8 +16,14 @@ const originals = [];
 
 // Validate every input before writing any output, so a mistaken asset mapping fails closed.
 for (const source of sources) {
-  const bytes = await fs.readFile(source.path);
-  if (hash(bytes) !== source.sha256) throw new Error(`Original hash mismatch: ${source.path}`);
+  let resolvedPath = source.path;
+  try {
+    await fs.access(resolvedPath);
+  } catch {
+    resolvedPath = source.path.replace('public/assets/figma', 'source-assets/figma');
+  }
+  const bytes = await fs.readFile(resolvedPath);
+  if (hash(bytes) !== source.sha256) throw new Error(`Original hash mismatch: ${resolvedPath}`);
   originals.push(bytes);
 }
 

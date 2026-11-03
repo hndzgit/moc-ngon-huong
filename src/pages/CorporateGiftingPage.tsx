@@ -80,7 +80,7 @@ export function CorporateGiftingPage({ onNavigate }: CorporateGiftingPageProps) 
             <span className="corporate-hero-note">Chọn ý nghĩa trước. Trao đổi chi tiết sau.</span>
           </div>
           <figure className="corporate-hero-photo">
-            <img src={assetUrl('/assets/optimized/tea-hop-qua-tam-y-1280.webp')} data-original-asset="/assets/figma/combo-table.png" alt="Hộp quà Tâm Ý cùng các hộp trà Mộc Ngôn Hương" width="1536" height="1024" decoding="async" />
+            <img src={assetUrl('/assets/optimized/tea-hop-qua-tam-y-1280.webp')} data-original-asset="/source-assets/figma/combo-table.png" alt="Hộp quà Tâm Ý cùng các hộp trà Mộc Ngôn Hương" width="1536" height="1024" decoding="async" />
             <figcaption><span>01 / MỘT MÓN QUÀ, NHIỀU LỜI MUỐN GỬI</span><span>Trao hương, gửi lời thương.</span></figcaption>
           </figure>
         </div>

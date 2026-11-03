@@ -181,7 +181,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
               <div className="relative w-full h-full min-h-[300px] sm:min-h-[360px] rounded-[16px] overflow-hidden shadow-sm bg-[#203323]">
                 <MotionImage
                   src={assetUrl(`/assets/optimized/discovery-card-${activeItem.productId}.webp`)}
-                  data-original-asset={selectedEmotion==='AN'?'/assets/figma/originals/ae4e7.png':activeItem.image}
+                  data-original-asset={selectedEmotion==='AN'?'/source-assets/figma/originals/ae4e7.png':activeItem.image}
                   alt={storyCopy.storyTitle}
                   loading="lazy" decoding="async"
                   className="w-full h-full object-cover"

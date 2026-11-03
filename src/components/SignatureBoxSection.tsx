@@ -16,10 +16,10 @@ interface SignatureBoxSectionProps {
 }
 
 const GIFT_VIEWS = [
-  { src: '/assets/figma/combo-slide-1.png', node: '96:2989', title: 'Hộp quà Tâm Ý', caption: 'Một món quà, bốn sắc hương trà Việt.' },
-  { src: '/assets/figma/originals/gift-96-3129.jpg', node: '96:3129', title: 'Mở hộp quà', caption: 'Khám phá hộp quà qua ảnh chụp nguyên bản.' },
-  { src: '/assets/figma/originals/gift-96-3091.jpg', node: '96:3091', title: 'Những điều bên trong', caption: 'Các thức trà và phụ kiện trong cùng một món quà.' },
-  { src: '/assets/figma/originals/gift-96-3111.jpg', node: '96:3111', title: 'Bốn sắc hương', caption: 'Bưởi — AN, Nhài — THƯƠNG, Hoa Sói — CẢM, Cốm — NHỚ.' },
+  { src: '/source-assets/figma/combo-slide-1.png', node: '96:2989', title: 'Hộp quà Tâm Ý', caption: 'Một món quà, bốn sắc hương trà Việt.' },
+  { src: '/source-assets/figma/originals/gift-96-3129.jpg', node: '96:3129', title: 'Mở hộp quà', caption: 'Khám phá hộp quà qua ảnh chụp nguyên bản.' },
+  { src: '/source-assets/figma/originals/gift-96-3091.jpg', node: '96:3091', title: 'Những điều bên trong', caption: 'Các thức trà và phụ kiện trong cùng một món quà.' },
+  { src: '/source-assets/figma/originals/gift-96-3111.jpg', node: '96:3111', title: 'Bốn sắc hương', caption: 'Bưởi — AN, Nhài — THƯƠNG, Hoa Sói — CẢM, Cốm — NHỚ.' },
 ] as const;
 
 export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({

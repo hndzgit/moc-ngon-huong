@@ -3,6 +3,7 @@
 // Generates high-quality WebP & AVIF derivatives from original Figma assets without mutating originals.
 
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -418,7 +419,13 @@ let totalOriginalBytes = 0;
 let totalOptimizedBytes = 0;
 
 for (const task of TASKS) {
-  const sourcePath = path.resolve(task.input);
+  let sourcePath = path.resolve(task.input);
+  if (!fsSync.existsSync(sourcePath)) {
+    const fallback = path.resolve(task.input.replace('public/assets/figma', 'source-assets/figma'));
+    if (fsSync.existsSync(fallback)) {
+      sourcePath = fallback;
+    }
+  }
   const sourceBuffer = await fs.readFile(sourcePath);
   const sourceStat = await fs.stat(sourcePath);
   const sourceMeta = await sharp(sourceBuffer).metadata();

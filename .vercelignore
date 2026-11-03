@@ -13,3 +13,4 @@ coverage
 *.tar.gz
 *.tsbuildinfo
 .DS_Store
+source-assets
