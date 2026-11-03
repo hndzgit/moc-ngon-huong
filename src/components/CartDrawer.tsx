@@ -5,6 +5,7 @@ import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useEffect } from 'react';
 import { CartItem, PageRoute } from '../types';
 import { FIGMA_PRODUCT_COPY, FIGMA_ORDER_MEDIA } from '../data/figmaMedia';
+import { calculateDemoDiscount, DEMO_DISCOUNT_DISCLAIMER } from '../assistant';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -51,6 +52,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     const isChecked = selectedIds[item.product.id] ?? true;
     return isChecked ? sum + item.product.price * item.quantity : sum;
   }, 0);
+
+  const selectedQuantity = items.reduce((sum, item) => {
+    const isChecked = selectedIds[item.product.id] ?? true;
+    return isChecked ? sum + item.quantity : sum;
+  }, 0);
+
+  const discountInfo = calculateDemoDiscount(selectedQuantity, subtotal);
 
   return (
     <div ref={ref} data-motion-phase={phase} className="cart-drawer fixed inset-0 z-50 flex justify-end">
@@ -186,7 +194,32 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
         {/* Drawer Footer: Subtotal & Checkout CTA (Figma 127:8439) */}
         {items.length > 0 && (
-          <div className="p-6 border-t border-gray-200 bg-white space-y-5">
+          <div className="p-6 border-t border-gray-200 bg-white space-y-4">
+            {/* Quantity Discount Demo Banner (Phase 9) */}
+            <div className="rounded-[10px] bg-[#FAF8F3] border border-[#3E5641]/15 p-3 text-[12px] space-y-1.5">
+              <div className="flex items-center justify-between text-[#3E5641] font-semibold">
+                <span>Ưu đãi số lượng (mô phỏng):</span>
+                <span>{discountInfo.activePercentage > 0 ? `Giảm ${discountInfo.activePercentage}%` : 'Chưa đạt mốc'}</span>
+              </div>
+              {discountInfo.activePercentage > 0 && (
+                <p className="text-[#555555]">
+                  Tiết kiệm ước tính: ~{discountInfo.estimatedSavings.toLocaleString('vi-VN')} đ
+                </p>
+              )}
+              {discountInfo.nextTier ? (
+                <p className="text-[#8E6746]">
+                  💡 Thêm {discountInfo.itemsToNextTier} sản phẩm để đạt mốc giảm {discountInfo.nextTier.percentage}%.
+                </p>
+              ) : (
+                <p className="text-[#3E5641]">
+                  ✨ Bạn đã đạt mốc ưu đãi cao nhất (12%)!
+                </p>
+              )}
+              <p className="text-[10px] text-[#8E6746] italic pt-1 border-t border-[#3E5641]/10 text-center">
+                {DEMO_DISCOUNT_DISCLAIMER}
+              </p>
+            </div>
+
             <div className="flex items-center justify-between">
               <span className="text-[16px] text-[#222222] font-medium">
                 Tạm tính

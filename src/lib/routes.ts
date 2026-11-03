@@ -24,7 +24,7 @@ export function readRoute(): {page:PageRoute; productId?:string; emotion?: 'AN'|
     const step=Number(params.get('buoc')||1);
     return {page, ...(['AN','THUONG','CAM','NHO'].includes(emotion||'') ? {emotion:emotion as 'AN'|'THUONG'|'CAM'|'NHO'} : {}),step:Number.isInteger(step)&&step>=1&&step<=5?step:1};
   }
-  const match = /^\/san-pham\/([^/]+)$/.exec(path);
+  const match = /^\/(?:san-pham|chuyen-tra|qr)\/([^/]+)$/.exec(path);
   if (match && PRODUCTS.some(product=>product.id === match[1])) return {page:'detail',productId:match[1]};
   return {page:'not-found'};
 }

@@ -130,6 +130,11 @@ export function App() {
     [cartItems]
   );
 
+  const cartSubtotal = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+    [cartItems]
+  );
+
   // Update quantity from inline ProductCard stepper (- 0 +)
   const handleUpdateProductQuantity = (product: Product, delta: number) => {
     setCartItems((prev) => {
@@ -503,7 +508,19 @@ export function App() {
       />
 
       {/* Floating ChatBox "Mộc Ngôn Hương" (Figma 80:5091) */}
-      <ChatBox onNavigate={handleNavigate} />
+      <ChatBox
+        onNavigate={handleNavigate}
+        onAddToCart={(product, qty) => {
+          handleUpdateProductQuantity(product, qty || 1);
+          setCartOpen(true);
+        }}
+        onOpenGiftJourney={(patch) => {
+          setGiftDraft((prev) => ({ ...prev, ...patch }));
+          setJourneyStep(4);
+          handleNavigate('gift-journey');
+        }}
+        cartSummary={{ totalQuantity: totalCartCount, subtotal: cartSubtotal }}
+      />
     </div>
   );
 }
