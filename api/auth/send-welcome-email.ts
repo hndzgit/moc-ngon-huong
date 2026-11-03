@@ -47,12 +47,40 @@ type ReservationResult =
   | { canSend: true; attempt: number }
   | { canSend: false; reason: 'ALREADY_SENT' | 'IN_PROGRESS' | 'MAX_ATTEMPTS_EXCEEDED' };
 
+async function parseRequestBody(req: VercelRequest): Promise<Record<string, any>> {
+  if (req.body) {
+    if (typeof req.body === 'object' && req.body !== null) return req.body;
+    if (typeof req.body === 'string') {
+      try {
+        return JSON.parse(req.body);
+      } catch {
+        return {};
+      }
+    }
+  }
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', (chunk: any) => {
+      raw += typeof chunk === 'string' ? chunk : chunk.toString('utf-8');
+    });
+    req.on('end', () => {
+      try {
+        resolve(raw ? JSON.parse(raw) : {});
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', () => resolve({}));
+  });
+}
+
 function handleMockReservation(
   uid: string,
   email: string,
   customerName: string,
   nowIso: string,
-  nowMs: number
+  nowMs: number,
+  forceRecovery = false
 ): ReservationResult {
   const existing = devMockStore.get(uid);
   if (!existing) {
@@ -74,8 +102,16 @@ function handleMockReservation(
     (!existing.status && Boolean(existing.sentAt)) ||
     (!existing.status && !existing.lastError);
 
-  if (isSent) {
+  if (isSent && !forceRecovery) {
     return { canSend: false, reason: 'ALREADY_SENT' };
+  }
+
+  if (forceRecovery) {
+    existing.status = 'pending';
+    existing.attemptCount = 1;
+    existing.updatedAt = nowIso;
+    existing.customerName = customerName;
+    return { canSend: true, attempt: 1 };
   }
 
   if (existing.status === 'pending') {
@@ -167,10 +203,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const targetEmail = verifiedUser.email.trim().toLowerCase();
   const uid = verifiedUser.uid;
 
-  // 2. Extract and sanitize Customer Name
+  // 2. Parse request body safely
+  const body = await parseRequestBody(req);
+  const forceRecovery = body.forceRecovery === true;
+
+  // Extract and sanitize Customer Name
   let rawName = '';
-  if (req.body && typeof req.body === 'object' && typeof req.body.fullName === 'string') {
-    rawName = req.body.fullName;
+  if (typeof body.fullName === 'string' && body.fullName.trim()) {
+    rawName = body.fullName.trim();
   }
   if (!rawName) {
     const adminAuth = getAdminAuth();
@@ -226,8 +266,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           (!data.status && Boolean(data.sentAt)) ||
           (!data.status && !data.lastError);
 
-        if (isSent) {
+        if (isSent && !forceRecovery) {
           return { canSend: false, reason: 'ALREADY_SENT' };
+        }
+
+        if (forceRecovery) {
+          console.log(`[Welcome Email] Controlled forceRecovery initiated for UID: ${uid}`);
+          transaction.set(
+            docRef,
+            {
+              uid,
+              email: targetEmail,
+              customerName,
+              status: 'pending',
+              attemptCount: 1,
+              updatedAt: nowIso,
+              provider: 'resend',
+              lastError: 'Controlled recovery',
+            },
+            { merge: true }
+          );
+          return { canSend: true, attempt: 1 };
         }
 
         const attemptCount = typeof data.attemptCount === 'number' ? data.attemptCount : 1;
@@ -275,36 +334,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return { canSend: true, attempt: attemptCount + 1 };
       });
     } catch (txnErr) {
-      console.error('[Welcome Email] Transaction failure for UID:', uid, txnErr);
-      if (getIsProduction()) {
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 503;
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: 'Hệ thống cơ sở dữ liệu tạm thời bận. Vui lòng thử lại sau ít phút.',
-          })
-        );
-        return;
-      }
-      // Non-production test fallback to in-memory store
-      reservation = handleMockReservation(uid, targetEmail, customerName, nowIso, nowMs);
+      console.warn('[Welcome Email] Firestore transaction failed; falling back to in-memory reservation and Resend Idempotency-Key:', txnErr);
+      reservation = handleMockReservation(uid, targetEmail, customerName, nowIso, nowMs, forceRecovery);
     }
   } else {
-    // No Firestore DB instance available
-    if (getIsProduction()) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 503;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: 'Dịch vụ lưu trữ cơ sở dữ liệu không khả dụng.',
-        })
-      );
-      return;
-    }
-    // Dev/Test in-memory fallback
-    reservation = handleMockReservation(uid, targetEmail, customerName, nowIso, nowMs);
+    console.warn('[Welcome Email] Firestore DB unavailable; falling back to in-memory reservation and Resend Idempotency-Key');
+    reservation = handleMockReservation(uid, targetEmail, customerName, nowIso, nowMs, forceRecovery);
   }
 
   // 4. Handle non-sendable reservation reasons
@@ -375,12 +410,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const successIso = new Date().toISOString();
     if (db) {
       try {
-        await db.collection('welcome_emails').doc(uid).update({
-          status: 'sent',
-          sentAt: successIso,
-          updatedAt: successIso,
-          messageId: sendResult.id || null,
-        });
+        await db.collection('welcome_emails').doc(uid).set(
+          {
+            uid,
+            email: targetEmail,
+            customerName,
+            status: 'sent',
+            sentAt: successIso,
+            updatedAt: successIso,
+            messageId: sendResult.id || null,
+            provider: 'resend',
+          },
+          { merge: true }
+        );
       } catch (updateErr) {
         console.warn('[Welcome Email] Failed to mark welcome email sent in Firestore:', updateErr);
       }
@@ -394,13 +436,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    console.log(`[Welcome Email] Welcome email successfully sent to ${targetEmail} (UID: ${uid})`);
+    console.log(`[Welcome Email] Welcome email successfully accepted by Resend for ${targetEmail} (UID: ${uid}, MessageId: ${sendResult.id})`);
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
     res.end(
       JSON.stringify({
         success: true,
-        message: 'Email chào mừng Mộc Ngôn Hương đã được gửi thành công.',
+        message: 'Email chào mừng Mộc Ngôn Hương đã được tiếp nhận gửi thành công.',
         messageId: sendResult.id,
       })
     );
@@ -411,11 +453,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const failIso = new Date().toISOString();
   if (db) {
     try {
-      await db.collection('welcome_emails').doc(uid).update({
-        status: 'failed',
-        lastError: sendResult.error || 'Dispatch error',
-        updatedAt: failIso,
-      });
+      await db.collection('welcome_emails').doc(uid).set(
+        {
+          uid,
+          email: targetEmail,
+          customerName,
+          status: 'failed',
+          lastError: sendResult.error || 'Dispatch error',
+          updatedAt: failIso,
+          provider: 'resend',
+        },
+        { merge: true }
+      );
     } catch (updateErr) {
       console.warn('[Welcome Email] Failed to mark welcome email failed in Firestore:', updateErr);
     }
@@ -435,6 +484,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     JSON.stringify({
       success: false,
       error: 'Không thể gửi email chào mừng qua dịch vụ gửi thư. Vui lòng thử lại sau ít phút.',
+      diagnostic: getIsProduction() ? undefined : sendResult.error,
     })
   );
 }

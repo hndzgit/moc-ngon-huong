@@ -7,7 +7,6 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   updateProfile,
-  sendEmailVerification,
   applyActionCode,
   verifyPasswordResetCode,
   confirmPasswordReset,
@@ -165,31 +164,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendVerification = async () => {
-    if (!auth || !auth.currentUser) {
-      throw new Error('Không tìm thấy phiên đăng nhập để gửi email xác thực.');
-    }
-
-    // 1. Try sending premium branded verification email via Resend
-    try {
-      const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch('/api/auth/send-verification', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success) {
-        return;
-      }
-      console.warn('[MNH Auth] Custom verification API non-success, using Firebase fallback:', data?.error);
-    } catch (err) {
-      console.warn('[MNH Auth] Custom verification fetch error, using Firebase fallback:', err);
-    }
-
-    // 2. Safe fallback to default Firebase Auth email
-    await sendEmailVerification(auth.currentUser);
+    // V17.0B.3: Registration is completely non-blocking without mandatory email verification.
+    console.log('[MNH Auth] Optional email verification requested; verification is not required for shopping.');
   };
 
   const reloadUser = async () => {

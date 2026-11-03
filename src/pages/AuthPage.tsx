@@ -24,7 +24,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     login,
     register,
     logout,
-    sendVerification,
     reloadUser,
     sendResetEmail,
     verifyResetCode,
@@ -51,9 +50,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
-  // OTP state (for Figma 127:11621 visual compliance)
-  const [otp, setOtp] = useState(['', '', '', '']);
-
   // Reset action code from Firebase email link
   const [resetActionCode, setResetActionCode] = useState<string | null>(null);
 
@@ -62,9 +58,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [infoMsg, setInfoMsg] = useState('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Verification resend cooldown
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Sub-navigation within account: 'orders' | 'profile'
   const [profileTab, setProfileTab] = useState<'orders' | 'profile'>('orders');
@@ -156,7 +149,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   }, [activeUser, step, loadUserOrders]);
 
-  // Check URL parameters for Firebase email actions (?mode=verifyEmail / ?mode=resetPassword)
+  // Check URL parameters for Firebase email actions (?mode=resetPassword / legacy ?mode=verifyEmail)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
@@ -164,18 +157,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     const oobCode = params.get('oobCode') || hashParams.get('oobCode');
 
     if (mode && oobCode) {
-      if (mode === 'verifyEmail') {
-        setLoading(true);
-        applyVerifyCode(oobCode)
-          .then(() => {
-            setInfoMsg('Chúc mừng! Email của bạn đã được xác thực thành công.');
-            setErrorMsg('');
-          })
-          .catch(() => {
-            setErrorMsg('Liên kết xác thực email không hợp lệ hoặc đã hết hạn.');
-          })
-          .finally(() => setLoading(false));
-      } else if (mode === 'resetPassword') {
+      if (mode === 'resetPassword') {
         setLoading(true);
         verifyResetCode(oobCode)
           .then((recoveredEmail) => {
@@ -190,18 +172,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             setStep('forgot-email');
           })
           .finally(() => setLoading(false));
+      } else if (mode === 'verifyEmail') {
+        // Silently apply legacy verification code if present without interrupting customer shopping flow
+        applyVerifyCode(oobCode).catch(() => {});
+        // Clean URL to prevent stale mode parameter
+        try {
+          const cleanUrl = window.location.pathname + (window.location.hash ? window.location.hash.split('?')[0] : '');
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch {}
       }
     }
-  }, []);
-
-  // Cooldown timer
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
+  }, [applyVerifyCode, verifyResetCode]);
 
   const switchStep = (next: AuthStep) => {
     setErrorMsg('');
@@ -300,50 +281,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // 3. Account Activation Submit (Retained for backward compatibility)
-  const handleActivateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setInfoMsg('');
-
-    if (password.length < 8) {
-      setErrorMsg('Mật khẩu phải có tối thiểu 8 ký tự.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErrorMsg('Mật khẩu xác nhận không khớp.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      if (!isAuthAvailable) {
-        setErrorMsg('Dịch vụ tạo tài khoản đang được bảo trì. Vui lòng thử lại sau.');
-        return;
-      }
-      const newUser = await register(email.trim(), password, fullName.trim(), address.trim());
-      onLoginSuccess(newUser.email || email.trim());
-      setRegistrationSuccess(true);
-      setInfoMsg(
-        'Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!'
-      );
-      setStep('profile');
-    } catch (err: any) {
-      const code = err?.code || '';
-      if (code === 'auth/email-already-in-use') {
-        setErrorMsg('Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng chức năng Quên mật khẩu.');
-      } else if (code === 'auth/weak-password') {
-        setErrorMsg('Mật khẩu quá yếu. Vui lòng dùng mật khẩu có độ bảo mật cao hơn.');
-      } else {
-        setErrorMsg(err.message || 'Không thể tạo tài khoản. Vui lòng thử lại sau.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 4. Forgot Password Step 1: Send Reset Link (Figma 127:10877)
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // 3. Forgot Password Step 1: Send Reset Link (Figma 127:10877)
+  const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setInfoMsg('');
@@ -361,16 +300,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       }
       await sendResetEmail(email.trim());
       setInfoMsg(
-        'Liên kết đặt lại mật khẩu bảo mật đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến (và thư mục Spam/Rác).'
+        'Liên kết đặt lại mật khẩu bảo mật đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến (và thư mục Spam/Rác) và bấm vào liên kết để tạo mật khẩu mới.'
       );
-      // Also open modal showing OTP interface for Figma visual fidelity
-      switchStep('forgot-otp');
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/user-not-found') {
         // Generic response to avoid email enumeration
         setInfoMsg('Nếu email đã được đăng ký, liên kết đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.');
-        switchStep('forgot-otp');
       } else {
         setErrorMsg('Không thể gửi liên kết đặt lại mật khẩu. Vui lòng thử lại sau.');
       }
@@ -379,20 +315,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // 5. Handle OTP submission (Figma 127:11621)
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otp.join('');
-    if (code.length < 4) {
-      setErrorMsg('Vui lòng nhập đủ mã số hoặc mở trực tiếp liên kết bảo mật được gửi đến email của bạn.');
-      return;
-    }
-    setErrorMsg(
-      'Để đảm bảo an toàn tuyệt đối cho tài khoản, vui lòng bấm vào liên kết xác thực được gửi trong email của bạn để hoàn tất đặt lại mật khẩu.'
-    );
-  };
-
-  // 6. Reset Password Submit (Figma 127:11753)
+  // 4. Reset Password Submit (Figma 127:11753)
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -423,21 +346,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  // 7. Resend Verification Email
-  const handleResendVerification = async () => {
-    if (resendCooldown > 0) return;
-    setErrorMsg('');
-    setInfoMsg('');
-    try {
-      await sendVerification();
-      setInfoMsg('Email xác thực mới đã được gửi. Vui lòng kiểm tra hộp thư của bạn.');
-      setResendCooldown(60);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Không thể gửi lại email xác thực. Vui lòng thử lại sau.');
-    }
-  };
-
-  // 8. Save edited profile
+  // 5. Save edited profile
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     await updateProfileData({
@@ -456,20 +365,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setIsEditingProfile(true);
   };
 
-  const handleOtpChange = (index: number, val: string) => {
-    const digit = val.replace(/\D/g, '').slice(-1);
-    const next = [...otp];
-    next[index] = digit;
-    setOtp(next);
-    if (digit && index < 3) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
   const isForgotFlow =
     step === 'forgot-email' ||
-    step === 'forgot-otp' ||
     step === 'forgot-reset' ||
     step === 'forgot-success';
 
@@ -612,9 +509,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             {[
               { id: 'login' as AuthStep, label: 'Đăng nhập (127:11104)' },
               { id: 'register' as AuthStep, label: 'Đăng ký (127:12046)' },
-              { id: 'activate' as AuthStep, label: 'Kích hoạt (127:12445)' },
               { id: 'forgot-email' as AuthStep, label: 'Quên MK (127:10877)' },
-              { id: 'forgot-otp' as AuthStep, label: 'Mã OTP (127:11621)' },
               { id: 'forgot-reset' as AuthStep, label: 'Tạo MK mới (127:11753)' },
               { id: 'forgot-success' as AuthStep, label: 'Hoàn tất (127:11871)' },
               { id: 'profile' as AuthStep, label: 'Hồ sơ khách hàng' },
@@ -1411,82 +1306,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 </div>
               )}
 
-              {/* SCREEN 2: ACCOUNT ACTIVATION (Figma 127:12445) */}
-              {step === 'activate' && (
-                <div>
-                  <h1 className="font-philosopher font-bold text-[34px] sm:text-[42px] text-[#222222] mb-2">
-                    Kích Hoạt Tài Khoản
-                  </h1>
-                  <p className="text-[14.5px] leading-[22px] text-[#555555] mb-6">
-                    Cảm ơn bạn đã tạo tài khoản. Để hoàn tất kích hoạt, vui lòng tạo mật khẩu bảo mật (tối thiểu 8 ký tự).
-                  </p>
-
-                  {errorMsg && (
-                    <div className="mb-4 p-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 text-[13.5px]">
-                      {errorMsg}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleActivateAccount} className="space-y-4" noValidate>
-                    <div>
-                      <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Tạo mật khẩu <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showPass ? 'text' : 'password'}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
-                          className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPass(!showPass)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
-                        >
-                          {showPass ? 'Ẩn' : 'Hiện'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Xác nhận mật khẩu <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPass ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Nhập lại mật khẩu mới"
-                          className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPass(!showConfirmPass)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
-                        >
-                          {showConfirmPass ? 'Ẩn' : 'Hiện'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm disabled:opacity-60 mt-2"
-                    >
-                      {loading ? 'Đang tạo tài khoản...' : 'Hoàn Tất Đăng Ký'}
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              {/* SCREEN 4: FORGOT PASSWORD STEP 1 (Figma 127:10877) */}
-              {(step === 'forgot-email' || step === 'forgot-otp') && (
+              {/* SCREEN: FORGOT PASSWORD STEP 1 (Figma 127:10877) */}
+              {step === 'forgot-email' && (
                 <div>
                   <h1 className="font-philosopher font-bold text-[34px] sm:text-[42px] text-[#222222] mb-2">
                     Quên Mật Khẩu
@@ -1495,7 +1316,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     Vui lòng nhập email đã đăng ký. Mộc Ngôn Hương sẽ gửi liên kết bảo mật để bạn thiết lập lại mật khẩu mới.
                   </p>
 
-                  {errorMsg && step === 'forgot-email' && (
+                  {errorMsg && (
                     <div className="mb-4 p-3 rounded-[8px] bg-red-50 border border-red-200 text-red-700 text-[13.5px]">
                       {errorMsg}
                     </div>
@@ -1507,7 +1328,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </div>
                   )}
 
-                  <form onSubmit={handleSendOtp} className="space-y-5" noValidate>
+                  <form onSubmit={handleSendResetLink} className="space-y-5" noValidate>
                     <div>
                       <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
                         Email <span className="text-red-500">*</span>
@@ -1631,8 +1452,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   src={assetUrl(
                     isForgotFlow
                       ? '/assets/optimized/auth-split-an.webp'
-                      : step === 'activate'
-                      ? '/assets/optimized/auth-split-thuong.webp'
                       : '/assets/optimized/auth-split-default.webp'
                   )}
                   alt="Mộc Ngôn Hương"
@@ -1648,81 +1467,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         )}
       </div>
 
-      {/* MODAL 1: 4-DIGIT OTP VERIFICATION OVERLAY (Figma 127:11621) */}
-      <MotionDialog open={step === 'forgot-otp'} onClose={() => switchStep('forgot-email')}>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fadeIn">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Xác thực mã OTP"
-            className="auth-modal auth-otp-modal relative bg-[#faf7f2] rounded-[24px] max-w-[460px] w-full p-8 text-center shadow-2xl"
-          >
-            <button
-              type="button"
-              onClick={() => switchStep('forgot-email')}
-              aria-label="Đóng xác thực mã OTP"
-              className="absolute right-6 top-6"
-            >
-              <FigmaIcon name="closeModal" />
-            </button>
-            <h2 className="font-philosopher font-bold text-[28px] text-[#222222] mb-2">
-              Quên Mật Khẩu
-            </h2>
-            <p className="text-[14px] leading-[22px] text-[#555555] mb-6">
-              Mộc Ngôn Hương đã gửi liên kết đặt lại mật khẩu an toàn đến email của bạn. Hãy kiểm tra hộp thư và bấm vào liên kết để tiếp tục.
-            </p>
-
-            {errorMsg && (
-              <div className="mb-4 p-2.5 rounded-[8px] bg-red-50 text-red-700 text-[13px]">
-                {errorMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleVerifyOtp}>
-              <div className="flex items-center justify-center gap-3.5 mb-5">
-                {otp.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    id={`otp-input-${idx}`}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    className="w-[58px] h-[58px] rounded-[10px] border border-gray-300 text-center font-bold text-[22px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
-                  />
-                ))}
-              </div>
-
-              <p className="text-[13px] text-[#666666] mb-6">
-                Chưa nhận được email?{' '}
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  className="font-semibold text-[#3e5641] hover:underline"
-                >
-                  Gửi lại liên kết
-                </button>
-              </p>
-
-              <button
-                type="submit"
-                className="w-full h-[46px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors"
-              >
-                Kiểm Tra Email
-              </button>
-            </form>
-          </div>
-        </div>
-      </MotionDialog>
-
-      {/* MODAL 2: PASSWORD RESET SUCCESS OVERLAY (Figma 127:11871) */}
+      {/* MODAL: PASSWORD RESET SUCCESS OVERLAY (Figma 127:11871) */}
       <MotionDialog open={step === 'forgot-success'} onClose={() => switchStep('login')}>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fadeIn">
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Xác thực tài khoản"
+            aria-label="Cập nhật mật khẩu thành công"
             className="auth-modal relative bg-[#faf7f2] rounded-[24px] max-w-[460px] w-full p-8 text-center shadow-2xl"
           >
             <div className="flex items-center justify-center mx-auto mb-6">

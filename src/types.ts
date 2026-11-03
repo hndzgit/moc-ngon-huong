@@ -4,10 +4,8 @@ export type PageRoute = 'home' | 'story' | 'products' | 'detail' | 'contact' | '
 
 export type AuthStep =
   | 'login'
-  | 'activate'
   | 'register'
   | 'forgot-email'
-  | 'forgot-otp'
   | 'forgot-reset'
   | 'forgot-success'
   | 'profile';
