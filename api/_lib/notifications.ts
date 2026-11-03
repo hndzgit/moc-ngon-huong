@@ -12,8 +12,8 @@ export interface NotificationResult {
 }
 
 /**
- * Helper to dispatch an email via Resend with automatic fallback
- * to onboarding@resend.dev if custom sender domain is unverified.
+ * Helper to dispatch an email via Resend with verified brand domain identity.
+ * In production, never falls back to onboarding@resend.dev to protect sender reputation.
  */
 export interface ResendDispatchOptions {
   from: string;
@@ -21,6 +21,8 @@ export interface ResendDispatchOptions {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string | string[];
+  reply_to?: string | string[];
   idempotencyKey?: string;
 }
 
@@ -36,7 +38,14 @@ export async function dispatchResendEmail(options: ResendDispatchOptions): Promi
     return { success: false, error: 'RESEND_API_KEY not configured' };
   }
 
-  const { idempotencyKey, ...emailPayload } = options;
+  const { idempotencyKey, replyTo, reply_to, ...restPayload } = options;
+  const resolvedReplyTo = replyTo || reply_to || process.env.EMAIL_REPLY_TO || 'mocngonhuong@gmail.com';
+
+  const emailPayload = {
+    ...restPayload,
+    reply_to: resolvedReplyTo,
+  };
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${apiKey}`,
@@ -47,7 +56,7 @@ export async function dispatchResendEmail(options: ResendDispatchOptions): Promi
   }
 
   try {
-    let res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers,
       body: JSON.stringify(emailPayload),
@@ -59,15 +68,23 @@ export async function dispatchResendEmail(options: ResendDispatchOptions): Promi
     }
 
     const errData = await res.json().catch(() => ({}));
-    const errMsg = JSON.stringify(errData);
+    const errMsg = typeof errData === 'object' ? JSON.stringify(errData) : String(errData);
 
-    // If failed due to unverified custom domain and 'from' wasn't already onboarding@resend.dev,
-    // automatically retry using onboarding@resend.dev
+    // In production or serverless environments, DO NOT silently fall back to onboarding@resend.dev!
+    // Returning an observable error ensures that any DNS or domain authorization issue is surfaced
+    // immediately rather than causing emails to silently degrade into Gmail Spam.
+    const isProductionEnv =
+      process.env.NODE_ENV === 'production' ||
+      process.env.VERCEL_ENV === 'production' ||
+      Boolean(process.env.VERCEL);
+
     if (
+      !isProductionEnv &&
+      process.env.ALLOW_DEV_RESEND_FALLBACK === 'true' &&
       (res.status === 403 || errMsg.includes('domain') || errMsg.includes('not verified')) &&
       !options.from.includes('onboarding@resend.dev')
     ) {
-      console.warn('[MNH Resend] Custom sender unverified on Resend. Retrying with onboarding@resend.dev...');
+      console.warn('[MNH Resend] Non-production test fallback: Retrying with onboarding@resend.dev...');
       const fallbackRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers,
@@ -85,6 +102,7 @@ export async function dispatchResendEmail(options: ResendDispatchOptions): Promi
       return { success: false, error: JSON.stringify(fallbackErr) };
     }
 
+    console.error(`[MNH Resend Error] HTTP ${res.status} from: ${options.from} to: ${options.to?.join(',')} error: ${errMsg}`);
     return { success: false, error: errMsg };
   } catch (err: any) {
     return { success: false, error: err?.message || String(err) };
@@ -127,7 +145,7 @@ export async function sendShopOrderNotification(order: OrderRecord): Promise<Not
   const fromEmail =
     process.env.ORDER_EMAIL_FROM ||
     process.env.EMAIL_FROM ||
-    'Mộc Ngôn Hương <donhang@mocngonhuong.com>';
+    'Mộc Ngôn Hương <donhang@mail.mocngonhuong.com>';
 
   const subject = `[MỘC NGÔN HƯƠNG] Đơn hàng mới — ${order.orderCode} - ${order.customer.fullName} (${order.total.toLocaleString('vi-VN')}đ)`;
   const itemsHtml = buildItemsHtml(order);
@@ -215,6 +233,7 @@ export async function sendShopOrderNotification(order: OrderRecord): Promise<Not
     const resendRes = await dispatchResendEmail({
       from: fromEmail,
       to: [shopEmail],
+      replyTo: 'mocngonhuong@gmail.com',
       subject,
       html,
     });
@@ -241,7 +260,7 @@ export async function sendCustomerOrderConfirmation(order: OrderRecord): Promise
   const fromEmail =
     process.env.ORDER_EMAIL_FROM ||
     process.env.EMAIL_FROM ||
-    'Mộc Ngôn Hương <donhang@mocngonhuong.com>';
+    'Mộc Ngôn Hương <donhang@mail.mocngonhuong.com>';
 
   const subject = `[MỘC NGÔN HƯƠNG] Xác nhận đơn hàng #${order.orderCode}`;
   const itemsHtml = buildItemsHtml(order);
@@ -353,6 +372,7 @@ export async function sendCustomerOrderConfirmation(order: OrderRecord): Promise
     const resendRes = await dispatchResendEmail({
       from: fromEmail,
       to: [customerEmail],
+      replyTo: 'mocngonhuong@gmail.com',
       subject,
       html,
     });

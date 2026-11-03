@@ -356,7 +356,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CRITICAL: Must be called OUTSIDE the Firestore transaction!
   const fromEmail =
     process.env.AUTH_EMAIL_FROM ||
-    process.env.ORDER_EMAIL_FROM ||
     'Mộc Ngôn Hương <taikhoan@mail.mocngonhuong.com>';
 
   const idempotencyKey = `welcome-user/${uid}`;
@@ -364,6 +363,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sendResult = await dispatchResendEmail({
     from: fromEmail,
     to: [targetEmail],
+    replyTo: 'mocngonhuong@gmail.com',
     subject,
     html,
     text,

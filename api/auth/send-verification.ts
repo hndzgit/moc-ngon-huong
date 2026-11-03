@@ -115,6 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sendResult = await dispatchResendEmail({
       from: fromEmail,
       to: [targetEmail],
+      replyTo: 'mocngonhuong@gmail.com',
       subject,
       html,
       text,
