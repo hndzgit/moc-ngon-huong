@@ -115,11 +115,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (fullName.trim()) {
       await updateProfile(cred.user, { displayName: fullName.trim() });
     }
-    // Real email verification
+    // Real email verification via branded email with fallback
     try {
-      await sendEmailVerification(cred.user);
+      const idToken = await cred.user.getIdToken();
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        // Fallback to standard Firebase email if custom endpoint fails
+        await sendEmailVerification(cred.user);
+      }
     } catch (err) {
-      console.warn('Could not automatically send verification email:', err);
+      console.warn('Custom verification email failed, falling back to Firebase Auth default:', err);
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (fbErr) {
+        console.warn('Could not send verification email via fallback:', fbErr);
+      }
     }
 
     const newProfile: CustomerProfile = {
@@ -147,6 +164,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth || !auth.currentUser) {
       throw new Error('Không tìm thấy phiên đăng nhập để gửi email xác thực.');
     }
+
+    // 1. Try sending premium branded verification email via Resend
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        return;
+      }
+      console.warn('[MNH Auth] Custom verification API non-success, using Firebase fallback:', data?.error);
+    } catch (err) {
+      console.warn('[MNH Auth] Custom verification fetch error, using Firebase fallback:', err);
+    }
+
+    // 2. Safe fallback to default Firebase Auth email
     await sendEmailVerification(auth.currentUser);
   };
 
@@ -160,8 +198,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth) {
       throw new Error('Dịch vụ đặt lại mật khẩu chưa khả dụng.');
     }
-    // Action code settings with production domain
-    await sendPasswordResetEmail(auth, emailInput.trim());
+    const cleanEmail = emailInput.trim();
+
+    // 1. Try sending premium branded password reset email via Resend
+    try {
+      const res = await fetch('/api/auth/send-reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        return;
+      }
+      console.warn('[MNH Auth] Custom reset password API non-success, using Firebase fallback:', data?.error);
+    } catch (err) {
+      console.warn('[MNH Auth] Custom reset password fetch error, using Firebase fallback:', err);
+    }
+
+    // 2. Safe fallback to default Firebase Auth email
+    await sendPasswordResetEmail(auth, cleanEmail);
   };
 
   const verifyResetCode = async (code: string): Promise<string> => {

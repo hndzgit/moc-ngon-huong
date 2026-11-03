@@ -15,11 +15,12 @@ export interface NotificationResult {
  * Helper to dispatch an email via Resend with automatic fallback
  * to onboarding@resend.dev if custom sender domain is unverified.
  */
-async function dispatchResendEmail(options: {
+export async function dispatchResendEmail(options: {
   from: string;
   to: string[];
   subject: string;
   html: string;
+  text?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Mộc Ngôn Hương — Email Visual Design Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #111412;
+      color: #E8EFE9;
+      padding: 24px;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-b: 1px solid #283329;
+      padding-bottom: 20px;
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #C89F5D;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #8C998E;
+      margin-top: 4px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      background: #1F2721;
+      color: #CAD5CB;
+      border: 1px solid #364438;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      background: #2D3930;
+      color: #FFF;
+    }
+    .btn.active {
+      background: #3E5641;
+      color: #FAF8F3;
+      border-color: #C89F5D;
+      font-weight: 600;
+    }
+    .grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .preview-section {
+      background: #171C18;
+      border: 1px solid #283329;
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #C89F5D;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: #8C998E;
+      margin-bottom: 16px;
+    }
+    .frames-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .device-card {
+      background: #0E120F;
+      border: 1px solid #2A362C;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .device-header {
+      background: #1F2721;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #A3B2A6;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #2A362C;
+    }
+    .frame-desktop {
+      width: 640px;
+      max-width: 100%;
+      height: 740px;
+      border: none;
+      background: #FAF8F3;
+    }
+    .frame-mobile {
+      width: 375px;
+      height: 740px;
+      border: none;
+      background: #FAF8F3;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand-title">Mộc Ngôn Hương — Premium Authentication Emails</div>
+      <div class="subtitle">Bản xem trước trực quan chuẩn Desktop (600px+) và Mobile (375px) — Tông màu Xanh rừng (#3E5641), Ngà ấm (#FAF8F3), Vàng kim (#C89F5D)</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- TEMPLATE 1: EMAIL VERIFICATION -->
+    <div class="preview-section">
+      <div class="section-title">
+        <span>✉ 1. Email Xác Minh Tài Khoản (Verification Email)</span>
+      </div>
+      <div class="section-desc">
+        Tiêu đề: <strong>Xác minh tài khoản Mộc Ngôn Hương</strong> | Người gửi: <strong>Mộc Ngôn Hương &lt;taikhoan@mail.mocngonhuong.com&gt;</strong>
+      </div>
+
+      <div class="frames-row">
+        <!-- Desktop -->
+        <div class="device-card">
+          <div class="device-header">
+            <span>Màn hình Máy tính / Desktop (600px Max-Width)</span>
+            <span>Gmail / Apple Mail / Outlook</span>
+          </div>
+          <iframe class="frame-desktop" srcdoc="&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; lang=&quot;vi&quot;&gt;
+&lt;head&gt;
+  &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;/&gt;
+  &lt;meta name=&quot;color-scheme&quot; content=&quot;light dark&quot; /&gt;
+  &lt;meta name=&quot;supported-color-schemes&quot; content=&quot;light dark&quot; /&gt;
+  &lt;title&gt;Xác minh tài khoản Mộc Ngôn Hương&lt;/title&gt;
+  &lt;style type=&quot;text/css&quot;&gt;
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #1A1E1B !important; }
+      .card-bg { background-color: #242A25 !important; border-color: #353F36 !important; }
+      .text-title { color: #E8EFE9 !important; }
+      .text-body { color: #C5D1C6 !important; }
+      .text-muted { color: #9AABA0 !important; }
+      .fallback-box { background-color: #1E241F !important; border-color: #353F36 !important; }
+      .fallback-link { color: #C89F5D !important; }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body class=&quot;email-bg&quot; style=&quot;margin: 0; padding: 0; background-color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif;&quot;&gt;
+  &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;email-bg&quot; style=&quot;background-color: #FAF8F3; table-layout: fixed;&quot;&gt;
+    &lt;tr&gt;
+      &lt;td align=&quot;center&quot; style=&quot;padding: 40px 16px 50px 16px;&quot;&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;table align=&quot;center&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;600&quot;&gt;
+        &lt;tr&gt;
+        &lt;td align=&quot;center&quot; valign=&quot;top&quot; width=&quot;600&quot;&gt;
+        &lt;![endif]--&gt;
+        &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;card-bg&quot; style=&quot;max-width: 600px; background-color: #FFFFFF; border-radius: 20px; border: 1px solid #ECE7DF; box-shadow: 0 4px 20px rgba(62,86,65,0.06); overflow: hidden;&quot;&gt;
+          
+          &lt;!-- BRAND HEADER --&gt;
+          &lt;tr&gt;
+            &lt;td align=&quot;center&quot; style=&quot;padding: 44px 36px 20px 36px;&quot;&gt;
+              &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;text-decoration: none; display: inline-block;&quot;&gt;
+                &lt;img src=&quot;https://mocngonhuong.com/assets/figma/logo-header.png&quot; width=&quot;80&quot; height=&quot;72&quot; alt=&quot;Mộc Ngôn Hương&quot; style=&quot;display: block; margin: 0 auto; width: 80px; height: 72px; object-fit: contain;&quot; /&gt;
+              &lt;/a&gt;
+              &lt;p style=&quot;margin: 14px 0 0 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 11px; letter-spacing: 3px; color: #C89F5D; text-transform: uppercase; font-weight: 700; text-align: center;&quot;&gt;
+                MỘC NGÔN HƯƠNG
+              &lt;/p&gt;
+              &lt;p style=&quot;margin: 4px 0 0 0; font-size: 12px; color: #8C7B6B; font-style: italic; text-align: center; font-family: &#39;Times New Roman&#39;, Georgia, serif;&quot;&gt;
+                Vị Trà Đong Đầy Yêu Thương
+              &lt;/p&gt;
+
+              &lt;!-- Muted Gold Ornament Line --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;60&quot; align=&quot;center&quot; style=&quot;margin: 18px auto 0 auto;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;height: 1px; background-color: #C89F5D; line-height: 1px; font-size: 1px;&quot;&gt;&amp;nbsp;&lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+
+          &lt;!-- MAIN CONTENT BODY --&gt;
+          &lt;tr&gt;
+            &lt;td style=&quot;padding: 10px 40px 36px 40px;&quot;&gt;
+              &lt;h1 class=&quot;text-title&quot; style=&quot;margin: 0 0 20px 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 24px; line-height: 34px; color: #3E5641; font-weight: 700; text-align: center;&quot;&gt;
+                Chào mừng bạn đến với Mộc Ngôn Hương!
+              &lt;/h1&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;&quot;&gt;
+                Chào &lt;strong&gt;Hoài Nam&lt;/strong&gt;,
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Cảm ơn bạn đã lựa chọn đồng hành cùng Mộc Ngôn Hương trong hành trình trao gửi những điều ý nghĩa.
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 28px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Chỉ còn một bước nhỏ để hoàn tất tài khoản của bạn. Vui lòng xác minh địa chỉ email bằng nút bên dưới:
+              &lt;/p&gt;
+
+              &lt;!-- PRIMARY CTA BUTTON --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin: 28px 0 32px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td align=&quot;center&quot;&gt;
+                    &lt;!--[if mso]&gt;
+                    &lt;v:roundrect xmlns:v=&quot;urn:schemas-microsoft-com:vml&quot; xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot; href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; style=&quot;height:50px;v-text-anchor:middle;width:260px;&quot; arcsize=&quot;50%&quot; stroke=&quot;f&quot; fillcolor=&quot;#3E5641&quot;&gt;
+                      &lt;w:anchorlock/&gt;
+                      &lt;center style=&quot;color:#FAF8F3;font-family:sans-serif;font-size:15px;font-weight:bold;&quot;&gt;Xác minh địa chỉ email&lt;/center&gt;
+                    &lt;/v:roundrect&gt;
+                    &lt;![endif]--&gt;
+                    &lt;!--[if !mso]&gt;&lt;!--&gt;
+                    &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; style=&quot;display: inline-block; background-color: #3E5641; color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, sans-serif; font-size: 15px; font-weight: 600; text-decoration: none; padding: 15px 36px; border-radius: 28px; box-shadow: 0 4px 14px rgba(62,86,65,0.25); text-align: center; letter-spacing: 0.3px;&quot;&gt;
+                      Xác minh địa chỉ email
+                    &lt;/a&gt;
+                    &lt;!--&lt;![endif]--&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- SAFE PLAIN-TEXT FALLBACK BOX --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;fallback-box&quot; style=&quot;background-color: #FAF8F3; border-radius: 12px; border: 1px solid #ECE7DF; margin: 10px 0 24px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;padding: 14px 18px;&quot;&gt;
+                    &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 6px 0; font-size: 12px; line-height: 18px; color: #73695F;&quot;&gt;
+                      Nếu nút bấm ở trên không hoạt động, bạn có thể sao chép liên kết bảo mật dưới đây và dán vào trình duyệt:
+                    &lt;/p&gt;
+                    &lt;p style=&quot;margin: 0; font-size: 11px; line-height: 16px; word-break: break-all; font-family: &#39;SFMono-Regular&#39;, Consolas, &#39;Liberation Mono&#39;, Menlo, monospace;&quot;&gt;
+                      &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; class=&quot;fallback-link&quot; style=&quot;color: #3E5641; text-decoration: underline;&quot;&gt;
+                        https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan
+                      &lt;/a&gt;
+                    &lt;/p&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- FOOTER &amp; BRAND SIGN-OFF --&gt;
+              &lt;div style=&quot;border-top: 1px solid #ECE7DF; padding-top: 24px; margin-top: 24px; text-align: center;&quot;&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 10px 0; font-size: 13px; line-height: 20px; color: #73695F;&quot;&gt;
+                  Nếu bạn không đăng ký tài khoản tại Mộc Ngôn Hương, bạn có thể yên tâm bỏ qua email này.
+                &lt;/p&gt;
+                &lt;p style=&quot;margin: 0 0 8px 0; font-size: 12px; color: #8C7B6B;&quot;&gt;
+                  &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;color: #C89F5D; text-decoration: none; font-weight: 600;&quot;&gt;mocngonhuong.com&lt;/a&gt;
+                  &amp;nbsp;•&amp;nbsp;
+                  &lt;a href=&quot;https://mocngonhuong.com/#/lien-he&quot; target=&quot;_blank&quot; class=&quot;text-muted&quot; style=&quot;color: #8C7B6B; text-decoration: none;&quot;&gt;Không gian tiệm trà&lt;/a&gt;
+                &lt;/p&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0; font-size: 11px; line-height: 16px; color: #A69B8D;&quot;&gt;
+                  42 Phố Hàng Điếu, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội&lt;br/&gt;
+                  © 2026 Mộc Ngôn Hương. Tất cả quyền được bảo lưu.
+                &lt;/p&gt;
+              &lt;/div&gt;
+
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;![endif]--&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;"></iframe>
+        </div>
+
+        <!-- Mobile -->
+        <div class="device-card">
+          <div class="device-header">
+            <span>Màn hình Điện thoại / Mobile (375px)</span>
+            <span>iPhone / Android Email</span>
+          </div>
+          <iframe class="frame-mobile" srcdoc="&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; lang=&quot;vi&quot;&gt;
+&lt;head&gt;
+  &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;/&gt;
+  &lt;meta name=&quot;color-scheme&quot; content=&quot;light dark&quot; /&gt;
+  &lt;meta name=&quot;supported-color-schemes&quot; content=&quot;light dark&quot; /&gt;
+  &lt;title&gt;Xác minh tài khoản Mộc Ngôn Hương&lt;/title&gt;
+  &lt;style type=&quot;text/css&quot;&gt;
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #1A1E1B !important; }
+      .card-bg { background-color: #242A25 !important; border-color: #353F36 !important; }
+      .text-title { color: #E8EFE9 !important; }
+      .text-body { color: #C5D1C6 !important; }
+      .text-muted { color: #9AABA0 !important; }
+      .fallback-box { background-color: #1E241F !important; border-color: #353F36 !important; }
+      .fallback-link { color: #C89F5D !important; }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body class=&quot;email-bg&quot; style=&quot;margin: 0; padding: 0; background-color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif;&quot;&gt;
+  &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;email-bg&quot; style=&quot;background-color: #FAF8F3; table-layout: fixed;&quot;&gt;
+    &lt;tr&gt;
+      &lt;td align=&quot;center&quot; style=&quot;padding: 40px 16px 50px 16px;&quot;&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;table align=&quot;center&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;600&quot;&gt;
+        &lt;tr&gt;
+        &lt;td align=&quot;center&quot; valign=&quot;top&quot; width=&quot;600&quot;&gt;
+        &lt;![endif]--&gt;
+        &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;card-bg&quot; style=&quot;max-width: 600px; background-color: #FFFFFF; border-radius: 20px; border: 1px solid #ECE7DF; box-shadow: 0 4px 20px rgba(62,86,65,0.06); overflow: hidden;&quot;&gt;
+          
+          &lt;!-- BRAND HEADER --&gt;
+          &lt;tr&gt;
+            &lt;td align=&quot;center&quot; style=&quot;padding: 44px 36px 20px 36px;&quot;&gt;
+              &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;text-decoration: none; display: inline-block;&quot;&gt;
+                &lt;img src=&quot;https://mocngonhuong.com/assets/figma/logo-header.png&quot; width=&quot;80&quot; height=&quot;72&quot; alt=&quot;Mộc Ngôn Hương&quot; style=&quot;display: block; margin: 0 auto; width: 80px; height: 72px; object-fit: contain;&quot; /&gt;
+              &lt;/a&gt;
+              &lt;p style=&quot;margin: 14px 0 0 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 11px; letter-spacing: 3px; color: #C89F5D; text-transform: uppercase; font-weight: 700; text-align: center;&quot;&gt;
+                MỘC NGÔN HƯƠNG
+              &lt;/p&gt;
+              &lt;p style=&quot;margin: 4px 0 0 0; font-size: 12px; color: #8C7B6B; font-style: italic; text-align: center; font-family: &#39;Times New Roman&#39;, Georgia, serif;&quot;&gt;
+                Vị Trà Đong Đầy Yêu Thương
+              &lt;/p&gt;
+
+              &lt;!-- Muted Gold Ornament Line --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;60&quot; align=&quot;center&quot; style=&quot;margin: 18px auto 0 auto;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;height: 1px; background-color: #C89F5D; line-height: 1px; font-size: 1px;&quot;&gt;&amp;nbsp;&lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+
+          &lt;!-- MAIN CONTENT BODY --&gt;
+          &lt;tr&gt;
+            &lt;td style=&quot;padding: 10px 40px 36px 40px;&quot;&gt;
+              &lt;h1 class=&quot;text-title&quot; style=&quot;margin: 0 0 20px 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 24px; line-height: 34px; color: #3E5641; font-weight: 700; text-align: center;&quot;&gt;
+                Chào mừng bạn đến với Mộc Ngôn Hương!
+              &lt;/h1&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;&quot;&gt;
+                Chào &lt;strong&gt;Hoài Nam&lt;/strong&gt;,
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Cảm ơn bạn đã lựa chọn đồng hành cùng Mộc Ngôn Hương trong hành trình trao gửi những điều ý nghĩa.
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 28px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Chỉ còn một bước nhỏ để hoàn tất tài khoản của bạn. Vui lòng xác minh địa chỉ email bằng nút bên dưới:
+              &lt;/p&gt;
+
+              &lt;!-- PRIMARY CTA BUTTON --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin: 28px 0 32px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td align=&quot;center&quot;&gt;
+                    &lt;!--[if mso]&gt;
+                    &lt;v:roundrect xmlns:v=&quot;urn:schemas-microsoft-com:vml&quot; xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot; href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; style=&quot;height:50px;v-text-anchor:middle;width:260px;&quot; arcsize=&quot;50%&quot; stroke=&quot;f&quot; fillcolor=&quot;#3E5641&quot;&gt;
+                      &lt;w:anchorlock/&gt;
+                      &lt;center style=&quot;color:#FAF8F3;font-family:sans-serif;font-size:15px;font-weight:bold;&quot;&gt;Xác minh địa chỉ email&lt;/center&gt;
+                    &lt;/v:roundrect&gt;
+                    &lt;![endif]--&gt;
+                    &lt;!--[if !mso]&gt;&lt;!--&gt;
+                    &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; style=&quot;display: inline-block; background-color: #3E5641; color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, sans-serif; font-size: 15px; font-weight: 600; text-decoration: none; padding: 15px 36px; border-radius: 28px; box-shadow: 0 4px 14px rgba(62,86,65,0.25); text-align: center; letter-spacing: 0.3px;&quot;&gt;
+                      Xác minh địa chỉ email
+                    &lt;/a&gt;
+                    &lt;!--&lt;![endif]--&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- SAFE PLAIN-TEXT FALLBACK BOX --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;fallback-box&quot; style=&quot;background-color: #FAF8F3; border-radius: 12px; border: 1px solid #ECE7DF; margin: 10px 0 24px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;padding: 14px 18px;&quot;&gt;
+                    &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 6px 0; font-size: 12px; line-height: 18px; color: #73695F;&quot;&gt;
+                      Nếu nút bấm ở trên không hoạt động, bạn có thể sao chép liên kết bảo mật dưới đây và dán vào trình duyệt:
+                    &lt;/p&gt;
+                    &lt;p style=&quot;margin: 0; font-size: 11px; line-height: 16px; word-break: break-all; font-family: &#39;SFMono-Regular&#39;, Consolas, &#39;Liberation Mono&#39;, Menlo, monospace;&quot;&gt;
+                      &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; class=&quot;fallback-link&quot; style=&quot;color: #3E5641; text-decoration: underline;&quot;&gt;
+                        https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=verifyEmail&amp;oobCode=sampleVerificationCode123456789&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan
+                      &lt;/a&gt;
+                    &lt;/p&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- FOOTER &amp; BRAND SIGN-OFF --&gt;
+              &lt;div style=&quot;border-top: 1px solid #ECE7DF; padding-top: 24px; margin-top: 24px; text-align: center;&quot;&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 10px 0; font-size: 13px; line-height: 20px; color: #73695F;&quot;&gt;
+                  Nếu bạn không đăng ký tài khoản tại Mộc Ngôn Hương, bạn có thể yên tâm bỏ qua email này.
+                &lt;/p&gt;
+                &lt;p style=&quot;margin: 0 0 8px 0; font-size: 12px; color: #8C7B6B;&quot;&gt;
+                  &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;color: #C89F5D; text-decoration: none; font-weight: 600;&quot;&gt;mocngonhuong.com&lt;/a&gt;
+                  &amp;nbsp;•&amp;nbsp;
+                  &lt;a href=&quot;https://mocngonhuong.com/#/lien-he&quot; target=&quot;_blank&quot; class=&quot;text-muted&quot; style=&quot;color: #8C7B6B; text-decoration: none;&quot;&gt;Không gian tiệm trà&lt;/a&gt;
+                &lt;/p&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0; font-size: 11px; line-height: 16px; color: #A69B8D;&quot;&gt;
+                  42 Phố Hàng Điếu, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội&lt;br/&gt;
+                  © 2026 Mộc Ngôn Hương. Tất cả quyền được bảo lưu.
+                &lt;/p&gt;
+              &lt;/div&gt;
+
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;![endif]--&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPLATE 2: PASSWORD RESET -->
+    <div class="preview-section">
+      <div class="section-title">
+        <span>🔐 2. Email Khôi Phục Mật Khẩu (Password Reset Email)</span>
+      </div>
+      <div class="section-desc">
+        Tiêu đề: <strong>Khôi phục mật khẩu Mộc Ngôn Hương</strong> | Người gửi: <strong>Mộc Ngôn Hương &lt;taikhoan@mail.mocngonhuong.com&gt;</strong>
+      </div>
+
+      <div class="frames-row">
+        <!-- Desktop -->
+        <div class="device-card">
+          <div class="device-header">
+            <span>Màn hình Máy tính / Desktop (600px Max-Width)</span>
+            <span>Gmail / Apple Mail / Outlook</span>
+          </div>
+          <iframe class="frame-desktop" srcdoc="&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; lang=&quot;vi&quot;&gt;
+&lt;head&gt;
+  &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;/&gt;
+  &lt;meta name=&quot;color-scheme&quot; content=&quot;light dark&quot; /&gt;
+  &lt;meta name=&quot;supported-color-schemes&quot; content=&quot;light dark&quot; /&gt;
+  &lt;title&gt;Khôi phục mật khẩu Mộc Ngôn Hương&lt;/title&gt;
+  &lt;style type=&quot;text/css&quot;&gt;
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #1A1E1B !important; }
+      .card-bg { background-color: #242A25 !important; border-color: #353F36 !important; }
+      .text-title { color: #E8EFE9 !important; }
+      .text-body { color: #C5D1C6 !important; }
+      .text-muted { color: #9AABA0 !important; }
+      .fallback-box { background-color: #1E241F !important; border-color: #353F36 !important; }
+      .fallback-link { color: #C89F5D !important; }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body class=&quot;email-bg&quot; style=&quot;margin: 0; padding: 0; background-color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif;&quot;&gt;
+  &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;email-bg&quot; style=&quot;background-color: #FAF8F3; table-layout: fixed;&quot;&gt;
+    &lt;tr&gt;
+      &lt;td align=&quot;center&quot; style=&quot;padding: 40px 16px 50px 16px;&quot;&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;table align=&quot;center&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;600&quot;&gt;
+        &lt;tr&gt;
+        &lt;td align=&quot;center&quot; valign=&quot;top&quot; width=&quot;600&quot;&gt;
+        &lt;![endif]--&gt;
+        &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;card-bg&quot; style=&quot;max-width: 600px; background-color: #FFFFFF; border-radius: 20px; border: 1px solid #ECE7DF; box-shadow: 0 4px 20px rgba(62,86,65,0.06); overflow: hidden;&quot;&gt;
+          
+          &lt;!-- BRAND HEADER --&gt;
+          &lt;tr&gt;
+            &lt;td align=&quot;center&quot; style=&quot;padding: 44px 36px 20px 36px;&quot;&gt;
+              &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;text-decoration: none; display: inline-block;&quot;&gt;
+                &lt;img src=&quot;https://mocngonhuong.com/assets/figma/logo-header.png&quot; width=&quot;80&quot; height=&quot;72&quot; alt=&quot;Mộc Ngôn Hương&quot; style=&quot;display: block; margin: 0 auto; width: 80px; height: 72px; object-fit: contain;&quot; /&gt;
+              &lt;/a&gt;
+              &lt;p style=&quot;margin: 14px 0 0 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 11px; letter-spacing: 3px; color: #C89F5D; text-transform: uppercase; font-weight: 700; text-align: center;&quot;&gt;
+                MỘC NGÔN HƯƠNG
+              &lt;/p&gt;
+              &lt;p style=&quot;margin: 4px 0 0 0; font-size: 12px; color: #8C7B6B; font-style: italic; text-align: center; font-family: &#39;Times New Roman&#39;, Georgia, serif;&quot;&gt;
+                Vị Trà Đong Đầy Yêu Thương
+              &lt;/p&gt;
+
+              &lt;!-- Muted Gold Ornament Line --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;60&quot; align=&quot;center&quot; style=&quot;margin: 18px auto 0 auto;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;height: 1px; background-color: #C89F5D; line-height: 1px; font-size: 1px;&quot;&gt;&amp;nbsp;&lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+
+          &lt;!-- MAIN CONTENT BODY --&gt;
+          &lt;tr&gt;
+            &lt;td style=&quot;padding: 10px 40px 36px 40px;&quot;&gt;
+              &lt;h1 class=&quot;text-title&quot; style=&quot;margin: 0 0 20px 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 24px; line-height: 34px; color: #3E5641; font-weight: 700; text-align: center;&quot;&gt;
+                Đặt lại mật khẩu tài khoản của bạn
+              &lt;/h1&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;&quot;&gt;
+                Chào &lt;strong&gt;Hoài Nam&lt;/strong&gt;,
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Chúng mình đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản Mộc Ngôn Hương của bạn.
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 28px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Nhấn vào nút bên dưới để tiếp tục tạo mật khẩu mới an toàn:
+              &lt;/p&gt;
+
+              &lt;!-- PRIMARY CTA BUTTON --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin: 28px 0 32px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td align=&quot;center&quot;&gt;
+                    &lt;!--[if mso]&gt;
+                    &lt;v:roundrect xmlns:v=&quot;urn:schemas-microsoft-com:vml&quot; xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot; href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; style=&quot;height:50px;v-text-anchor:middle;width:220px;&quot; arcsize=&quot;50%&quot; stroke=&quot;f&quot; fillcolor=&quot;#3E5641&quot;&gt;
+                      &lt;w:anchorlock/&gt;
+                      &lt;center style=&quot;color:#FAF8F3;font-family:sans-serif;font-size:15px;font-weight:bold;&quot;&gt;Đặt lại mật khẩu&lt;/center&gt;
+                    &lt;/v:roundrect&gt;
+                    &lt;![endif]--&gt;
+                    &lt;!--[if !mso]&gt;&lt;!--&gt;
+                    &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; style=&quot;display: inline-block; background-color: #3E5641; color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, sans-serif; font-size: 15px; font-weight: 600; text-decoration: none; padding: 15px 38px; border-radius: 28px; box-shadow: 0 4px 14px rgba(62,86,65,0.25); text-align: center; letter-spacing: 0.3px;&quot;&gt;
+                      Đặt lại mật khẩu
+                    &lt;/a&gt;
+                    &lt;!--&lt;![endif]--&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- SAFE PLAIN-TEXT FALLBACK BOX --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;fallback-box&quot; style=&quot;background-color: #FAF8F3; border-radius: 12px; border: 1px solid #ECE7DF; margin: 10px 0 24px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;padding: 14px 18px;&quot;&gt;
+                    &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 6px 0; font-size: 12px; line-height: 18px; color: #73695F;&quot;&gt;
+                      Nếu nút bấm ở trên không hoạt động, bạn có thể sao chép liên kết bảo mật dưới đây và dán vào trình duyệt:
+                    &lt;/p&gt;
+                    &lt;p style=&quot;margin: 0; font-size: 11px; line-height: 16px; word-break: break-all; font-family: &#39;SFMono-Regular&#39;, Consolas, &#39;Liberation Mono&#39;, Menlo, monospace;&quot;&gt;
+                      &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; class=&quot;fallback-link&quot; style=&quot;color: #3E5641; text-decoration: underline;&quot;&gt;
+                        https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan
+                      &lt;/a&gt;
+                    &lt;/p&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- FOOTER &amp; BRAND SIGN-OFF --&gt;
+              &lt;div style=&quot;border-top: 1px solid #ECE7DF; padding-top: 24px; margin-top: 24px; text-align: center;&quot;&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 10px 0; font-size: 13px; line-height: 20px; color: #73695F;&quot;&gt;
+                  Nếu bạn không yêu cầu thay đổi mật khẩu, bạn có thể yên tâm bỏ qua email này. Tài khoản của bạn vẫn được bảo vệ an toàn.
+                &lt;/p&gt;
+                &lt;p style=&quot;margin: 0 0 8px 0; font-size: 12px; color: #8C7B6B;&quot;&gt;
+                  &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;color: #C89F5D; text-decoration: none; font-weight: 600;&quot;&gt;mocngonhuong.com&lt;/a&gt;
+                  &amp;nbsp;•&amp;nbsp;
+                  &lt;a href=&quot;https://mocngonhuong.com/#/lien-he&quot; target=&quot;_blank&quot; class=&quot;text-muted&quot; style=&quot;color: #8C7B6B; text-decoration: none;&quot;&gt;Không gian tiệm trà&lt;/a&gt;
+                &lt;/p&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0; font-size: 11px; line-height: 16px; color: #A69B8D;&quot;&gt;
+                  42 Phố Hàng Điếu, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội&lt;br/&gt;
+                  © 2026 Mộc Ngôn Hương. Tất cả quyền được bảo lưu.
+                &lt;/p&gt;
+              &lt;/div&gt;
+
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;![endif]--&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;"></iframe>
+        </div>
+
+        <!-- Mobile -->
+        <div class="device-card">
+          <div class="device-header">
+            <span>Màn hình Điện thoại / Mobile (375px)</span>
+            <span>iPhone / Android Email</span>
+          </div>
+          <iframe class="frame-mobile" srcdoc="&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; lang=&quot;vi&quot;&gt;
+&lt;head&gt;
+  &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;/&gt;
+  &lt;meta name=&quot;color-scheme&quot; content=&quot;light dark&quot; /&gt;
+  &lt;meta name=&quot;supported-color-schemes&quot; content=&quot;light dark&quot; /&gt;
+  &lt;title&gt;Khôi phục mật khẩu Mộc Ngôn Hương&lt;/title&gt;
+  &lt;style type=&quot;text/css&quot;&gt;
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #1A1E1B !important; }
+      .card-bg { background-color: #242A25 !important; border-color: #353F36 !important; }
+      .text-title { color: #E8EFE9 !important; }
+      .text-body { color: #C5D1C6 !important; }
+      .text-muted { color: #9AABA0 !important; }
+      .fallback-box { background-color: #1E241F !important; border-color: #353F36 !important; }
+      .fallback-link { color: #C89F5D !important; }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body class=&quot;email-bg&quot; style=&quot;margin: 0; padding: 0; background-color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Helvetica, Arial, sans-serif;&quot;&gt;
+  &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;email-bg&quot; style=&quot;background-color: #FAF8F3; table-layout: fixed;&quot;&gt;
+    &lt;tr&gt;
+      &lt;td align=&quot;center&quot; style=&quot;padding: 40px 16px 50px 16px;&quot;&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;table align=&quot;center&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; width=&quot;600&quot;&gt;
+        &lt;tr&gt;
+        &lt;td align=&quot;center&quot; valign=&quot;top&quot; width=&quot;600&quot;&gt;
+        &lt;![endif]--&gt;
+        &lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;card-bg&quot; style=&quot;max-width: 600px; background-color: #FFFFFF; border-radius: 20px; border: 1px solid #ECE7DF; box-shadow: 0 4px 20px rgba(62,86,65,0.06); overflow: hidden;&quot;&gt;
+          
+          &lt;!-- BRAND HEADER --&gt;
+          &lt;tr&gt;
+            &lt;td align=&quot;center&quot; style=&quot;padding: 44px 36px 20px 36px;&quot;&gt;
+              &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;text-decoration: none; display: inline-block;&quot;&gt;
+                &lt;img src=&quot;https://mocngonhuong.com/assets/figma/logo-header.png&quot; width=&quot;80&quot; height=&quot;72&quot; alt=&quot;Mộc Ngôn Hương&quot; style=&quot;display: block; margin: 0 auto; width: 80px; height: 72px; object-fit: contain;&quot; /&gt;
+              &lt;/a&gt;
+              &lt;p style=&quot;margin: 14px 0 0 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 11px; letter-spacing: 3px; color: #C89F5D; text-transform: uppercase; font-weight: 700; text-align: center;&quot;&gt;
+                MỘC NGÔN HƯƠNG
+              &lt;/p&gt;
+              &lt;p style=&quot;margin: 4px 0 0 0; font-size: 12px; color: #8C7B6B; font-style: italic; text-align: center; font-family: &#39;Times New Roman&#39;, Georgia, serif;&quot;&gt;
+                Vị Trà Đong Đầy Yêu Thương
+              &lt;/p&gt;
+
+              &lt;!-- Muted Gold Ornament Line --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;60&quot; align=&quot;center&quot; style=&quot;margin: 18px auto 0 auto;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;height: 1px; background-color: #C89F5D; line-height: 1px; font-size: 1px;&quot;&gt;&amp;nbsp;&lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+
+          &lt;!-- MAIN CONTENT BODY --&gt;
+          &lt;tr&gt;
+            &lt;td style=&quot;padding: 10px 40px 36px 40px;&quot;&gt;
+              &lt;h1 class=&quot;text-title&quot; style=&quot;margin: 0 0 20px 0; font-family: &#39;Times New Roman&#39;, Georgia, serif; font-size: 24px; line-height: 34px; color: #3E5641; font-weight: 700; text-align: center;&quot;&gt;
+                Đặt lại mật khẩu tài khoản của bạn
+              &lt;/h1&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;&quot;&gt;
+                Chào &lt;strong&gt;Hoài Nam&lt;/strong&gt;,
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Chúng mình đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản Mộc Ngôn Hương của bạn.
+              &lt;/p&gt;
+
+              &lt;p class=&quot;text-body&quot; style=&quot;margin: 0 0 28px 0; font-size: 15px; line-height: 26px; color: #4A554D;&quot;&gt;
+                Nhấn vào nút bên dưới để tiếp tục tạo mật khẩu mới an toàn:
+              &lt;/p&gt;
+
+              &lt;!-- PRIMARY CTA BUTTON --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin: 28px 0 32px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td align=&quot;center&quot;&gt;
+                    &lt;!--[if mso]&gt;
+                    &lt;v:roundrect xmlns:v=&quot;urn:schemas-microsoft-com:vml&quot; xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot; href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; style=&quot;height:50px;v-text-anchor:middle;width:220px;&quot; arcsize=&quot;50%&quot; stroke=&quot;f&quot; fillcolor=&quot;#3E5641&quot;&gt;
+                      &lt;w:anchorlock/&gt;
+                      &lt;center style=&quot;color:#FAF8F3;font-family:sans-serif;font-size:15px;font-weight:bold;&quot;&gt;Đặt lại mật khẩu&lt;/center&gt;
+                    &lt;/v:roundrect&gt;
+                    &lt;![endif]--&gt;
+                    &lt;!--[if !mso]&gt;&lt;!--&gt;
+                    &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; style=&quot;display: inline-block; background-color: #3E5641; color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, sans-serif; font-size: 15px; font-weight: 600; text-decoration: none; padding: 15px 38px; border-radius: 28px; box-shadow: 0 4px 14px rgba(62,86,65,0.25); text-align: center; letter-spacing: 0.3px;&quot;&gt;
+                      Đặt lại mật khẩu
+                    &lt;/a&gt;
+                    &lt;!--&lt;![endif]--&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- SAFE PLAIN-TEXT FALLBACK BOX --&gt;
+              &lt;table role=&quot;presentation&quot; border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot; class=&quot;fallback-box&quot; style=&quot;background-color: #FAF8F3; border-radius: 12px; border: 1px solid #ECE7DF; margin: 10px 0 24px 0;&quot;&gt;
+                &lt;tr&gt;
+                  &lt;td style=&quot;padding: 14px 18px;&quot;&gt;
+                    &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 6px 0; font-size: 12px; line-height: 18px; color: #73695F;&quot;&gt;
+                      Nếu nút bấm ở trên không hoạt động, bạn có thể sao chép liên kết bảo mật dưới đây và dán vào trình duyệt:
+                    &lt;/p&gt;
+                    &lt;p style=&quot;margin: 0; font-size: 11px; line-height: 16px; word-break: break-all; font-family: &#39;SFMono-Regular&#39;, Consolas, &#39;Liberation Mono&#39;, Menlo, monospace;&quot;&gt;
+                      &lt;a href=&quot;https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan&quot; target=&quot;_blank&quot; class=&quot;fallback-link&quot; style=&quot;color: #3E5641; text-decoration: underline;&quot;&gt;
+                        https://moc-ngon-huong.firebaseapp.com/__/auth/action?mode=resetPassword&amp;oobCode=sampleResetCode987654321&amp;apiKey=AIzaSyDXeJnyXJzLh7pnEVt6i3PDnIko8aaOEVk&amp;continueUrl=https%3A%2F%2Fmocngonhuong.com%2F%23%2Ftai-khoan
+                      &lt;/a&gt;
+                    &lt;/p&gt;
+                  &lt;/td&gt;
+                &lt;/tr&gt;
+              &lt;/table&gt;
+
+              &lt;!-- FOOTER &amp; BRAND SIGN-OFF --&gt;
+              &lt;div style=&quot;border-top: 1px solid #ECE7DF; padding-top: 24px; margin-top: 24px; text-align: center;&quot;&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0 0 10px 0; font-size: 13px; line-height: 20px; color: #73695F;&quot;&gt;
+                  Nếu bạn không yêu cầu thay đổi mật khẩu, bạn có thể yên tâm bỏ qua email này. Tài khoản của bạn vẫn được bảo vệ an toàn.
+                &lt;/p&gt;
+                &lt;p style=&quot;margin: 0 0 8px 0; font-size: 12px; color: #8C7B6B;&quot;&gt;
+                  &lt;a href=&quot;https://mocngonhuong.com&quot; target=&quot;_blank&quot; style=&quot;color: #C89F5D; text-decoration: none; font-weight: 600;&quot;&gt;mocngonhuong.com&lt;/a&gt;
+                  &amp;nbsp;•&amp;nbsp;
+                  &lt;a href=&quot;https://mocngonhuong.com/#/lien-he&quot; target=&quot;_blank&quot; class=&quot;text-muted&quot; style=&quot;color: #8C7B6B; text-decoration: none;&quot;&gt;Không gian tiệm trà&lt;/a&gt;
+                &lt;/p&gt;
+                &lt;p class=&quot;text-muted&quot; style=&quot;margin: 0; font-size: 11px; line-height: 16px; color: #A69B8D;&quot;&gt;
+                  42 Phố Hàng Điếu, Phường Cửa Đông, Quận Hoàn Kiếm, Hà Nội&lt;br/&gt;
+                  © 2026 Mộc Ngôn Hương. Tất cả quyền được bảo lưu.
+                &lt;/p&gt;
+              &lt;/div&gt;
+
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;!--[if (gte mso 9)|(IE)]&gt;
+        &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/table&gt;
+        &lt;![endif]--&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
