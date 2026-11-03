@@ -53,6 +53,8 @@ const PROFILE_STORAGE_PREFIX = 'mnh_profile_';
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // Refresh context consumers after Firebase mutates User metadata in place.
+  const [authRevision, setAuthRevision] = useState(0);
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
 
   const isAuthAvailable = Boolean(auth);
@@ -191,7 +193,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const reloadUser = async () => {
     if (!auth || !auth.currentUser) return;
     await reload(auth.currentUser);
-    setUser({ ...auth.currentUser });
+    // Keep the genuine Firebase User instance (with prototype methods like getIdToken).
+    setUser(auth.currentUser);
+    setAuthRevision((revision) => revision + 1);
   };
 
   const sendResetEmail = async (emailInput: string) => {
@@ -243,7 +247,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await applyActionCode(auth, code);
     if (auth.currentUser) {
       await reload(auth.currentUser);
-      setUser({ ...auth.currentUser });
+      // Object-spreading Firebase User drops prototype methods and breaks order history tokens.
+      setUser(auth.currentUser);
+      setAuthRevision((revision) => revision + 1);
     }
   };
 
@@ -265,10 +271,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getIdToken = async (forceRefresh = false): Promise<string | null> => {
-    if (!user) return null;
+    const currentUser = auth?.currentUser;
+    if (!currentUser) return null;
     try {
-      return await user.getIdToken(forceRefresh);
-    } catch {
+      return await currentUser.getIdToken(forceRefresh);
+    } catch (error: any) {
+      console.warn('[MNH Auth] Failed to obtain Firebase ID token:', error?.code || 'unknown');
       return null;
     }
   };
@@ -294,7 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateProfileData,
       getIdToken,
     }),
-    [user, loading, isAuthAvailable, profile]
+    [user, loading, isAuthAvailable, profile, authRevision]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
