@@ -48,14 +48,28 @@ export const StoryPage: React.FC<StoryPageProps> = ({ onNavigate }) => {
     <div className="story-page story-editorial bg-[#faf8f3]">
       {/* Original Figma photography and hero composition remain the brand foundation. */}
       <section className="relative w-full h-[460px] sm:h-[580px] lg:h-[680px] overflow-hidden bg-[#203323]">
-        <img
-          src={assetUrl('/assets/figma/story-hero.png')}
-          alt="Câu chuyện thương hiệu Mộc Ngôn Hương"
-          className="absolute inset-0 w-full h-full object-cover"
-          decoding="async"
-          width={4032} height={3024}
-        />
-        <img src={assetUrl('/assets/figma/originals/90128.png')} alt="" aria-hidden="true" className="story-hero-shade absolute inset-0 w-full h-full rotate-180" />
+        <picture>
+          <source
+            type="image/avif"
+            srcSet={`${assetUrl('/assets/optimized/story-hero-768.avif')} 768w, ${assetUrl('/assets/optimized/story-hero-1280.avif')} 1280w, ${assetUrl('/assets/optimized/story-hero-1920.avif')} 1920w`}
+            sizes="100vw"
+          />
+          <source
+            type="image/webp"
+            srcSet={`${assetUrl('/assets/optimized/story-hero-768.webp')} 768w, ${assetUrl('/assets/optimized/story-hero-1280.webp')} 1280w, ${assetUrl('/assets/optimized/story-hero-1920.webp')} 1920w`}
+            sizes="100vw"
+          />
+          <img
+            src={assetUrl('/assets/optimized/story-hero-1920.webp')}
+            alt="Câu chuyện thương hiệu Mộc Ngôn Hương"
+            className="absolute inset-0 w-full h-full object-cover"
+            decoding="async"
+            width={1920}
+            height={1440}
+            fetchPriority="high"
+          />
+        </picture>
+        <img src={assetUrl('/assets/optimized/story-hero-shade.webp')} alt="" aria-hidden="true" className="story-hero-shade absolute inset-0 w-full h-full rotate-180" />
         <div className="relative z-10 figma-container h-full flex flex-col items-center justify-end text-center pb-12 sm:pb-16 px-4">
           <h1 className="font-philosopher font-bold text-[38px] sm:text-[54px] lg:text-[68px] text-[#f7f4d5] leading-[1.1] mb-3 drop-shadow-md">
             Mộc Ngôn Hương
@@ -92,7 +106,26 @@ export const StoryPage: React.FC<StoryPageProps> = ({ onNavigate }) => {
               <blockquote>Trao hương, gửi lời thương.</blockquote>
             </div>
             <figure className="story-chapter-figure">
-              <img src={assetUrl('/assets/figma/story-1.png')} alt="Hộp trà Mộc Ngôn Hương và các phụ kiện trong hộp quà" loading="lazy" decoding="async" width={4096} height={2731} />
+              <picture>
+                <source
+                  type="image/avif"
+                  srcSet={`${assetUrl('/assets/optimized/story-1-768.avif')} 768w, ${assetUrl('/assets/optimized/story-1-1280.avif')} 1280w, ${assetUrl('/assets/optimized/story-1-1920.avif')} 1920w`}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <source
+                  type="image/webp"
+                  srcSet={`${assetUrl('/assets/optimized/story-1-768.webp')} 768w, ${assetUrl('/assets/optimized/story-1-1280.webp')} 1280w, ${assetUrl('/assets/optimized/story-1-1920.webp')} 1920w`}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <img
+                  src={assetUrl('/assets/optimized/story-1-1280.webp')}
+                  alt="Hộp trà Mộc Ngôn Hương và các phụ kiện trong hộp quà"
+                  loading="lazy"
+                  decoding="async"
+                  width={1920}
+                  height={1280}
+                />
+              </picture>
               <figcaption>Một món quà được bắt đầu bằng sự chân thành.</figcaption>
             </figure>
           </div>
@@ -131,7 +164,26 @@ export const StoryPage: React.FC<StoryPageProps> = ({ onNavigate }) => {
         <article id="story-giving" className="story-chapter" data-revealed={revealedChapters.includes('story-giving')} aria-labelledby="story-giving-title">
           <div className="figma-container story-editorial-grid story-editorial-grid-reverse">
             <figure className="story-chapter-figure">
-              <img src={assetUrl('/assets/figma/story-2.png')} alt="Khay trà Mộc Ngôn Hương giữa không gian vườn" loading="lazy" decoding="async" width={4096} height={2731} />
+              <picture>
+                <source
+                  type="image/avif"
+                  srcSet={`${assetUrl('/assets/optimized/story-2-768.avif')} 768w, ${assetUrl('/assets/optimized/story-2-1280.avif')} 1280w, ${assetUrl('/assets/optimized/story-2-1920.avif')} 1920w`}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <source
+                  type="image/webp"
+                  srcSet={`${assetUrl('/assets/optimized/story-2-768.webp')} 768w, ${assetUrl('/assets/optimized/story-2-1280.webp')} 1280w, ${assetUrl('/assets/optimized/story-2-1920.webp')} 1920w`}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <img
+                  src={assetUrl('/assets/optimized/story-2-1280.webp')}
+                  alt="Khay trà Mộc Ngôn Hương giữa không gian vườn"
+                  loading="lazy"
+                  decoding="async"
+                  width={1920}
+                  height={1280}
+                />
+              </picture>
               <figcaption>Chọn một hương trà để thay lời muốn nói.</figcaption>
             </figure>
             <div className="story-chapter-copy">

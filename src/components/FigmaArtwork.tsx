@@ -11,6 +11,12 @@ const crops = {
 
 export function FigmaArtwork({ name }: { name: keyof typeof crops }) {
   return <span className="relative inline-block w-[37px] h-[40px] overflow-hidden shrink-0" style={{width:name === 'kraft' ? 40 : name === 'envelope' ? 39 : 37,height:name === 'kraft' ? 37.714 : 40}} aria-hidden="true">
-    <img src={assetUrl(name === 'kraft' || name === 'envelope' ? '/assets/figma/icons-steps-scroll-envelope.png' : '/assets/figma/icons-gold-3.png')} alt="" className="absolute max-w-none" style={crops[name]} />
+    <img
+      src={assetUrl(name === 'kraft' || name === 'envelope' ? '/assets/optimized/icons-steps-scroll-envelope.webp' : '/assets/optimized/icons-gold-3.webp')}
+      alt=""
+      decoding="async"
+      className="absolute max-w-none"
+      style={crops[name]}
+    />
   </span>;
 }

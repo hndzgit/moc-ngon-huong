@@ -6,7 +6,7 @@ import React, { useState, useMemo } from 'react';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
-import { FIGMA_CARD_COPY } from '../data/figmaMedia';
+import { FIGMA_CARD_COPY, FIGMA_LISTING_MEDIA } from '../data/figmaMedia';
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -136,8 +136,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                   quantity={cartQuantities[product.id] || 0}
                   onUpdateQuantity={onUpdateQuantity}
                   onSelect={handleSelect}
-                  imageSrc={`/assets/figma/originals/${['ae4e7.png', '219aa.png', '417b2.png', 'c759e.png', '7dc9e.png'][PRODUCTS.findIndex(p => p.id === product.id)]}`}
-                compact
+                  imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
+                  compact
                 />
               ))}
             </div>
@@ -159,7 +159,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 quantity={cartQuantities[product.id] || 0}
                 onUpdateQuantity={onUpdateQuantity}
                 onSelect={handleSelect}
-                imageSrc={`/assets/figma/originals/${['ae4e7.png', '219aa.png', '417b2.png', 'c759e.png', '7dc9e.png'][PRODUCTS.findIndex(p => p.id === product.id)]}`}
+                imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
                 compact
               />
             ))}

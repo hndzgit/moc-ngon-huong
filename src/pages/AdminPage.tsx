@@ -73,7 +73,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const getItemThumbnail = (item: { productId: string; image?: string }) => {
     if (item.image) return assetUrl(item.image);
     const found = allCatalog.find((p) => p.id === item.productId);
-    return assetUrl(found?.image || '/images/products/an.png');
+    return assetUrl(found?.image || '/assets/optimized/order-thumb-buoi-an.webp');
   };
 
   // Format currency
@@ -1358,6 +1358,10 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                     <img
                       src={getItemThumbnail(item)}
                       alt={item.productName}
+                      loading="lazy"
+                      decoding="async"
+                      width={56}
+                      height={56}
                       className="w-14 h-14 object-cover rounded-xl border border-stone-100 flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">

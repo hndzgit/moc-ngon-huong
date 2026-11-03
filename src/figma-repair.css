@@ -519,7 +519,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .chat-input-art { gap:8px; }
   .chat-input-art img { width:24px; height:24px; }
 }
-.chat-panel { background-color:white; background-image:linear-gradient(rgb(255 255 255 / .5),rgb(255 255 255 / .5)),url('/assets/figma/paper-texture.png'); background-size:auto,594px 233.279px; }
+.chat-panel { background-color:white; background-image:linear-gradient(rgb(255 255 255 / .5),rgb(255 255 255 / .5)),url('/assets/optimized/paper-texture.webp'); background-size:auto,594px 233.279px; }
 @media (min-width:1024px) {
   .chat-panel .chat-quick-replies button { height:56px; }
   .review-list > div > div:first-child { width:283px!important; gap:8px; }

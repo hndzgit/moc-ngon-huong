@@ -388,17 +388,23 @@ export function App() {
                   <div className="lg:col-span-6 space-y-5 lg:pt-10">
                     <div className="rounded-[16px] overflow-hidden shadow-md aspect-[16/10]">
                       <img
-                        src={assetUrl("/assets/figma/originals/4f921.png")}
+                        src={assetUrl("/assets/optimized/detail-hop-qua-tam-y-3.webp")}
                         alt="Hộp quà Tâm Ý Mộc Ngôn Hương"
-                        loading="lazy" decoding="async"
+                        loading="lazy"
+                        decoding="async"
+                        width={1280}
+                        height={800}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="rounded-[16px] overflow-hidden shadow-md aspect-[16/10]">
                       <img
-                        src={assetUrl("/assets/figma/combo-table.png")}
+                        src={assetUrl("/assets/optimized/detail-hop-qua-tam-y-story.webp")}
                         alt="Bộ sưu tập trà Mộc Ngôn Hương"
-                        loading="lazy" decoding="async"
+                        loading="lazy"
+                        decoding="async"
+                        width={1280}
+                        height={800}
                         className="w-full h-full object-cover"
                       />
                     </div>

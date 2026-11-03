@@ -458,7 +458,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const getItemImage = (item: { productId: string; image?: string }) => {
     if (item.image) return assetUrl(item.image);
     const found = allCatalog.find((p) => p.id === item.productId);
-    return assetUrl(found?.image || '/images/products/an.png');
+    return assetUrl(found?.image || '/assets/optimized/card-buoi-an-800.webp');
   };
 
   const getOrderStatusBadge = (status: OrderStatus) => {
@@ -1209,8 +1209,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             {/* Bottom Wide Banner Image (Figma 127:12046) */}
             <div className="mt-12 rounded-[20px] overflow-hidden h-[240px] sm:h-[320px] shadow-md">
               <img
-                src={assetUrl('/assets/figma/originals/c1a60.png')}
+                src={assetUrl('/assets/optimized/auth-tea-banner.webp')}
                 alt="Không gian trà Mộc Ngôn Hương"
+                loading="lazy"
+                decoding="async"
+                width={1280}
+                height={853}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -1543,12 +1547,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <img
                   src={assetUrl(
                     isForgotFlow
-                      ? '/assets/figma/originals/496fe.png'
+                      ? '/assets/optimized/auth-split-an.webp'
                       : step === 'activate'
-                      ? '/assets/figma/originals/e31ba.png'
-                      : '/assets/figma/originals/7a0f7.png'
+                      ? '/assets/optimized/auth-split-thuong.webp'
+                      : '/assets/optimized/auth-split-default.webp'
                   )}
                   alt="Mộc Ngôn Hương"
+                  loading="lazy"
+                  decoding="async"
+                  width={1280}
+                  height={1280}
                   className="w-full h-full object-cover"
                 />
               </div>

@@ -15,12 +15,12 @@ export const PRODUCTS: Product[] = [
     reviewsCount: 100,
     weight: '100g',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
-    image: '/assets/figma/an-outdoor.png',
+    image: '/assets/optimized/card-buoi-an-800.webp',
     gallery: [
-      '/assets/figma/an-outdoor.png',
-      '/assets/figma/an-tray.png',
+      '/assets/optimized/detail-buoi-an-1.webp',
+      '/assets/optimized/detail-buoi-an-2.webp',
       '/assets/figma/an-thumb-3.png',
-      '/assets/figma/an-thumb-4.png',
+      '/assets/optimized/detail-buoi-an-4.webp',
     ],
     badge: 'Bán chạy',
     shortDesc:
@@ -34,8 +34,8 @@ export const PRODUCTS: Product[] = [
     ],
     storyQuote:
       '"Chúc người một đời an nhiên, lòng luôn tĩnh tại như mặt hồ phẳng lặng trước những biến thiên của cuộc đời. Mượn hương hoa bưởi thanh sạch để gột rửa những âu lo, trả lại sự thư thái và nhẹ nhõm trong tâm hồn."',
-    storyImage: '/assets/figma/an-tray.png',
-    botanicalIllustration: '/assets/figma/illus-hoabuoi.png',
+    storyImage: '/assets/optimized/detail-buoi-an-story.webp',
+    botanicalIllustration: '/assets/optimized/discovery-botanical-AN.webp',
     scentNotes: [
       'Mở đầu bằng mùi hương hoa bưởi tự nhiên the mát, thanh tao. Vị trà chát dịu nhẹ nơi đầu lưỡi, sau đó chuyển dần sang hậu vị ngọt sâu lắng và thanh khiết.'
     ],
@@ -62,12 +62,12 @@ export const PRODUCTS: Product[] = [
     reviewsCount: 100,
     weight: '100g',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
-    image: '/assets/figma/thuong-outdoor.png',
+    image: '/assets/optimized/card-nhai-thuong-800.webp',
     gallery: [
-      '/assets/figma/thuong-outdoor.png',
-      '/assets/figma/thuong-tray.png',
+      '/assets/optimized/detail-nhai-thuong-1.webp',
+      '/assets/optimized/detail-nhai-thuong-2.webp',
       '/assets/figma/thuong-thumb-3.png',
-      '/assets/figma/thuong-thumb-4.png',
+      '/assets/optimized/detail-nhai-thuong-4.webp',
     ],
     badge: 'Yêu thích',
     shortDesc:
@@ -81,8 +81,8 @@ export const PRODUCTS: Product[] = [
     ],
     storyQuote:
       '"Thay cho những cái ôm siết chặt và sự vỗ về dịu dàng nhất. Gửi đến người một chút ngọt ngào để xoa dịu những ngày dài mỏi mệt, một chút hương thơm nồng ấm để biết rằng luôn có một người âm thầm dõi theo, yêu thương và trân trọng bạn vô điều kiện."',
-    storyImage: '/assets/figma/thuong-tray.png',
-    botanicalIllustration: '/assets/figma/illus-hoanhai.png',
+    storyImage: '/assets/optimized/detail-nhai-thuong-story.webp',
+    botanicalIllustration: '/assets/optimized/discovery-botanical-THUONG.webp',
     scentNotes: [
       'Hương hoa nhài đêm ngát hương, quyến rũ nhưng rất đỗi gần gũi. Khi thưởng thức, vị trà mềm mại, êm dịu, để lại cảm giác ngọt ngào vương vấn thật lâu nơi cuống họng.'
     ],
@@ -109,12 +109,12 @@ export const PRODUCTS: Product[] = [
     reviewsCount: 100,
     weight: '100g',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
-    image: '/assets/figma/cam-outdoor.png',
+    image: '/assets/optimized/card-soi-cam-800.webp',
     gallery: [
-      '/assets/figma/cam-outdoor.png',
-      '/assets/figma/cam-tray.png',
+      '/assets/optimized/detail-soi-cam-1.webp',
+      '/assets/optimized/detail-soi-cam-2.webp',
       '/assets/figma/cam-thumb-3.png',
-      '/assets/figma/cam-thumb-4.png',
+      '/assets/optimized/detail-soi-cam-4.webp',
     ],
     badge: 'Cổ truyền',
     shortDesc:
@@ -128,8 +128,8 @@ export const PRODUCTS: Product[] = [
     ],
     storyQuote:
       '"Gửi ngàn lời cảm kích vì sự hiện diện của người trong cuộc đời này. Cảm ơn những sẻ chia, nâng đỡ và cả những sự thấu hiểu không cần nói thành lời. Hương trà mộc mạc nhưng bền bỉ này chính là biểu tượng cho tấm lòng tri ân sâu sắc và sự trân quý không bao giờ phai nhạt."',
-    storyImage: '/assets/figma/cam-tray.png',
-    botanicalIllustration: '/assets/figma/illus-hoasoi.png',
+    storyImage: '/assets/optimized/detail-soi-cam-story.webp',
+    botanicalIllustration: '/assets/optimized/discovery-botanical-CAM.webp',
     scentNotes: [
       'Hương hoa sói mang nét trầm ấm, mộc mạc, thoang thoảng chút hương thảo mộc cổ điển và nắng ấm. Vị trà đậm đà, chát đượm nhưng hậu ngọt rất sâu và bền bỉ qua nhiều tuần nước.'
     ],
@@ -156,12 +156,12 @@ export const PRODUCTS: Product[] = [
     reviewsCount: 100,
     weight: '100g',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
-    image: '/assets/figma/nho-outdoor.jpg',
+    image: '/assets/optimized/card-com-nho-800.webp',
     gallery: [
-      '/assets/figma/nho-outdoor.jpg',
-      '/assets/figma/nho-tray.png',
+      '/assets/optimized/detail-com-nho-1.webp',
+      '/assets/optimized/detail-com-nho-2.webp',
       '/assets/figma/nho-thumb-3.png',
-      '/assets/figma/nho-thumb-4.png',
+      '/assets/optimized/detail-com-nho-4.webp',
     ],
     badge: 'Độc đáo',
     shortDesc:
@@ -175,8 +175,8 @@ export const PRODUCTS: Product[] = [
     ],
     storyQuote:
       '"Gửi một chút hương xưa để gợi nhắc về những tháng năm cũ, những kỷ niệm đẹp đẽ mà chúng ta đã cùng nhau đi qua. Dù thời gian có trôi và khoảng cách có bao xa, mong người khi thưởng thức chén trà này sẽ luôn nhớ về nhau với những tình cảm trong trẻo, nguyên vẹn như thuở ban đầu."',
-    storyImage: '/assets/figma/nho-tray.png',
-    botanicalIllustration: '/assets/figma/illus-com.png',
+    storyImage: '/assets/optimized/detail-com-nho-story.webp',
+    botanicalIllustration: '/assets/optimized/discovery-botanical-NHO.webp',
     scentNotes: [
       'Hương cốm non mộc mạc, thơm bùi như mùi lúa mới và sắc thu Hà Nội. Vị trà thanh tao, nhẹ nhàng, mang lại cảm giác bình yên, thân thuộc như được trở về nhà.'
     ],
@@ -203,12 +203,12 @@ export const PRODUCTS: Product[] = [
     reviewsCount: 100,
     weight: '4 thức trà (Bưởi, Nhài, Hoa Sói, Cốm) + Kẹo lạc + Phụ kiện trà',
     packaging: '4 hộp trà 50g + Kẹo lạc truyền thống + Túi vải đay + Muỗng gỗ + 4 Thẻ thông điệp QR',
-    image: '/assets/figma/combo-table.png',
+    image: '/assets/optimized/card-hop-qua-tam-y-800.webp',
     gallery: [
-      '/assets/figma/combo-table.png',
-      '/assets/figma/combo-open-box.png',
-      '/assets/figma/combo-outdoor-tea.png',
-      '/assets/figma/combo-pouring.jpg',
+      '/assets/optimized/detail-hop-qua-tam-y-1.webp',
+      '/assets/optimized/detail-hop-qua-tam-y-2.webp',
+      '/assets/optimized/detail-hop-qua-tam-y-3.webp',
+      '/assets/optimized/detail-hop-qua-tam-y-4.webp',
     ],
     badge: 'Món quà đặc biệt',
     shortDesc:
@@ -222,8 +222,8 @@ export const PRODUCTS: Product[] = [
     ],
     storyQuote:
       '"Chúc người một đời an nhiên, lòng luôn tĩnh tại như mặt hồ phẳng lặng trước những biến thiên của cuộc đời. Mượn hương hoa bưởi thanh sạch để gột rửa những âu lo, trả lại sự thư thái và nhẹ nhõm trong tâm hồn."',
-    storyImage: '/assets/figma/combo-open-box.png',
-    botanicalIllustration: '/assets/figma/illus-hoasen.png',
+    storyImage: '/assets/optimized/detail-hop-qua-tam-y-story.webp',
+    botanicalIllustration: '/assets/optimized/illus-hoasen.webp',
     scentNotes: [
       'Mở đầu bằng mùi hương hoa bưởi tự nhiên the mát, thanh tao. Vị trà chát dịu nhẹ nơi đầu lưỡi, sau đó chuyển dần sang hậu vị ngọt sâu lắng và thanh khiết.'
     ],
@@ -245,28 +245,28 @@ export const PRODUCTS: Product[] = [
         title: 'Bình an & Biết ơn',
         subtitle: 'Trà Bưởi',
         emotion: 'AN',
-        image: '/assets/figma/illus-hoabuoi.png'
+        image: '/assets/optimized/discovery-botanical-AN.webp'
       },
       {
         id: 'nhai-thuong',
         title: 'Dịu Ngọt & Yêu thương',
         subtitle: 'Trà Nhài',
         emotion: 'THUONG',
-        image: '/assets/figma/illus-hoanhai.png'
+        image: '/assets/optimized/discovery-botanical-THUONG.webp'
       },
       {
         id: 'soi-cam',
         title: 'Tri ân & Hoài niệm',
         subtitle: 'Trà Hoa Sói',
         emotion: 'CAM',
-        image: '/assets/figma/illus-hoasoi.png'
+        image: '/assets/optimized/discovery-botanical-CAM.webp'
       },
       {
         id: 'com-nho',
         title: 'Ký ức & Dịu êm',
         subtitle: 'Trà Cốm',
         emotion: 'NHO',
-        image: '/assets/figma/illus-com.png'
+        image: '/assets/optimized/discovery-botanical-NHO.webp'
       }
     ],
     isSignature: true
@@ -281,7 +281,7 @@ export const LOOSE_TEA_PRODUCTS: Product[] = [
     name: 'Trà hương Bưởi (AN)',
     shortName: 'Trà hương Bưởi (AN)',
     price: 75000,
-    image: '/assets/figma/an-tray.png',
+    image: '/assets/optimized/card-buoi-an-800.webp',
   },
   {
     ...PRODUCTS[1],
@@ -289,7 +289,7 @@ export const LOOSE_TEA_PRODUCTS: Product[] = [
     name: 'Trà Nhài (THƯƠNG)',
     shortName: 'Trà Nhài (THƯƠNG)',
     price: 75000,
-    image: '/assets/figma/thuong-tray.png',
+    image: '/assets/optimized/card-nhai-thuong-800.webp',
   },
   {
     ...PRODUCTS[2],
@@ -297,7 +297,7 @@ export const LOOSE_TEA_PRODUCTS: Product[] = [
     name: 'Trà Hoa Sói (CẢM)',
     shortName: 'Trà Hoa Sói (CẢM)',
     price: 75000,
-    image: '/assets/figma/cam-tray.png',
+    image: '/assets/optimized/card-soi-cam-800.webp',
   },
   {
     ...PRODUCTS[3],
@@ -305,7 +305,7 @@ export const LOOSE_TEA_PRODUCTS: Product[] = [
     name: 'Trà Cốm (NHỚ)',
     shortName: 'Trà Cốm (NHỚ)',
     price: 75000,
-    image: '/assets/figma/nho-tray.png',
+    image: '/assets/optimized/card-com-nho-800.webp',
   },
   {
     ...PRODUCTS[4],
@@ -313,7 +313,7 @@ export const LOOSE_TEA_PRODUCTS: Product[] = [
     name: 'Combo Signature "Tâm Ý"',
     shortName: 'Combo Signature "Tâm Ý"',
     price: 399000,
-    image: '/assets/figma/combo-table.png',
+    image: '/assets/optimized/card-hop-qua-tam-y-800.webp',
   },
 ];
 
@@ -368,9 +368,9 @@ export const EMOTION_CARDS = [
       'Ông bà, cha mẹ (dịp Lễ Tết, mừng thọ); những người đang cần sự nghỉ ngơi, chữa lành; hoặc dùng trong những buổi trà chiều tĩnh lặng.',
     price: 75000,
     productId: 'buoi-an',
-    image: '/assets/figma/an-tray.png',
-    boxImage: '/assets/figma/an-outdoor.png',
-    illustration: '/assets/figma/illus-hoabuoi.png',
+    image: '/assets/optimized/detail-buoi-an-2.webp',
+    boxImage: '/assets/optimized/card-buoi-an-800.webp',
+    illustration: '/assets/optimized/illus-hoabuoi.webp',
     accentColor: '#2B4C59'
   },
   {
@@ -390,9 +390,9 @@ export const EMOTION_CARDS = [
       'Nửa kia, người thương, bạn đời; hoặc gửi tặng mẹ, chị gái, những người phụ nữ dịu dàng quanh bạn vào những ngày kỷ niệm hoặc chẳng nhân dịp gì cả.',
     price: 75000,
     productId: 'nhai-thuong',
-    image: '/assets/figma/thuong-tray.png',
-    boxImage: '/assets/figma/thuong-outdoor.png',
-    illustration: '/assets/figma/illus-hoanhai.png',
+    image: '/assets/optimized/detail-nhai-thuong-2.webp',
+    boxImage: '/assets/optimized/card-nhai-thuong-800.webp',
+    illustration: '/assets/optimized/illus-hoanhai.webp',
     accentColor: '#8B4F58'
   },
   {
@@ -403,7 +403,7 @@ export const EMOTION_CARDS = [
     pillBg: '#edfdec',
     pillText: '#4aa12b',
     suggestPill: 'Hương gợi ý: Hoa Sói (Cảm)',
-    heading: 'Trà Hương Hoa Sói - Lời tri ân từ đáy lòng',
+    heading: 'Trà Hương Hoa Sói - Lời tri ấn từ đáy lòng',
     quote:
       '"Gửi ngàn lời cảm kích vì sự hiện diện của người trong cuộc đời này. Cảm ơn những sẻ chia, nâng đỡ và cả những sự thấu hiểu không cần nói thành lời. Hương trà mộc mạc nhưng bền bỉ này chính là biểu tượng cho tấm lòng tri ân sâu sắc và sự trân quý không bao giờ phai nhạt."',
     scentProfile:
@@ -412,9 +412,9 @@ export const EMOTION_CARDS = [
       'Thầy cô giáo, sếp, đồng nghiệp, đối tác, hoặc những vị ân nhân đã từng giúp đỡ mình trên đường đời.',
     price: 75000,
     productId: 'soi-cam',
-    image: '/assets/figma/cam-tray.png',
-    boxImage: '/assets/figma/cam-outdoor.png',
-    illustration: '/assets/figma/illus-hoasoi.png',
+    image: '/assets/optimized/detail-soi-cam-2.webp',
+    boxImage: '/assets/optimized/card-soi-cam-800.webp',
+    illustration: '/assets/optimized/illus-hoasoi.webp',
     accentColor: '#4F6238'
   },
   {
@@ -434,9 +434,9 @@ export const EMOTION_CARDS = [
       'Những người bạn cũ lâu ngày chưa gặp, người thân đang ở phương xa, những người con xa quê, hoặc những tâm hồn yêu nét đẹp hoài cổ.',
     price: 75000,
     productId: 'com-nho',
-    image: '/assets/figma/nho-tray.png',
-    boxImage: '/assets/figma/nho-outdoor.jpg',
-    illustration: '/assets/figma/illus-com.png',
+    image: '/assets/optimized/detail-com-nho-2.webp',
+    boxImage: '/assets/optimized/card-com-nho-800.webp',
+    illustration: '/assets/optimized/illus-com.webp',
     accentColor: '#7D6A27'
   }
 ];

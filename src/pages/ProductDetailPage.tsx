@@ -96,6 +96,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <MotionImage
                   src={assetUrl(activeImage)}
                   alt={product.name}
+                  fetchPriority="high"
+                  decoding="async"
+                  width={1280}
+                  height={960}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -116,6 +120,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   >
                     <img
                       src={assetUrl(imgUrl)}
+                      loading="lazy"
+                      decoding="async"
+                      width={320}
+                      height={240}
                       style={idx === 1 ? { width: '195.33%', height: '218.8%', maxWidth:'none', position:'absolute', top:'-80.78%', left:'-18.09%' } : idx === 2 ? { width:'125.68%',height:'125.68%',maxWidth:'none',position:'absolute',left:'-25.66%',top:'-6.81%' } : undefined}
                       alt={`${product.name} ${idx + 1}`}
                       className="w-full h-full object-cover"
@@ -207,6 +215,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         <img
                           src={assetUrl(card.illustration)}
                           alt={card.teaName}
+                          loading="lazy"
+                          decoding="async"
+                          width={48}
+                          height={48}
                           className="w-12 h-12 object-contain shrink-0"
                         />
                       </button>
@@ -265,9 +277,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
       {/* 2. Dark-Green Storytelling Banner (#3e5641) */}
       <section className="detail-story relative py-12 md:py-16 bg-[#3e5641] text-[#f7f4d5]">
-        <img src={assetUrl("/assets/figma/illus-lache-green.png")} alt="" aria-hidden="true" className="detail-leaf-left pointer-events-none absolute" />
-        <img src={assetUrl("/assets/figma/illus-lache-green.png")} alt="" aria-hidden="true" className="detail-leaf-right pointer-events-none absolute" />
-        <img src={assetUrl("/assets/figma/illus-nui.png")} alt="" aria-hidden="true" className="detail-mountain pointer-events-none absolute" />
+        <img src={assetUrl("/assets/optimized/illus-lache-green.webp")} alt="" aria-hidden="true" loading="lazy" decoding="async" width={400} height={400} className="detail-leaf-left pointer-events-none absolute" />
+        <img src={assetUrl("/assets/optimized/illus-lache-green.webp")} alt="" aria-hidden="true" loading="lazy" decoding="async" width={400} height={400} className="detail-leaf-right pointer-events-none absolute" />
+        <img src={assetUrl("/assets/optimized/illus-nui.webp")} alt="" aria-hidden="true" loading="lazy" decoding="async" width={600} height={300} className="detail-mountain pointer-events-none absolute" />
         <div className="figma-container relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             <div className="lg:col-span-5">
@@ -463,10 +475,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                     {idx === 0 && (
                       <div className="review-photo relative w-[150px] h-[200px] overflow-hidden"><img loading="lazy" decoding="async"
-                        src={assetUrl("/assets/figma/an-hand.png")}
+                        src={assetUrl("/assets/optimized/an-hand-800.webp")}
                         alt="Ảnh thực tế khách hàng"
                         className="absolute max-w-none"
                         style={{ width:'228.15%', height:'230.5%', left:'-94.9%', top:'-51.44%' }}
+                        width={800}
+                        height={800}
                       /></div>
                     )}
                   </div>

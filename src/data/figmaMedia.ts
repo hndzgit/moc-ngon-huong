@@ -1,26 +1,30 @@
-// Slot mappings from live Source A contexts, not filename guesses.
+// Slot mappings from live Source A contexts, pointing to lightweight optimized WebP derivatives.
 export const FIGMA_PRODUCT_MEDIA: Record<string, { main: string; story: string }> = {
-  'buoi-an': { main: '55312.png', story: '14960.png' },
-  'nhai-thuong': { main: '2cf37.png', story: '2cf37.png' },
-  'soi-cam': { main: '2f1ed.png', story: 'c6f60.png' },
-  'com-nho': { main: '24130.png', story: '3735e.png' },
-  'hop-qua-tam-y': { main: '7b167.png', story: '7dc9e.png' },
+  'buoi-an': { main: '/assets/optimized/detail-buoi-an-1.webp', story: '/assets/optimized/detail-buoi-an-story.webp' },
+  'nhai-thuong': { main: '/assets/optimized/detail-nhai-thuong-1.webp', story: '/assets/optimized/detail-nhai-thuong-story.webp' },
+  'soi-cam': { main: '/assets/optimized/detail-soi-cam-1.webp', story: '/assets/optimized/detail-soi-cam-story.webp' },
+  'com-nho': { main: '/assets/optimized/detail-com-nho-1.webp', story: '/assets/optimized/detail-com-nho-story.webp' },
+  'hop-qua-tam-y': { main: '/assets/optimized/detail-hop-qua-tam-y-1.webp', story: '/assets/optimized/detail-hop-qua-tam-y-story.webp' },
 };
 
-export const figmaImage = (file: string) => `/assets/figma/originals/${file}`;
+export const figmaImage = (file: string) => file.startsWith('/') ? file : `/assets/figma/originals/${file}`;
 
 // Listing images are separate Figma slots from the detail gallery (77:2583).
 export const FIGMA_LISTING_MEDIA: Record<string, string> = {
-  'buoi-an': '55312.png', // 77:2887
-  'nhai-thuong': 'ba739.png', // 120:8204
-  'soi-cam': '417b2.png', // 120:8281
-  'com-nho': 'c759e.png', // 120:8295
+  'buoi-an': '/assets/optimized/card-buoi-an-800.webp',
+  'nhai-thuong': '/assets/optimized/card-nhai-thuong-800.webp',
+  'soi-cam': '/assets/optimized/card-soi-cam-800.webp',
+  'com-nho': '/assets/optimized/card-com-nho-800.webp',
+  'hop-qua-tam-y': '/assets/optimized/card-hop-qua-tam-y-800.webp',
 };
 
-// The same two order thumbnails/crops occur in cart, checkout and receipt.
+// Lightweight thumbnails for cart, checkout and receipt (replaces 7-9MB originals).
 export const FIGMA_ORDER_MEDIA: Record<string, {image:string;position:string}> = {
-  'buoi-an': {image:figmaImage('ae4e7.png'),position:'82.31% center'},
-  'hop-qua-tam-y': {image:figmaImage('01c48.png'),position:'center'},
+  'buoi-an': {image:'/assets/optimized/order-thumb-buoi-an.webp',position:'82.31% center'},
+  'nhai-thuong': {image:'/assets/optimized/order-thumb-nhai-thuong.webp',position:'center'},
+  'soi-cam': {image:'/assets/optimized/order-thumb-soi-cam.webp',position:'center'},
+  'com-nho': {image:'/assets/optimized/order-thumb-com-nho.webp',position:'center'},
+  'hop-qua-tam-y': {image:'/assets/optimized/order-thumb-hop-qua-tam-y.webp',position:'center'},
 };
 
 export const FIGMA_PRODUCT_COPY: Record<string, {node:string;title:string;summary:string;storyTitle:string;quote:string;scent:string;giftFor:string}> = {

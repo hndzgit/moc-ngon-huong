@@ -32,15 +32,23 @@ export const StepsSection: React.FC<StepsSectionProps> = ({ onNavigate }) => {
     <section className="relative py-16 md:py-24 bg-[#f5f2ed] overflow-hidden">
       {/* Decorative green tea leaves illustration matching Figma 56:1033 */}
       <img
-        src={assetUrl("/assets/figma/illus-lache-green.png")}
+        src={assetUrl("/assets/optimized/illus-lache-green.webp")}
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        width={320}
+        height={320}
         className="pointer-events-none select-none absolute -bottom-10 -left-10 w-[240px] md:w-[320px] opacity-30 object-contain"
       />
       <img
-        src={assetUrl("/assets/figma/illus-lache-green.png")}
+        src={assetUrl("/assets/optimized/illus-lache-green.webp")}
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        width={320}
+        height={320}
         className="pointer-events-none select-none absolute -top-10 -right-10 w-[240px] md:w-[320px] opacity-25 object-contain rotate-180"
       />
 

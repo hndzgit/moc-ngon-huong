@@ -47,7 +47,7 @@
 
 /* Paper texture overlay helper */
 .bg-paper-texture {
-  background-image: url('/assets/figma/paper-texture.png');
+  background-image: url('/assets/optimized/paper-texture.webp');
   background-size: cover;
   background-position: center;
 }

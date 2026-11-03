@@ -30,7 +30,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
             sizes="(max-width: 1023px) max(100vw, calc(606px + 40.2vw)), 100vw"
           />
           <img
-            src={assetUrl('/assets/figma/hero-banner.png')}
+            src={assetUrl('/assets/optimized/hero-1920.webp')}
             width={4096}
             height={2731}
             fetchPriority="high"
@@ -43,8 +43,8 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
       </div>
 
       {/* Gradient Overlay for Left Text Readability */}
-      <img src={assetUrl("/assets/figma/originals/4ce5c.png")} alt="" aria-hidden="true" className="hero-overlay-turn absolute pointer-events-none" />
-      <img src={assetUrl("/assets/figma/originals/3ee72.png")} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none" />
+      <img src={assetUrl("/assets/figma/originals/4ce5c.png")} alt="" aria-hidden="true" decoding="async" className="hero-overlay-turn absolute pointer-events-none" />
+      <img src={assetUrl("/assets/figma/originals/3ee72.png")} alt="" aria-hidden="true" decoding="async" className="absolute inset-0 w-full h-full pointer-events-none" />
 
       {/* Left-aligned Content Overlay (Figma 61:1189) */}
       <div className="hero-content relative z-10 figma-container h-full text-left">

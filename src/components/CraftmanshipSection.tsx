@@ -1,9 +1,9 @@
 import { assetUrl } from '../lib/assets';
 import React from 'react';
 import { Leaf, Sun, Heart, Award } from 'lucide-react';
-import elem14 from '../assets/elem_14.png';
-import elem16 from '../assets/elem_16.png';
-import elem18 from '../assets/elem_18.png';
+import elem14 from '../assets/elem_14.webp';
+import elem16 from '../assets/elem_16.webp';
+import elem18 from '../assets/elem_18.webp';
 
 export const CraftmanshipSection: React.FC = () => {
   return (
@@ -79,6 +79,10 @@ export const CraftmanshipSection: React.FC = () => {
                 <img
                   src={assetUrl(elem16)}
                   alt="Búp trà Thái Nguyên"
+                  loading="lazy"
+                  decoding="async"
+                  width={800}
+                  height={1000}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 />
               </div>
@@ -97,6 +101,10 @@ export const CraftmanshipSection: React.FC = () => {
                 <img
                   src={assetUrl(elem18)}
                   alt="Ướp hoa truyền thống"
+                  loading="lazy"
+                  decoding="async"
+                  width={800}
+                  height={1000}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 />
               </div>
