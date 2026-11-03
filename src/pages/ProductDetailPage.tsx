@@ -2,9 +2,9 @@ import './ProductDetailPage.css';
 import { assetUrl } from '../lib/assets';
 import { MotionImage } from '../motion/MotionImage';
 import { useChangeMotion } from '../motion/motion';
-import { FIGMA_PRODUCT_MEDIA, FIGMA_PRODUCT_COPY, FIGMA_CARD_COPY, figmaImage } from '../data/figmaMedia';
+import { FIGMA_PRODUCT_MEDIA, FIGMA_PRODUCT_COPY, FIGMA_CARD_COPY, FIGMA_LISTING_MEDIA, FIGMA_DETAIL_GALLERY_SHARED, figmaImage } from '../data/figmaMedia';
 import { FigmaIcon } from '../components/FigmaIcon';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { EMOTION_CARDS, PRODUCTS, REVIEWS } from '../data/products';
 import { PageRoute, Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
@@ -52,8 +52,23 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const media = FIGMA_PRODUCT_MEDIA[product.id];
   const copy = FIGMA_PRODUCT_COPY[product.id];
-  const gallery = media ? [figmaImage(media.main), figmaImage('b5d74.png'), figmaImage('191e7.png')] : product.gallery;
-  const [activeImage, setActiveImage] = useState(gallery[0] || product.image);
+
+  const galleryItems = useMemo(() => [
+    {
+      full: media ? media.main : product.gallery[0] || product.image,
+      thumb: media ? media.thumb : product.gallery[0] || product.image,
+    },
+    {
+      full: FIGMA_DETAIL_GALLERY_SHARED[0].full,
+      thumb: FIGMA_DETAIL_GALLERY_SHARED[0].thumb,
+    },
+    {
+      full: FIGMA_DETAIL_GALLERY_SHARED[1].full,
+      thumb: FIGMA_DETAIL_GALLERY_SHARED[1].thumb,
+    },
+  ], [media, product]);
+
+  const [activeImage, setActiveImage] = useState(galleryItems[0].full);
   const [buyQty, setBuyQty] = useState(1);
   const [selectedComboFlavor, setSelectedComboFlavor] = useState(EMOTION_CARDS[0]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'media'>('all');
@@ -61,9 +76,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const quantityMotion=useChangeMotion<HTMLSpanElement>(buyQty,undefined,.18);
 
   useEffect(() => {
-    setActiveImage(media ? figmaImage(media.main) : product.gallery[0] || product.image);
+    setActiveImage(galleryItems[0].full);
     setBuyQty(1);
-  }, [product, media]);
+    if (typeof window !== 'undefined') {
+      galleryItems.slice(1).forEach((item) => {
+        const img = new Image();
+        img.src = assetUrl(item.full);
+      });
+    }
+  }, [galleryItems]);
 
   const otherProducts = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
 
@@ -105,22 +126,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </div>
 
               <div className="grid grid-cols-3 gap-3 sm:w-3/4">
-                {gallery.slice(0, 3).map((imgUrl, idx) => (
+                {galleryItems.map((item, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setActiveImage(imgUrl)}
+                    onClick={() => setActiveImage(item.full)}
                     aria-label={`Ảnh sản phẩm ${idx + 1}`}
-                    aria-pressed={activeImage === imgUrl}
+                    aria-pressed={activeImage === item.full}
                     className={`relative aspect-[4/3] rounded-[10px] overflow-hidden border-2 transition-all ${
-                      activeImage === imgUrl
+                      activeImage === item.full
                         ? 'border-[#3e5641] shadow-xs'
                         : 'border-transparent opacity-75 hover:opacity-100'
                     }`}
                   >
                     <img
-                      src={assetUrl(imgUrl)}
-                      loading="lazy"
+                      src={assetUrl(item.thumb)}
+                      loading="eager"
                       decoding="async"
                       width={320}
                       height={240}
@@ -341,7 +362,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 displayTitle={FIGMA_CARD_COPY[item.id]?.title}
                 displayDescription={FIGMA_CARD_COPY[item.id]?.description}
                 displayNote={FIGMA_CARD_COPY[item.id]?.note}
-                imageSrc={figmaImage(({ 'buoi-an':'ae4e7.png', 'nhai-thuong':'219aa.png', 'soi-cam':'417b2.png', 'com-nho':'c759e.png', 'hop-qua-tam-y':'7dc9e.png' } as Record<string,string>)[item.id])}
+                imageSrc={FIGMA_LISTING_MEDIA[item.id] || item.image}
                 quantity={cartQuantities[item.id] || 0}
                 onUpdateQuantity={onUpdateQuantity}
                 onSelect={(id) => onNavigate('detail', id)}

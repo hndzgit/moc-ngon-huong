@@ -1,11 +1,29 @@
 // Slot mappings from live Source A contexts, pointing to lightweight optimized WebP derivatives.
-export const FIGMA_PRODUCT_MEDIA: Record<string, { main: string; story: string }> = {
-  'buoi-an': { main: '/assets/optimized/detail-buoi-an-1.webp', story: '/assets/optimized/detail-buoi-an-story.webp' },
-  'nhai-thuong': { main: '/assets/optimized/detail-nhai-thuong-1.webp', story: '/assets/optimized/detail-nhai-thuong-story.webp' },
-  'soi-cam': { main: '/assets/optimized/detail-soi-cam-1.webp', story: '/assets/optimized/detail-soi-cam-story.webp' },
-  'com-nho': { main: '/assets/optimized/detail-com-nho-1.webp', story: '/assets/optimized/detail-com-nho-story.webp' },
-  'hop-qua-tam-y': { main: '/assets/optimized/detail-hop-qua-tam-y-1.webp', story: '/assets/optimized/detail-hop-qua-tam-y-story.webp' },
+export const FIGMA_PRODUCT_MEDIA: Record<string, { main: string; thumb: string; story: string }> = {
+  'buoi-an': { main: '/assets/optimized/detail-buoi-an-1.webp', thumb: '/assets/optimized/detail-buoi-an-1-thumb.webp', story: '/assets/optimized/detail-buoi-an-story.webp' },
+  'nhai-thuong': { main: '/assets/optimized/detail-nhai-thuong-1.webp', thumb: '/assets/optimized/detail-nhai-thuong-1-thumb.webp', story: '/assets/optimized/detail-nhai-thuong-story.webp' },
+  'soi-cam': { main: '/assets/optimized/detail-soi-cam-1.webp', thumb: '/assets/optimized/detail-soi-cam-1-thumb.webp', story: '/assets/optimized/detail-soi-cam-story.webp' },
+  'com-nho': { main: '/assets/optimized/detail-com-nho-1.webp', thumb: '/assets/optimized/detail-com-nho-1-thumb.webp', story: '/assets/optimized/detail-com-nho-story.webp' },
+  'hop-qua-tam-y': { main: '/assets/optimized/detail-hop-qua-tam-y-1.webp', thumb: '/assets/optimized/detail-hop-qua-tam-y-1-thumb.webp', story: '/assets/optimized/detail-hop-qua-tam-y-story.webp' },
 };
+
+// Shared detail gallery slots (Figma 103:5875 and 103:6447), generated from exact originals b5d74.png and 191e7.png.
+export const FIGMA_DETAIL_GALLERY_SHARED = [
+  {
+    id: 'open-box',
+    full: '/assets/optimized/detail-gallery-b5d74-1280.webp',
+    thumb: '/assets/optimized/detail-gallery-b5d74-thumb.webp',
+    width: 1280,
+    height: 853,
+  },
+  {
+    id: 'hand-leaf',
+    full: '/assets/optimized/detail-gallery-191e7-1280.webp',
+    thumb: '/assets/optimized/detail-gallery-191e7-thumb.webp',
+    width: 1280,
+    height: 1919,
+  },
+] as const;
 
 export const figmaImage = (file: string) => file.startsWith('/') ? file : `/assets/figma/originals/${file}`;
 

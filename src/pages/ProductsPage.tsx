@@ -50,7 +50,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               <ProductCard
                 key={product.id}
                 product={product}
-                imageSrc={figmaImage(FIGMA_LISTING_MEDIA[product.id])}
+                imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
                 displayTitle={FIGMA_PRODUCT_COPY[product.id].title}
                 displayDescription={FIGMA_LISTING_COPY[product.id]}
                 quantity={cartQuantities[product.id] || 0}

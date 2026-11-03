@@ -274,6 +274,22 @@ const TASKS = [
     ],
   },
 
+  // Shared Detail Gallery Images (Figma 103:5875 and 103:6447)
+  {
+    input: 'public/assets/figma/originals/b5d74.png',
+    outputs: [
+      { file: 'detail-gallery-b5d74-1280.webp', width: 1280, quality: 88 },
+      { file: 'detail-gallery-b5d74-thumb.webp', width: 480, quality: 86 },
+    ],
+  },
+  {
+    input: 'public/assets/figma/originals/191e7.png',
+    outputs: [
+      { file: 'detail-gallery-191e7-1280.webp', width: 1280, quality: 88 },
+      { file: 'detail-gallery-191e7-thumb.webp', width: 480, quality: 86 },
+    ],
+  },
+
   // 5. Botanical, Artwork & Decorative Images
   {
     input: 'public/assets/figma/illus-hoasen.png',
