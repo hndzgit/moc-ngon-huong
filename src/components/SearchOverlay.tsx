@@ -63,12 +63,12 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const noResults = hasQuery && filteredProducts.length === 0;
 
   return (
-    <div ref={ref} data-motion-phase={phase} inert={!isOpen} className="search-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 backdrop-blur-[2px] p-4 sm:p-6 md:pt-20">
+    <div ref={ref} data-motion-phase={phase} className="search-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/55 backdrop-blur-[2px] p-4 sm:p-6 md:pt-20">
       {/* Backdrop click receiver */}
       <div className="fixed inset-0" onClick={onClose} />
 
       {/* Centered White Rounded Search Card (Figma 127:12938, 127:13466, 127:13960 - max-w-[1290px]) */}
-      <div role="dialog" aria-modal="true" aria-label="Tìm kiếm sản phẩm" className="search-card relative z-10 w-full max-w-[1680px] bg-white rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.3)] p-6 sm:p-8 lg:p-10 my-auto md:my-0">
+      <div inert={!isOpen} role="dialog" aria-modal="true" aria-label="Tìm kiếm sản phẩm" className="search-card relative z-10 w-full max-w-[1680px] bg-white rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.3)] p-6 sm:p-8 lg:p-10 my-auto md:my-0">
         {/* Top Search Input Pill */}
         <div className="relative flex items-center w-full h-[52px] rounded-full border border-[#222222]/35 bg-white px-5 mb-7 focus-within:border-[#3e5641] focus-within:ring-2 focus-within:ring-[#3e5641]/15">
           <img

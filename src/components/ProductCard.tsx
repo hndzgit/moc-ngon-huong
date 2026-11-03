@@ -43,7 +43,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       } border border-black/5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_28px_rgba(32,51,35,0.1)] transition-all`}
     >
       {/* Product Thumbnail */}
-      <div
+      <button
+        type="button"
+        aria-label={`Xem ${product.name}`}
         onClick={() => onSelect(detailId)}
         className={`relative w-full ${
           large ? 'aspect-[16/10]' : 'aspect-[4/3]'
@@ -52,16 +54,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <img
           src={assetUrl(imageSrc || product.image)}
           alt={product.shortName || product.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover"
           loading="lazy" decoding="async"
         />
-      </div>
+      </button>
 
       {/* Product Title, Short Description & Price + Stepper Bar */}
       <div className="pt-3 flex-1 flex flex-col justify-between">
         <div>
           <h3
-            onClick={() => onSelect(detailId)}
             className={`font-philosopher font-bold ${
               large
                 ? 'text-[22px] md:text-[26px]'
@@ -70,7 +71,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 : 'text-[18px] md:text-[19px]'
             } text-[#222222] group-hover:text-[#3e5641] transition-colors cursor-pointer line-clamp-1`}
           >
-            {displayTitle || (large ? product.name : product.shortName || product.name)}
+            <button type="button" onClick={()=>onSelect(detailId)} className="w-full text-left" aria-label={`Chi tiết ${product.name}`}>
+              {displayTitle || (large ? product.name : product.shortName || product.name)}
+            </button>
           </h3>
           {(!compact || displayDescription) && (
             <p

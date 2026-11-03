@@ -1,0 +1,38 @@
+/* V17: preserve the resting composition; improve control geometry and motion. */
+.product-card > button.relative { display:block; text-align:inherit; padding:0; }
+.product-card h3 > button { font:inherit; color:inherit; letter-spacing:inherit; }
+.product-card > .relative > img { transition:transform 450ms cubic-bezier(.2,.65,.3,1); }
+.product-card:focus-within { box-shadow:0 8px 24px #20332312; }
+.product-card > button:focus-visible { outline-offset:-4px; }
+.product-card h3 > button:focus-visible { outline-offset:-2px; }
+.cart-drawer,.search-overlay { overscroll-behavior:contain; }
+.chat-widget { z-index:45; }
+body:has(.checkout-premium) .chat-widget { right:16px; bottom:max(16px,env(safe-area-inset-bottom)); }
+body:has(.checkout-premium) .chat-widget>button { width:56px; height:56px; }
+.profile-view .profile-details-tab p { overflow-wrap:anywhere; }
+.profile-tab-controls>button { min-height:44px; text-align:left; }
+.admin-page [role=dialog] { overscroll-behavior:contain; }
+.admin-page [role=dialog] h2 { overflow-wrap:anywhere; }
+.cart-drawer [role=dialog],.search-card { overscroll-behavior:contain; }
+.cart-drawer[data-motion-phase=closing],.search-overlay[data-motion-phase=closing] { pointer-events:auto; }
+[data-motion-modal][data-motion-phase=closing] { pointer-events:auto; }
+#mobile-navigation { max-height:calc(100dvh - 118px); overflow-y:auto; overscroll-behavior:contain; }
+.checkout-page .checkout-input { scroll-margin-block:96px; }
+.checkout-page .checkout-select-card { transition-property:background-color,border-color,box-shadow,transform; }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  .product-card:focus-within > .relative > img { transform:scale(1.025); }
+}
+@media(pointer:coarse),(max-width:767px){
+  .admin-page button,.profile-view button,.auth-page button { min-height:44px; }
+  .admin-page button:has(>svg:only-child) { min-width:44px; }
+  .auth-page input[type=email],.auth-page input[type=password],.auth-page input[type=tel],.auth-register input[type=text] { font-size:16px; }
+  .product-card .border-t > div { min-height:44px; height:auto; gap:4px; padding-inline:0; }
+  .product-card .border-t > div button { min-width:44px; min-height:44px; width:44px; height:44px; }
+  .product-detail-page button[aria-label$="số lượng"],.cart-item button[aria-label$="số lượng"] { min-width:44px; min-height:44px; }
+  .cart-item>div:last-child { min-height:44px; height:auto; gap:2px; padding-inline:2px; }
+  .checkout-page .checkout-input { font-size:16px; }
+  .checkout-page .checkout-select-card:hover { transform:none; }
+}
+@media(prefers-reduced-motion:reduce){
+  .product-card > .relative > img { transition:none; transform:none; }
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { assetUrl } from '../lib/assets';
 import type { CartItem, PageRoute, PaymentStatus } from '../types';
 import { FIGMA_PRODUCT_COPY, FIGMA_ORDER_MEDIA } from '../data/figmaMedia';
@@ -63,6 +63,8 @@ export function OrderConfirmation({
   onNavigate,
 }: OrderConfirmationProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  useEffect(()=>()=>{clearTimeout(copyTimer.current);},[]);
 
   const calculatedSubtotal = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -77,7 +79,7 @@ export function OrderConfirmation({
 
   useEffect(() => {
     // Smooth scroll to top on mount
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth' });
 
     // Restrained, luxury confetti launch if not reduced motion
     const prefersReducedMotion =
@@ -99,6 +101,7 @@ export function OrderConfirmation({
         // Safe fallback if canvas is unavailable
       }
     }
+    return ()=>{confetti.reset();};
   }, []);
 
   const handleCopyCode = async () => {
@@ -106,7 +109,8 @@ export function OrderConfirmation({
     try {
       await navigator.clipboard.writeText(orderCode);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
+      clearTimeout(copyTimer.current);
+      copyTimer.current=setTimeout(() => setCopied(false), 2400);
     } catch {
       // Fallback
       setCopied(false);

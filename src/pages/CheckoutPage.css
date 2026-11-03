@@ -10,6 +10,12 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* V16 cards own their layout; the older single-card Figma checkout rules do not. */
+.checkout-page.checkout-premium > .figma-container { max-width:1240px; padding-inline:0; }
+.checkout-premium .checkout-card { min-width:0; }
+.checkout-premium .checkout-select-card > div { min-width:0; }
+.checkout-premium .checkout-input { font-size:16px; }
+
 /* Card Foundations */
 .checkout-card {
   background: #FFFFFF;
@@ -182,11 +188,11 @@
 }
 
 .order-gold-ring {
-  animation: pulseGoldRing 2.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  animation: pulseGoldRing 2.8s 2 cubic-bezier(0.4, 0, 0.6, 1);
 }
 
 .animate-spin-slow {
-  animation: spin 8s linear infinite;
+  animation: spin 8s linear 1;
 }
 
 @keyframes spin {
