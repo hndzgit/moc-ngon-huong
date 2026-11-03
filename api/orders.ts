@@ -629,7 +629,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       JSON.stringify({
         success: false,
         error:
-          'Hệ thống gặp sự cố trong quá trình lưu trữ đơn hàng. Quý khách vui lòng thử lại hoặc liên hệ hotline Mộc Ngôn Hương (098.765.4321) để được hỗ trợ chu đáo nhất.',
+          'Hệ thống gặp sự cố trong quá trình lưu trữ đơn hàng. Quý khách vui lòng thử lại hoặc liên hệ hotline Mộc Ngôn Hương (0889742556) để được hỗ trợ chu đáo nhất.',
       })
     );
   } finally {
