@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useDialogLifecycle } from '../components/useDialogLifecycle';
 import { useAuth } from '../context/AuthContext';
 import { assetUrl } from '../lib/assets';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
@@ -58,6 +59,10 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   // Modals & Actions
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<OrderRecord | null>(null);
+  const detailDialog=useRef<HTMLDivElement>(null);
+  const cancelDialog=useRef<HTMLDivElement>(null);
+  useDialogLifecycle(Boolean(selectedOrder&&user),()=>setSelectedOrder(null),detailDialog);
+  useDialogLifecycle(Boolean(orderToCancel&&user),()=>setOrderToCancel(null),cancelDialog);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -592,7 +597,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   // VIEW: MAIN ADMIN ORDER MANAGEMENT DASHBOARD
   // ==========================================================================
   return (
-    <div className="min-h-screen bg-[#faf8f3] text-stone-800 pb-16">
+    <div className="admin-page min-h-screen bg-[#faf8f3] text-stone-800 pb-16">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#3e5641] text-[#f7f4d5] px-4 py-3 rounded-xl shadow-lg border border-[#c89f5d]/30 text-sm flex items-center gap-2 animate-fade-in">
@@ -1141,11 +1146,11 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       ====================================================================== */}
       {selectedOrder && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+          ref={detailDialog} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
           onClick={() => setSelectedOrder(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-xl border border-stone-200 space-y-6"
+            role="dialog" aria-modal="true" aria-label="Chi tiết đơn hàng" className="bg-white rounded-3xl max-w-2xl w-full max-h-[90dvh] overflow-y-auto p-6 sm:p-8 shadow-xl border border-stone-200 space-y-6"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1458,11 +1463,11 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       ====================================================================== */}
       {orderToCancel && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          ref={cancelDialog} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setOrderToCancel(null)}
         >
           <div
-            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-stone-200 space-y-4"
+            role="dialog" aria-modal="true" aria-label="Xác nhận hủy đơn hàng" className="bg-white rounded-3xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-6 shadow-xl border border-stone-200 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto border border-rose-200">

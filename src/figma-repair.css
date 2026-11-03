@@ -32,14 +32,14 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
 /* Figma 132:4382 and shared required-label variants; preserve the original glyph. */
 .contact-page label:has(> span.text-red-500),
 .auth-page label:has(> span.text-red-500),
-.checkout-page label:has(> span.text-red-500) {
+.checkout-page:not(.checkout-premium) label:has(> span.text-red-500) {
   display:flex;
   align-items:center;
   gap:4px;
 }
 .contact-page label > span.text-red-500,
 .auth-page label > span.text-red-500,
-.checkout-page label > span.text-red-500 {
+.checkout-page:not(.checkout-premium) label > span.text-red-500 {
   font-family:'Montserrat Alternates',sans-serif;
   font-weight:400;
   color:#c8161d;
@@ -59,25 +59,25 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
 .auth-otp-modal form input[type=text] { width:86px; height:auto; aspect-ratio:1; max-width:20%; font:400 clamp(28px,7vw,36px)/1.5 Roboto,sans-serif; }
 .auth-otp-modal form button[type=submit] { width:100%; min-height:62px; font:400 20px/30px Roboto,sans-serif; }
 @media (min-width:1024px) {
-  .checkout-page { padding:clamp(64px,4.166667vw,80px) 0; background:#faf7f2; }
-  .checkout-page > .figma-container { max-width:1680px; }
-  .checkout-page h1 { font-size:clamp(56px,4.166667vw,80px); line-height:1.125; }
-  .checkout-page .text-center > p { font:400 24px/29px 'Minion Pro',Georgia,serif; letter-spacing:4.8px; }
-  .checkout-page form { padding:24px; border:0; border-radius:24px; box-shadow:none; }
-  .checkout-page form > div:first-child > .grid { font:400 20px/30px Philosopher,serif; padding:24px; }
-  .checkout-page form .divide-y > div { padding:40px 0; font-size:24px; }
-  .checkout-page form .divide-y img { width:120px; height:120px; border-radius:16px; }
-  .checkout-page form .divide-y h3 { font:400 30px/34px Philosopher,serif; color:#3e5641; }
-  .checkout-page h2 { font:700 24px/27px Philosopher,serif; color:#3e5641; }
-  .checkout-page label { font:400 20px/30px Philosopher,serif; color:#3e5641; }
-  .checkout-page input:not([type=checkbox]):not([type=radio]),.checkout-page select { height:68px; border-radius:16px; font-size:20px; }
-  .checkout-page input::placeholder { color:transparent; }
-  .checkout-page textarea { font-size:20px; }
-  .checkout-page button[type=submit] { height:68px; font:400 24px/36px Roboto,sans-serif; color:white; }
-  .checkout-page .grid-cols-2 > button { height:90px; }
-  .checkout-page .grid-cols-2 > button span { font-size:20px; font-weight:400; }
-  .checkout-page .grid-cols-2 > button span + span { font-size:16px; }
-  .checkout-page .grid-cols-2 > button.bg-\[\#3e5641\] { background:#c59a58; border-color:#c59a58; }
+  .checkout-page:not(.checkout-premium) { padding:clamp(64px,4.166667vw,80px) 0; background:#faf7f2; }
+  .checkout-page:not(.checkout-premium) > .figma-container { max-width:1680px; }
+  .checkout-page:not(.checkout-premium) h1 { font-size:clamp(56px,4.166667vw,80px); line-height:1.125; }
+  .checkout-page:not(.checkout-premium) .text-center > p { font:400 24px/29px 'Minion Pro',Georgia,serif; letter-spacing:4.8px; }
+  .checkout-page:not(.checkout-premium) form { padding:24px; border:0; border-radius:24px; box-shadow:none; }
+  .checkout-page:not(.checkout-premium) form > div:first-child > .grid { font:400 20px/30px Philosopher,serif; padding:24px; }
+  .checkout-page:not(.checkout-premium) form .divide-y > div { padding:40px 0; font-size:24px; }
+  .checkout-page:not(.checkout-premium) form .divide-y img { width:120px; height:120px; border-radius:16px; }
+  .checkout-page:not(.checkout-premium) form .divide-y h3 { font:400 30px/34px Philosopher,serif; color:#3e5641; }
+  .checkout-page:not(.checkout-premium) h2 { font:700 24px/27px Philosopher,serif; color:#3e5641; }
+  .checkout-page:not(.checkout-premium) label { font:400 20px/30px Philosopher,serif; color:#3e5641; }
+  .checkout-page:not(.checkout-premium) input:not([type=checkbox]):not([type=radio]),.checkout-page:not(.checkout-premium) select { height:68px; border-radius:16px; font-size:20px; }
+  .checkout-page:not(.checkout-premium) input::placeholder { color:transparent; }
+  .checkout-page:not(.checkout-premium) textarea { font-size:20px; }
+  .checkout-page:not(.checkout-premium) button[type=submit] { height:68px; font:400 24px/36px Roboto,sans-serif; color:white; }
+  .checkout-page:not(.checkout-premium) .grid-cols-2 > button { height:90px; }
+  .checkout-page:not(.checkout-premium) .grid-cols-2 > button span { font-size:20px; font-weight:400; }
+  .checkout-page:not(.checkout-premium) .grid-cols-2 > button span + span { font-size:16px; }
+  .checkout-page:not(.checkout-premium) .grid-cols-2 > button.bg-\[\#3e5641\] { background:#c59a58; border-color:#c59a58; }
   .order-confirmation h1 { font-size:clamp(56px,4.166667vw,80px); line-height:1.125; }
   .order-confirmation > .text-center > p { font-size:20px; }
   .auth-page .auth-layout > div:last-child > div { height:614px; border-radius:12px; box-shadow:none; }
@@ -242,15 +242,15 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .site-header .header-main button { flex-shrink:0; }
   .signature-box .grid-cols-1.sm\:grid-cols-3 p:first-child { display:flex; gap:12px; align-items:center; }
   .home-emotion .pt-3.border-t button { min-height:44px; }
-  .checkout-page form > div:first-child > .grid { display:none; }
-  .checkout-page .divide-y > .grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:20px 0; }
-  .checkout-page .divide-y .col-span-6 { grid-column:1/-1; }
-  .checkout-page .divide-y .col-span-6 h3 { white-space:normal; overflow:visible; }
-  .checkout-page .divide-y .col-span-2 { grid-column:span 1; text-align:left; font-size:13px; }
-  .checkout-page .divide-y .col-span-2:before { display:block; font-size:11px; font-weight:400; color:#666; margin-bottom:4px; }
-  .checkout-page .divide-y .col-span-2:nth-child(2):before { content:'Số lượng'; }
-  .checkout-page .divide-y .col-span-2:nth-child(3):before { content:'Đơn giá'; }
-  .checkout-page .divide-y .col-span-2:nth-child(4):before { content:'Thành tiền'; }
+  .checkout-page:not(.checkout-premium) form > div:first-child > .grid { display:none; }
+  .checkout-page:not(.checkout-premium) .divide-y > .grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:20px 0; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-6 { grid-column:1/-1; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-6 h3 { white-space:normal; overflow:visible; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-2 { grid-column:span 1; text-align:left; font-size:13px; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-2:before { display:block; font-size:11px; font-weight:400; color:#666; margin-bottom:4px; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-2:nth-child(2):before { content:'Số lượng'; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-2:nth-child(3):before { content:'Đơn giá'; }
+  .checkout-page:not(.checkout-premium) .divide-y .col-span-2:nth-child(4):before { content:'Thành tiền'; }
   .cart-drawer aside .truncate { white-space:normal; overflow:visible; }
   .cart-drawer aside .h-\[34px\] { gap:6px; padding:0 6px; }
 }
@@ -382,43 +382,43 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .auth-register form > label { padding-top:0; margin-bottom:24px; font:400 20px/30px Montserrat,sans-serif; gap:16px; }
   .auth-register form > label input { margin:0; }
   .auth-register form > button[type=submit] { margin-top:0; }
-  .checkout-page > .figma-container > .text-center { margin-bottom:40px; }
-  .checkout-page > .figma-container > .text-center > p { margin-bottom:4px; }
-  .checkout-page form { display:flex; flex-direction:column; gap:clamp(24px,2.083333vw,40px); }
-  .checkout-page form.space-y-7 > :not([hidden]) ~ :not([hidden]) { margin-top:0; }
-  .checkout-page form .checkout-summary > .grid,.checkout-page .checkout-summary .divide-y > .grid { grid-template-columns:minmax(0,853fr) minmax(0,139fr) minmax(0,320fr) minmax(0,320fr); gap:0; padding-left:0; padding-right:0; }
-  .checkout-page .checkout-summary .col-span-6,.checkout-page .checkout-summary .col-span-2 { grid-column:auto; }
-  .checkout-page .checkout-summary > .grid { height:78px; border-radius:16px 16px 0 0; }
-  .checkout-page .checkout-summary > .grid > div { padding:0 24px; }
-  .checkout-page .checkout-summary .col-span-2 { padding-right:24px; text-align:right; font-size:24px; font-weight:400; }
-  .checkout-page .checkout-summary > .grid .col-span-2 { font-size:20px; }
-  .checkout-page .checkout-summary .divide-y > .grid { height:200px; border-color:#d9d9d9; }
-  .checkout-page .checkout-summary .divide-y .col-span-6 { gap:16px; }
-  .checkout-page .checkout-summary h3 { font:400 32px/48px Philosopher,serif; }
-  .checkout-page .checkout-summary p { font:400 20px/30px Montserrat,sans-serif; }
-  .checkout-page .checkout-summary > .pt-4 { height:60px; padding-top:24px; font:400 24px/36px Montserrat,sans-serif; }
-  .checkout-page .checkout-summary > .pt-4 > span:last-child { font-size:24px; padding-right:24px; }
-  .checkout-page h2 { line-height:36px; margin-bottom:24px; }
-  .checkout-page label { margin-bottom:8px; }
-  .checkout-page .checkout-buyer > :not([hidden]) ~ :not([hidden]) { margin-top:16px; }
-  .checkout-page .checkout-buyer > h2 + div { margin-top:0; }
-  .checkout-page .checkout-buyer > .flex label { margin-bottom:0; }
-  .checkout-page .checkout-buyer .sm\:grid-cols-2 { gap:24px; }
-  .checkout-page .checkout-shipping { display:flex; flex-direction:column; gap:16px; }
-  .checkout-page .checkout-shipping > :not([hidden]) ~ :not([hidden]) { margin-top:0; }
-  .checkout-page .checkout-shipping h2 { margin-bottom:8px; }
-  .checkout-page .checkout-shipping > .grid > button { height:90px; border-radius:12px; }
-  .checkout-page .checkout-shipping > .grid > button span:first-child { font:700 20px/30px Philosopher,serif; }
-  .checkout-page .checkout-shipping > .grid > button span + span { font:400 16px/24px Montserrat,sans-serif; }
-  .checkout-page .checkout-address { display:flex; flex-direction:column; gap:16px; }
-  .checkout-page .checkout-address > :not([hidden]) ~ :not([hidden]) { margin-top:0; }
-  .checkout-page .checkout-address select { height:62px; }
-  .checkout-page .checkout-consent { padding-top:0; display:flex; flex-direction:column; gap:16px; }
-  .checkout-page .checkout-consent > label { margin:0; font:400 20px/30px Montserrat,sans-serif; gap:16px; }
-  .checkout-page .checkout-payment h2 { margin-bottom:24px; }
-  .checkout-page .checkout-payment button { min-height:62px; height:auto; padding:16px 32px; border-radius:16px; font:300 20px/30px Roboto,sans-serif; }
-  .checkout-page .checkout-payment .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top:16px; }
-  .checkout-page .checkout-payment textarea { display:block; height:140px; border-radius:16px; padding:16px 24px; font:300 24px/36px Roboto,sans-serif; }
+  .checkout-page:not(.checkout-premium) > .figma-container > .text-center { margin-bottom:40px; }
+  .checkout-page:not(.checkout-premium) > .figma-container > .text-center > p { margin-bottom:4px; }
+  .checkout-page:not(.checkout-premium) form { display:flex; flex-direction:column; gap:clamp(24px,2.083333vw,40px); }
+  .checkout-page:not(.checkout-premium) form.space-y-7 > :not([hidden]) ~ :not([hidden]) { margin-top:0; }
+  .checkout-page:not(.checkout-premium) form .checkout-summary > .grid,.checkout-page:not(.checkout-premium) .checkout-summary .divide-y > .grid { grid-template-columns:minmax(0,853fr) minmax(0,139fr) minmax(0,320fr) minmax(0,320fr); gap:0; padding-left:0; padding-right:0; }
+  .checkout-page:not(.checkout-premium) .checkout-summary .col-span-6,.checkout-page:not(.checkout-premium) .checkout-summary .col-span-2 { grid-column:auto; }
+  .checkout-page:not(.checkout-premium) .checkout-summary > .grid { height:78px; border-radius:16px 16px 0 0; }
+  .checkout-page:not(.checkout-premium) .checkout-summary > .grid > div { padding:0 24px; }
+  .checkout-page:not(.checkout-premium) .checkout-summary .col-span-2 { padding-right:24px; text-align:right; font-size:24px; font-weight:400; }
+  .checkout-page:not(.checkout-premium) .checkout-summary > .grid .col-span-2 { font-size:20px; }
+  .checkout-page:not(.checkout-premium) .checkout-summary .divide-y > .grid { height:200px; border-color:#d9d9d9; }
+  .checkout-page:not(.checkout-premium) .checkout-summary .divide-y .col-span-6 { gap:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-summary h3 { font:400 32px/48px Philosopher,serif; }
+  .checkout-page:not(.checkout-premium) .checkout-summary p { font:400 20px/30px Montserrat,sans-serif; }
+  .checkout-page:not(.checkout-premium) .checkout-summary > .pt-4 { height:60px; padding-top:24px; font:400 24px/36px Montserrat,sans-serif; }
+  .checkout-page:not(.checkout-premium) .checkout-summary > .pt-4 > span:last-child { font-size:24px; padding-right:24px; }
+  .checkout-page:not(.checkout-premium) h2 { line-height:36px; margin-bottom:24px; }
+  .checkout-page:not(.checkout-premium) label { margin-bottom:8px; }
+  .checkout-page:not(.checkout-premium) .checkout-buyer > :not([hidden]) ~ :not([hidden]) { margin-top:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-buyer > h2 + div { margin-top:0; }
+  .checkout-page:not(.checkout-premium) .checkout-buyer > .flex label { margin-bottom:0; }
+  .checkout-page:not(.checkout-premium) .checkout-buyer .sm\:grid-cols-2 { gap:24px; }
+  .checkout-page:not(.checkout-premium) .checkout-shipping { display:flex; flex-direction:column; gap:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-shipping > :not([hidden]) ~ :not([hidden]) { margin-top:0; }
+  .checkout-page:not(.checkout-premium) .checkout-shipping h2 { margin-bottom:8px; }
+  .checkout-page:not(.checkout-premium) .checkout-shipping > .grid > button { height:90px; border-radius:12px; }
+  .checkout-page:not(.checkout-premium) .checkout-shipping > .grid > button span:first-child { font:700 20px/30px Philosopher,serif; }
+  .checkout-page:not(.checkout-premium) .checkout-shipping > .grid > button span + span { font:400 16px/24px Montserrat,sans-serif; }
+  .checkout-page:not(.checkout-premium) .checkout-address { display:flex; flex-direction:column; gap:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-address > :not([hidden]) ~ :not([hidden]) { margin-top:0; }
+  .checkout-page:not(.checkout-premium) .checkout-address select { height:62px; }
+  .checkout-page:not(.checkout-premium) .checkout-consent { padding-top:0; display:flex; flex-direction:column; gap:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-consent > label { margin:0; font:400 20px/30px Montserrat,sans-serif; gap:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-payment h2 { margin-bottom:24px; }
+  .checkout-page:not(.checkout-premium) .checkout-payment button { min-height:62px; height:auto; padding:16px 32px; border-radius:16px; font:300 20px/30px Roboto,sans-serif; }
+  .checkout-page:not(.checkout-premium) .checkout-payment .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top:16px; }
+  .checkout-page:not(.checkout-premium) .checkout-payment textarea { display:block; height:140px; border-radius:16px; padding:16px 24px; font:300 24px/36px Roboto,sans-serif; }
 }
 @media (min-width:1024px) {
   .cart-drawer aside > div:first-child { position:absolute; top:28px; right:28px; padding:0; height:48px; z-index:1; }

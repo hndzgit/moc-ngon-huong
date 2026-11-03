@@ -19,6 +19,7 @@ async function runV134Tests() {
   console.log(`[1] Server đang chạy tại ${BASE_URL}\n`);
 
   try {
+    let createdOrderStatus;
     // ---------------------------------------------------------
     // PHẦN 1: BẢO MẬT XÁC THỰC ENDPOINT /api/me/orders
     // ---------------------------------------------------------
@@ -117,6 +118,9 @@ async function runV134Tests() {
       assert.equal(data.order.userId, 'mock_user_a', 'userId không được phép tin cậy body client');
       assert.notEqual(data.order.userId, 'malicious_spoofed_uid', 'Đã ngăn chặn thành công việc giả mạo UID qua body');
       assert.equal(data.order.items.length, 2);
+      // Admin release 6c9719a starts new orders at preparing, not the V13 default.
+      assert.equal(data.order.orderStatus, 'preparing');
+      createdOrderStatus = data.order.orderStatus;
       assert.ok(data.order.items[0].image, 'Item snapshot phải lưu hình ảnh sản phẩm');
 
       orderAId = data.order.id;
@@ -144,7 +148,7 @@ async function runV134Tests() {
       assert.ok(foundOrder, 'Đơn hàng vừa đặt phải xuất hiện trong lịch sử của User A');
       assert.equal(foundOrder.orderCode, orderACode);
       assert.equal(foundOrder.customerUid, 'mock_user_a');
-      assert.equal(foundOrder.orderStatus, 'pending_confirmation');
+      assert.equal(foundOrder.orderStatus, createdOrderStatus, 'History must preserve the authoritative creation status');
       assert.equal(foundOrder.paymentStatus, 'pending');
       assert.equal(foundOrder.paymentMethod, 'bank');
       assert.equal(foundOrder.customer.fullName, 'Trần Thị Thu An');

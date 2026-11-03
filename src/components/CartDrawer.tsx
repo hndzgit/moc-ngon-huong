@@ -53,7 +53,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   }, 0);
 
   return (
-    <div ref={ref} data-motion-phase={phase} inert={!isOpen} className="cart-drawer fixed inset-0 z-50 flex justify-end">
+    <div ref={ref} data-motion-phase={phase} className="cart-drawer fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-[1px] transition-opacity"
@@ -62,6 +62,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
       {/* Slide-over Drawer Panel (Figma 127:8439 & 127:8870) */}
       <aside
+        inert={!isOpen}
         className="relative z-10 w-full max-w-[558px] bg-white h-full shadow-2xl flex flex-col justify-between"
         role="dialog" aria-modal="true" aria-label="Giỏ hàng"
       >

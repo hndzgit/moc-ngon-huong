@@ -360,7 +360,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const isSubmitting = checkoutStatus === 'submitting' || checkoutStatus === 'validating';
 
   return (
-    <div className={`checkout-page checkout-${shippingMode} py-10 md:py-16`}>
+    <div className={`checkout-page checkout-premium checkout-${shippingMode} py-10 md:py-16`}>
       <div className="figma-container max-w-[1240px] mx-auto px-4 sm:px-6">
         
         {/* Editorial Page Header & Step Tracker */}
@@ -463,12 +463,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#222222] mb-1.5">
+                    <label htmlFor="checkout-fullName" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
                       Họ và Tên <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      value={fullName}
+                      id="checkout-fullName" value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Ví dụ: Nguyễn Văn An"
                       className="checkout-input"
@@ -476,12 +476,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#222222] mb-1.5">
+                    <label htmlFor="checkout-phone" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
                       Số Điện Thoại <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
-                      value={phone}
+                      id="checkout-phone" value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="Ví dụ: 0912 345 678"
                       className="checkout-input"
@@ -491,12 +491,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-[13px] font-semibold text-[#222222] mb-1.5">
+                  <label htmlFor="checkout-email" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
                     Địa chỉ Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
-                    value={email}
+                    id="checkout-email" value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Ví dụ: an.nguyen@email.com"
                     className="checkout-input"
@@ -571,12 +571,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   {shippingMode === 'delivery' ? (
                     <div className="space-y-4 pt-1">
                       <div>
-                        <label className="block text-[13px] font-semibold text-[#222222] mb-1.5">
+                        <label htmlFor="checkout-address" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
                           Địa chỉ nhận hàng chi tiết <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
-                          value={address}
+                          id="checkout-address" value={address}
                           onChange={(e) => setAddress(e.target.value)}
                           placeholder="Số nhà, ngõ/ngách, tên đường..."
                           className="checkout-input"
@@ -586,11 +586,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                         <div>
-                          <label className="block text-[12px] font-medium text-[#555555] mb-1">
+                          <label htmlFor="checkout-city" className="block text-[12px] font-medium text-[#555555] mb-1">
                             Tỉnh / Thành phố
                           </label>
                           <select
-                            value={city}
+                            id="checkout-city" value={city}
                             onChange={(e) => setCity(e.target.value)}
                             className="checkout-input checkout-select text-[13.5px]"
                           >
@@ -605,11 +605,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-[12px] font-medium text-[#555555] mb-1">
+                          <label htmlFor="checkout-district" className="block text-[12px] font-medium text-[#555555] mb-1">
                             Quận / Huyện
                           </label>
                           <select
-                            value={district}
+                            id="checkout-district" value={district}
                             onChange={(e) => setDistrict(e.target.value)}
                             className="checkout-input checkout-select text-[13.5px]"
                           >
@@ -624,11 +624,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-[12px] font-medium text-[#555555] mb-1">
+                          <label htmlFor="checkout-ward" className="block text-[12px] font-medium text-[#555555] mb-1">
                             Phường / Xã
                           </label>
                           <select
-                            value={ward}
+                            id="checkout-ward" value={ward}
                             onChange={(e) => setWard(e.target.value)}
                             className="checkout-input checkout-select text-[13.5px]"
                           >

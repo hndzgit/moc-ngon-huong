@@ -672,7 +672,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
               {/* Sub-navigation Tabs: Đơn hàng của tôi vs Thông tin giao nhận */}
               <div className="flex flex-wrap items-center justify-between gap-4 mt-8 mb-6 border-b border-[#e5dfd5] pb-4">
-                <div className="flex items-center gap-3 sm:gap-6">
+                <div className="profile-tab-controls flex flex-wrap items-center gap-3 sm:gap-6 min-w-0">
                   <button
                     type="button"
                     onClick={() => {
