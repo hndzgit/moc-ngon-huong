@@ -41,6 +41,12 @@ export interface OrderRecord {
     phone: string;
     email: string;
     address?: string;
+    provinceCode?: string;
+    provinceName?: string;
+    communeCode?: string;
+    communeName?: string;
+    formattedAddress?: string;
+    addressSchemaVersion?: string;
     city?: string;
     district?: string;
     ward?: string;

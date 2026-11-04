@@ -8,6 +8,17 @@ import { FIGMA_PRODUCT_COPY, FIGMA_ORDER_MEDIA } from '../data/figmaMedia';
 import { useAuth } from '../context/AuthContext';
 import { calculateDemoDiscount, DEMO_DISCOUNT_DISCLAIMER } from '../assistant';
 import {
+  getProvinces,
+  getProvinceByCode,
+  getCommunesByProvinceCode,
+  getCommuneByCode,
+  validateDeliveryAddress,
+  formatCustomerDeliveryAddress,
+  attemptLegacyAddressConversion,
+  ConversionProposal,
+} from '../data/address';
+import { SearchableAddressSelect } from '../components/SearchableAddressSelect';
+import {
   Truck,
   Store,
   CreditCard,
@@ -48,7 +59,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onClearCart,
   onNavigate,
 }) => {
-  const { user, profile } = useAuth();
+  const { user, profile, updateProfileData } = useAuth();
 
   const [shippingMode, setShippingMode] = useState<'delivery' | 'pickup'>('delivery');
   const [gender, setGender] = useState<'anh' | 'chi'>('anh');
@@ -56,9 +67,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [district, setDistrict] = useState('');
-  const [ward, setWard] = useState('');
+  const [provinceCode, setProvinceCode] = useState('');
+  const [communeCode, setCommuneCode] = useState('');
+  const [addressError, setAddressError] = useState('');
+  const [legacyProposal, setLegacyProposal] = useState<ConversionProposal | null>(null);
+  const [dismissProposal, setDismissProposal] = useState(false);
   const [pickupStore, setPickupStore] = useState('42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bank'>('cod');
   const [note, setNote] = useState('');
@@ -104,8 +117,112 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       if (profile.address && !address) {
         setAddress(profile.address);
       }
+
+      // Check if profile already contains verified 2-tier 2026 data
+      if (profile.provinceCode && !provinceCode) {
+        setProvinceCode(profile.provinceCode);
+        if (profile.communeCode && !communeCode) {
+          setCommuneCode(profile.communeCode);
+        }
+      } else if (!provinceCode && !dismissProposal && (profile.city || profile.address)) {
+        // Attempt safe legacy mapping
+        const proposal = attemptLegacyAddressConversion({
+          address: profile.address,
+          city: profile.city,
+          district: profile.district,
+          ward: profile.ward,
+        });
+        if (proposal.isUnambiguous) {
+          setLegacyProposal(proposal);
+        } else if (proposal.proposedProvinceCode) {
+          setProvinceCode(proposal.proposedProvinceCode);
+        }
+      }
+    } else {
+      // Guest local storage fallback
+      try {
+        const saved = localStorage.getItem('mnh_saved_customer_info');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.fullName && !fullName) setFullName(parsed.fullName);
+          if (parsed.phone && !phone) setPhone(parsed.phone);
+          if (parsed.email && !email) setEmail(parsed.email);
+          if (parsed.address && !address) setAddress(parsed.address);
+          if (parsed.provinceCode && !provinceCode) {
+            setProvinceCode(parsed.provinceCode);
+            if (parsed.communeCode && !communeCode) {
+              setCommuneCode(parsed.communeCode);
+            }
+          }
+        }
+      } catch {}
     }
   }, [user, profile]);
+
+  const selectedProvince = React.useMemo(() => getProvinceByCode(provinceCode), [provinceCode]);
+  const selectedCommune = React.useMemo(
+    () => getCommuneByCode(provinceCode, communeCode),
+    [provinceCode, communeCode]
+  );
+
+  const provinceOptions = React.useMemo(() => {
+    return getProvinces().map((p) => ({
+      code: p.code,
+      name: p.name,
+      fullName: p.fullName,
+      badge: p.type,
+      extraInfo: `${p.communeCount} xã/phường`,
+    }));
+  }, []);
+
+  const communeOptions = React.useMemo(() => {
+    if (!provinceCode) return [];
+    return getCommunesByProvinceCode(provinceCode).map((c) => ({
+      code: c.code,
+      name: c.name,
+      badge: c.type,
+    }));
+  }, [provinceCode]);
+
+  const formattedPreview = React.useMemo(() => {
+    if (shippingMode === 'pickup') {
+      return pickupStore;
+    }
+    if (!address.trim() && !selectedCommune && !selectedProvince) {
+      return '';
+    }
+    return [address.trim(), selectedCommune?.name, selectedProvince?.fullName]
+      .filter(Boolean)
+      .join(', ');
+  }, [shippingMode, pickupStore, address, selectedCommune, selectedProvince]);
+
+  const handleProvinceChange = (newCode: string) => {
+    setProvinceCode(newCode);
+    setCommuneCode(''); // Reset commune selection when province changes
+    setAddressError('');
+    if (legacyProposal) setLegacyProposal(null);
+  };
+
+  const handleCommuneChange = (newCode: string) => {
+    setCommuneCode(newCode);
+    setAddressError('');
+  };
+
+  const handleAcceptProposal = () => {
+    if (legacyProposal?.proposedProvinceCode) {
+      setProvinceCode(legacyProposal.proposedProvinceCode);
+      if (legacyProposal?.proposedCommuneCode) {
+        setCommuneCode(legacyProposal.proposedCommuneCode);
+      }
+    }
+    setDismissProposal(true);
+    setLegacyProposal(null);
+  };
+
+  const handleDismissProposal = () => {
+    setDismissProposal(true);
+    setLegacyProposal(null);
+  };
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
@@ -131,10 +248,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setCheckoutStatus('idle');
       return;
     }
-    if (shippingMode === 'delivery' && !address.trim()) {
-      setErrorMsg('Vui lòng nhập Địa chỉ nhận hàng.');
-      setCheckoutStatus('idle');
-      return;
+    if (shippingMode === 'delivery') {
+      const addressValidation = validateDeliveryAddress({
+        address,
+        provinceCode,
+        communeCode,
+      });
+      if (!addressValidation.isValid) {
+        setErrorMsg(addressValidation.error || 'Vui lòng kiểm tra lại địa chỉ giao hàng.');
+        setAddressError(addressValidation.error || '');
+        setCheckoutStatus('idle');
+        return;
+      }
     }
 
     // Phone format basic check
@@ -168,9 +293,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           email: email.trim(),
           shippingMode,
           address: shippingMode === 'delivery' ? address.trim() : undefined,
-          city: shippingMode === 'delivery' ? city || undefined : undefined,
-          district: shippingMode === 'delivery' ? district || undefined : undefined,
-          ward: shippingMode === 'delivery' ? ward || undefined : undefined,
+          provinceCode: shippingMode === 'delivery' ? provinceCode : undefined,
+          provinceName: shippingMode === 'delivery' ? selectedProvince?.fullName : undefined,
+          communeCode: shippingMode === 'delivery' ? communeCode : undefined,
+          communeName: shippingMode === 'delivery' ? selectedCommune?.name : undefined,
+          formattedAddress: shippingMode === 'delivery' ? formattedPreview : undefined,
+          addressSchemaVersion: shippingMode === 'delivery' ? '2' : undefined,
           pickupStore: shippingMode === 'pickup' ? pickupStore : undefined,
           note: note.trim() || undefined,
         },
@@ -239,9 +367,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 phone: phoneClean,
                 email: email.trim(),
                 address: address.trim(),
+                provinceCode: shippingMode === 'delivery' ? provinceCode : undefined,
+                provinceName: shippingMode === 'delivery' ? selectedProvince?.fullName : undefined,
+                communeCode: shippingMode === 'delivery' ? communeCode : undefined,
+                communeName: shippingMode === 'delivery' ? selectedCommune?.name : undefined,
+                formattedAddress: shippingMode === 'delivery' ? formattedPreview : undefined,
+                addressSchemaVersion: shippingMode === 'delivery' ? '2' : undefined,
               })
             );
           } catch {}
+
+          if (user && profile) {
+            updateProfileData({
+              fullName: fullName.trim(),
+              phone: phoneClean,
+              address: shippingMode === 'delivery' ? address.trim() : profile.address,
+              provinceCode: shippingMode === 'delivery' ? provinceCode : profile.provinceCode,
+              provinceName: shippingMode === 'delivery' ? selectedProvince?.fullName : profile.provinceName,
+              communeCode: shippingMode === 'delivery' ? communeCode : profile.communeCode,
+              communeName: shippingMode === 'delivery' ? selectedCommune?.name : profile.communeName,
+              formattedAddress: shippingMode === 'delivery' ? formattedPreview : profile.formattedAddress,
+              addressSchemaVersion: shippingMode === 'delivery' ? '2' : profile.addressSchemaVersion,
+            }).catch(() => {});
+          }
         }
 
         // CLEAR CART ONLY AFTER PERSISTENCE IS CONFIRMED
@@ -319,14 +467,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         address={
           serverOrder.customer.shippingMode === 'pickup'
             ? serverOrder.customer.pickupStore || pickupStore
-            : [
-                serverOrder.customer.address,
-                serverOrder.customer.ward,
-                serverOrder.customer.district,
-                serverOrder.customer.city,
-              ]
-                .filter(Boolean)
-                .join(', ')
+            : (serverOrder.customer.formattedAddress ||
+                formatCustomerDeliveryAddress(serverOrder.customer))
         }
         payment={
           serverOrder.paymentMethod === 'cod'
@@ -573,76 +715,124 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div ref={shippingMotion}>
                   {shippingMode === 'delivery' ? (
                     <div className="space-y-4 pt-1">
-                      <div>
-                        <label htmlFor="checkout-address" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
-                          Địa chỉ nhận hàng chi tiết <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="checkout-address" value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          placeholder="Số nhà, ngõ/ngách, tên đường..."
-                          className="checkout-input"
+                      {/* Optional Legacy Address Conversion Proposal */}
+                      {legacyProposal?.isUnambiguous && !dismissProposal && (
+                        <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-[#C89F5D]/40 text-[13px] space-y-2 animate-in fade-in duration-200">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-[#3E5641] flex items-center gap-1.5">
+                              <Sparkles className="w-4 h-4 text-[#C89F5D]" /> Gợi ý cập nhật địa giới hành chính 2026
+                            </span>
+                            <span className="text-[11px] bg-[#C89F5D]/20 text-[#3E5641] px-2 py-0.5 rounded-full font-medium">
+                              QĐ 19/2025/QĐ-TTg
+                            </span>
+                          </div>
+                          <p className="text-[#555555] text-[12.5px] leading-relaxed">
+                            Mộc Ngôn Hương đã xác thực địa chỉ cũ của bạn chuyển đổi tương ứng sang đơn vị hành chính mới:
+                          </p>
+                          <div className="font-medium text-[#222222] bg-white p-2.5 rounded-lg border border-[#E5DFD5]">
+                            {legacyProposal.proposedFormattedAddress}
+                          </div>
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleAcceptProposal}
+                              className="px-3.5 py-1.5 rounded-full bg-[#3E5641] text-[#FAF8F3] text-[12px] font-medium hover:bg-[#203323] transition-colors"
+                            >
+                              Xác nhận dùng địa chỉ mới
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDismissProposal}
+                              className="px-3 py-1.5 rounded-full border border-[#D5CFC5] text-[#666666] text-[12px] hover:bg-stone-50 transition-colors"
+                            >
+                              Tự chọn thủ công
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2-tier Dropdowns: Tỉnh/Thành phố & Phường/Xã/Đặc khu */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <SearchableAddressSelect
+                          id="checkout-province"
+                          label="Tỉnh / Thành phố"
                           required
+                          placeholder="Chọn tỉnh / thành phố"
+                          searchPlaceholder="Tìm theo tên tỉnh, thành phố..."
+                          value={provinceCode}
+                          options={provinceOptions}
+                          onChange={handleProvinceChange}
+                          emptyMessage="Không tìm thấy tỉnh / thành phố phù hợp"
+                        />
+
+                        <SearchableAddressSelect
+                          id="checkout-commune"
+                          label="Phường / Xã / Đặc khu"
+                          required
+                          disabled={!provinceCode}
+                          placeholder={
+                            provinceCode
+                              ? 'Chọn phường / xã / đặc khu'
+                              : 'Vui lòng chọn Tỉnh/Thành trước'
+                          }
+                          searchPlaceholder="Tìm theo tên phường, xã, đặc khu..."
+                          value={communeCode}
+                          options={communeOptions}
+                          onChange={handleCommuneChange}
+                          emptyMessage={
+                            provinceCode
+                              ? 'Không tìm thấy phường / xã phù hợp trong tỉnh này'
+                              : 'Vui lòng chọn Tỉnh / Thành phố trước'
+                          }
+                          helperText={
+                            provinceCode && selectedProvince
+                              ? `${selectedProvince.fullName} có ${communeOptions.length} đơn vị cấp xã`
+                              : undefined
+                          }
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                        <div>
-                          <label htmlFor="checkout-city" className="block text-[12px] font-medium text-[#555555] mb-1">
-                            Tỉnh / Thành phố
-                          </label>
-                          <select
-                            id="checkout-city" value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                            className="checkout-input checkout-select text-[13.5px]"
-                          >
-                            <option value="">Chọn tỉnh / thành</option>
-                            <option value="Hà Nội">Hà Nội</option>
-                            <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                            <option value="Thái Nguyên">Thái Nguyên</option>
-                            <option value="Đà Nẵng">Đà Nẵng</option>
-                            <option value="Hải Phòng">Hải Phòng</option>
-                            <option value="Khác">Tỉnh / Thành khác</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label htmlFor="checkout-district" className="block text-[12px] font-medium text-[#555555] mb-1">
-                            Quận / Huyện
-                          </label>
-                          <select
-                            id="checkout-district" value={district}
-                            onChange={(e) => setDistrict(e.target.value)}
-                            className="checkout-input checkout-select text-[13.5px]"
-                          >
-                            <option value="">Chọn quận / huyện</option>
-                            <option value="Hoàn Kiếm">Quận Hoàn Kiếm</option>
-                            <option value="Ba Đình">Quận Ba Đình</option>
-                            <option value="Đống Đa">Quận Đống Đa</option>
-                            <option value="Cầu Giấy">Quận Cầu Giấy</option>
-                            <option value="Tây Hồ">Quận Tây Hồ</option>
-                            <option value="Khác">Quận / Huyện khác</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label htmlFor="checkout-ward" className="block text-[12px] font-medium text-[#555555] mb-1">
-                            Phường / Xã
-                          </label>
-                          <select
-                            id="checkout-ward" value={ward}
-                            onChange={(e) => setWard(e.target.value)}
-                            className="checkout-input checkout-select text-[13.5px]"
-                          >
-                            <option value="">Chọn phường / xã</option>
-                            <option value="Hàng Điếu">Phường Hàng Điếu</option>
-                            <option value="Tràng Tiền">Phường Tràng Tiền</option>
-                            <option value="Cửa Đông">Phường Cửa Đông</option>
-                            <option value="Khác">Phường / Xã khác</option>
-                          </select>
-                        </div>
+                      {/* Detailed Street Address */}
+                      <div>
+                        <label
+                          htmlFor="checkout-address"
+                          className="block text-[12.5px] font-medium text-[#444444] mb-1"
+                        >
+                          Số nhà, ngõ, đường, thôn, tổ dân phố <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="checkout-address"
+                          value={address}
+                          onChange={(e) => {
+                            setAddress(e.target.value);
+                            setAddressError('');
+                          }}
+                          placeholder="Số nhà, ngõ/ngách, tên đường, thôn, buôn, ấp..."
+                          className={`checkout-input ${
+                            addressError ? 'border-red-400 ring-1 ring-red-400/20' : ''
+                          }`}
+                          required
+                        />
+                        {addressError && (
+                          <p className="text-red-500 text-[11.5px] mt-1 pl-1">{addressError}</p>
+                        )}
                       </div>
+
+                      {/* Formatted Address Preview */}
+                      {formattedPreview && (
+                        <div className="rounded-xl p-3 bg-[#FAF8F3] border border-[#E8E2D5] text-[12.5px] flex items-start gap-2.5">
+                          <MapPin className="w-4 h-4 text-[#C89F5D] shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-[#8C827A] text-[11px] uppercase tracking-wider block">
+                              Địa chỉ giao nhận đầy đủ:
+                            </span>
+                            <span className="font-medium text-[#2B3A2D] text-[13px] block mt-0.5">
+                              {formattedPreview}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-3.5 pt-1">

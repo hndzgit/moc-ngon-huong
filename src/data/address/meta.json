@@ -1,0 +1,17 @@
+{
+  "decision": "19/2025/QĐ-TTg",
+  "title": "Bảng danh mục và mã số các đơn vị hành chính Việt Nam",
+  "effectiveDate": "2025-07-01",
+  "datasetVersion": "2026.11",
+  "lastUpdated": "2026-11-02",
+  "baseline": {
+    "provincesCount": 34,
+    "communesCount": 3321,
+    "communeTypes": {
+      "xa": 2599,
+      "phuong": 709,
+      "dacKhu": 13
+    }
+  },
+  "source": "https://chinhphu.vn/?classid=1&docid=214409&orggroupid=3&pageid=27160"
+}

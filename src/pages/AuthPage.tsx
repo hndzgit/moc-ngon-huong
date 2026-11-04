@@ -849,7 +849,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                 <strong className="text-[#333333]">
                                   {order.customer?.shippingMode === 'pickup'
                                     ? 'Nhận tại tiệm (42 Phố Hàng Điếu, Hà Nội)'
-                                    : `${order.customer?.address || 'Địa chỉ đã lưu'}${order.customer?.district ? `, ${order.customer.district}` : ''}${order.customer?.city ? `, ${order.customer.city}` : ''}`}
+                                    : (order.customer?.formattedAddress ||
+                                        (order.customer?.communeName
+                                          ? [
+                                              order.customer?.address,
+                                              order.customer?.communeName,
+                                              order.customer?.provinceName,
+                                            ]
+                                              .filter(Boolean)
+                                              .join(', ')
+                                          : [
+                                              order.customer?.address,
+                                              order.customer?.ward,
+                                              order.customer?.district,
+                                              order.customer?.city,
+                                            ]
+                                              .filter(Boolean)
+                                              .join(', ') || 'Địa chỉ đã lưu'))}
                                 </strong>
                               </div>
 
@@ -1629,7 +1645,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     <span className="text-right text-[#222222] font-medium">
                       {selectedOrder.customer?.shippingMode === 'pickup'
                         ? selectedOrder.customer?.pickupStore || '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội'
-                        : `${selectedOrder.customer?.address || ''}${selectedOrder.customer?.ward ? `, ${selectedOrder.customer.ward}` : ''}${selectedOrder.customer?.district ? `, ${selectedOrder.customer.district}` : ''}${selectedOrder.customer?.city ? `, ${selectedOrder.customer.city}` : ''}`}
+                        : (selectedOrder.customer?.formattedAddress ||
+                            (selectedOrder.customer?.communeName
+                              ? [
+                                  selectedOrder.customer?.address,
+                                  selectedOrder.customer?.communeName,
+                                  selectedOrder.customer?.provinceName,
+                                ]
+                                  .filter(Boolean)
+                                  .join(', ')
+                              : [
+                                  selectedOrder.customer?.address,
+                                  selectedOrder.customer?.ward,
+                                  selectedOrder.customer?.district,
+                                  selectedOrder.customer?.city,
+                                ]
+                                  .filter(Boolean)
+                                  .join(', ')))}
                     </span>
                   </div>
                   {selectedOrder.customer?.note && (

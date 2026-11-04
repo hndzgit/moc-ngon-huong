@@ -1332,14 +1332,23 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                       <Truck className="w-3 h-3 mr-1" /> Giao hàng tận nơi
                     </div>
                     <p className="text-stone-800 leading-relaxed font-medium">
-                      {[
-                        selectedOrder.customer?.address,
-                        selectedOrder.customer?.ward,
-                        selectedOrder.customer?.district,
-                        selectedOrder.customer?.city,
-                      ]
-                        .filter(Boolean)
-                        .join(', ')}
+                      {selectedOrder.customer?.formattedAddress ||
+                        (selectedOrder.customer?.communeName
+                          ? [
+                              selectedOrder.customer?.address,
+                              selectedOrder.customer?.communeName,
+                              selectedOrder.customer?.provinceName,
+                            ]
+                              .filter(Boolean)
+                              .join(', ')
+                          : [
+                              selectedOrder.customer?.address,
+                              selectedOrder.customer?.ward,
+                              selectedOrder.customer?.district,
+                              selectedOrder.customer?.city,
+                            ]
+                              .filter(Boolean)
+                              .join(', '))}
                     </p>
                   </div>
                 )}

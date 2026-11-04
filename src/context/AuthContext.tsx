@@ -22,6 +22,15 @@ export interface CustomerProfile {
   email: string;
   address?: string;
   phone?: string;
+  provinceCode?: string;
+  provinceName?: string;
+  communeCode?: string;
+  communeName?: string;
+  formattedAddress?: string;
+  addressSchemaVersion?: string;
+  city?: string;
+  district?: string;
+  ward?: string;
 }
 
 interface AuthContextType {
@@ -238,6 +247,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: user.email || '',
       address: data.address ?? profile?.address ?? '',
       phone: data.phone ?? profile?.phone ?? '',
+      provinceCode: data.provinceCode ?? profile?.provinceCode,
+      provinceName: data.provinceName ?? profile?.provinceName,
+      communeCode: data.communeCode ?? profile?.communeCode,
+      communeName: data.communeName ?? profile?.communeName,
+      formattedAddress: data.formattedAddress ?? profile?.formattedAddress,
+      addressSchemaVersion: data.addressSchemaVersion ?? profile?.addressSchemaVersion,
+      city: data.city ?? profile?.city,
+      district: data.district ?? profile?.district,
+      ward: data.ward ?? profile?.ward,
     };
     if (data.fullName && user) {
       await updateProfile(user, { displayName: data.fullName });

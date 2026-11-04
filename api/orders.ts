@@ -4,6 +4,7 @@ import path from 'path';
 import { getFirestoreDb, verifyAuthToken, getIsProduction, getIsServerless, cleanForFirestore } from './_lib/firebaseAdmin.js';
 import { sendOrderNotifications } from './_lib/notifications.js';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../src/data/products.js';
+import { validateDeliveryAddress } from '../src/data/address/index.js';
 import type { OrderRecord, OrderItemSnapshot, PaymentStatus, OrderStatus } from '../src/types';
 
 interface VercelRequest extends IncomingMessage {
@@ -39,13 +40,23 @@ function computePayloadFingerprint(
     }))
     .sort((a, b) => a.id.localeCompare(b.id));
 
-  const cleanCustomer = {
+  const cleanCustomer: Record<string, any> = {
     name: typeof customer?.fullName === 'string' ? customer.fullName.trim() : '',
     phone: typeof customer?.phone === 'string' ? customer.phone.replace(/[\s.-]/g, '') : '',
     email: typeof customer?.email === 'string' ? customer.email.trim().toLowerCase() : '',
     shippingMode: customer?.shippingMode === 'pickup' ? 'pickup' : 'delivery',
     address: typeof customer?.address === 'string' ? customer.address.trim() : '',
   };
+
+  if (typeof customer?.provinceCode === 'string' && customer.provinceCode.trim()) {
+    cleanCustomer.provinceCode = customer.provinceCode.trim();
+  }
+  if (typeof customer?.communeCode === 'string' && customer.communeCode.trim()) {
+    cleanCustomer.communeCode = customer.communeCode.trim();
+  }
+  if (typeof customer?.pickupStore === 'string' && customer.pickupStore.trim()) {
+    cleanCustomer.pickupStore = customer.pickupStore.trim();
+  }
 
   return JSON.stringify({
     userId: userId || null,
@@ -333,6 +344,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const email = typeof customer.email === 'string' ? customer.email.trim() : '';
   const shippingMode = customer.shippingMode === 'pickup' ? 'pickup' : 'delivery';
   const address = typeof customer.address === 'string' ? customer.address.trim() : '';
+  const provinceCode = typeof customer.provinceCode === 'string' ? customer.provinceCode.trim() : '';
+  const communeCode = typeof customer.communeCode === 'string' ? customer.communeCode.trim() : '';
   const city = typeof customer.city === 'string' ? customer.city.trim() : '';
   const district = typeof customer.district === 'string' ? customer.district.trim() : '';
   const ward = typeof customer.ward === 'string' ? customer.ward.trim() : '';
@@ -372,16 +385,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  if (shippingMode === 'delivery' && (!address || address.length < 5)) {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 400;
-    res.end(
-      JSON.stringify({
-        success: false,
-        error: 'Vui lòng nhập địa chỉ nhận hàng chi tiết (số nhà, tên đường).',
-      })
-    );
-    return;
+  if (shippingMode === 'delivery') {
+    if (!address || address.length < 3 || address.length > 250) {
+      res.setHeader('Content-Type', 'application/json');
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          success: false,
+          error: 'Vui lòng nhập địa chỉ nhận hàng chi tiết (3-250 ký tự: số nhà, tên đường, thôn, xóm).',
+        })
+      );
+      return;
+    }
+
+    if (provinceCode || communeCode) {
+      const addressValidation = validateDeliveryAddress({ address, provinceCode, communeCode });
+      if (!addressValidation.isValid) {
+        res.setHeader('Content-Type', 'application/json');
+        res.statusCode = 400;
+        res.end(
+          JSON.stringify({
+            success: false,
+            error: addressValidation.error || 'Địa chỉ nhận hàng không hợp lệ.',
+          })
+        );
+        return;
+      }
+    } else if (!city) {
+      res.setHeader('Content-Type', 'application/json');
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          success: false,
+          error: 'Vui lòng chọn Tỉnh / Thành phố nhận hàng.',
+        })
+      );
+      return;
+    }
   }
 
   // 7. Payment Method & Authoritative Calculation
@@ -417,12 +457,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   if (shippingMode === 'delivery') {
-    if (address) customerRecord.address = address;
-    if (city) customerRecord.city = city;
-    if (district) customerRecord.district = district;
-    if (ward) customerRecord.ward = ward;
+    if (provinceCode && communeCode) {
+      const addressValidation = validateDeliveryAddress({ address, provinceCode, communeCode });
+      if (addressValidation.isValid && addressValidation.validated) {
+        customerRecord.address = addressValidation.validated.address;
+        customerRecord.provinceCode = addressValidation.validated.provinceCode;
+        customerRecord.provinceName = addressValidation.validated.provinceName;
+        customerRecord.communeCode = addressValidation.validated.communeCode;
+        customerRecord.communeName = addressValidation.validated.communeName;
+        customerRecord.formattedAddress = addressValidation.validated.formattedAddress;
+        customerRecord.addressSchemaVersion = '2';
+        // Backward compatibility for legacy downstream systems inspecting city/ward
+        customerRecord.city = addressValidation.validated.provinceName;
+        customerRecord.ward = addressValidation.validated.communeName;
+      } else {
+        customerRecord.address = address;
+      }
+    } else {
+      if (address) customerRecord.address = address;
+      if (city) customerRecord.city = city;
+      if (district) customerRecord.district = district;
+      if (ward) customerRecord.ward = ward;
+      customerRecord.formattedAddress = [address, ward, district, city].filter(Boolean).join(', ');
+      customerRecord.addressSchemaVersion = '1';
+    }
   } else {
     customerRecord.pickupStore = pickupStore || '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội';
+    customerRecord.formattedAddress = customerRecord.pickupStore;
   }
 
   if (note) {

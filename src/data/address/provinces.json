@@ -1,0 +1,240 @@
+[
+  {
+    "code": "01",
+    "name": "Hà Nội",
+    "fullName": "Thành phố Hà Nội",
+    "type": "Thành phố",
+    "communeCount": 126
+  },
+  {
+    "code": "04",
+    "name": "Cao Bằng",
+    "fullName": "Tỉnh Cao Bằng",
+    "type": "Tỉnh",
+    "communeCount": 56
+  },
+  {
+    "code": "08",
+    "name": "Tuyên Quang",
+    "fullName": "Tỉnh Tuyên Quang",
+    "type": "Tỉnh",
+    "communeCount": 124
+  },
+  {
+    "code": "11",
+    "name": "Điện Biên",
+    "fullName": "Tỉnh Điện Biên",
+    "type": "Tỉnh",
+    "communeCount": 45
+  },
+  {
+    "code": "12",
+    "name": "Lai Châu",
+    "fullName": "Tỉnh Lai Châu",
+    "type": "Tỉnh",
+    "communeCount": 38
+  },
+  {
+    "code": "14",
+    "name": "Sơn La",
+    "fullName": "Tỉnh Sơn La",
+    "type": "Tỉnh",
+    "communeCount": 75
+  },
+  {
+    "code": "15",
+    "name": "Lào Cai",
+    "fullName": "Tỉnh Lào Cai",
+    "type": "Tỉnh",
+    "communeCount": 99
+  },
+  {
+    "code": "19",
+    "name": "Thái Nguyên",
+    "fullName": "Tỉnh Thái Nguyên",
+    "type": "Tỉnh",
+    "communeCount": 92
+  },
+  {
+    "code": "20",
+    "name": "Lạng Sơn",
+    "fullName": "Tỉnh Lạng Sơn",
+    "type": "Tỉnh",
+    "communeCount": 65
+  },
+  {
+    "code": "22",
+    "name": "Quảng Ninh",
+    "fullName": "Thành phố Quảng Ninh",
+    "type": "Thành phố",
+    "communeCount": 54
+  },
+  {
+    "code": "24",
+    "name": "Bắc Ninh",
+    "fullName": "Thành phố Bắc Ninh",
+    "type": "Thành phố",
+    "communeCount": 99
+  },
+  {
+    "code": "25",
+    "name": "Phú Thọ",
+    "fullName": "Tỉnh Phú Thọ",
+    "type": "Tỉnh",
+    "communeCount": 148
+  },
+  {
+    "code": "31",
+    "name": "Hải Phòng",
+    "fullName": "Thành phố Hải Phòng",
+    "type": "Thành phố",
+    "communeCount": 114
+  },
+  {
+    "code": "33",
+    "name": "Hưng Yên",
+    "fullName": "Tỉnh Hưng Yên",
+    "type": "Tỉnh",
+    "communeCount": 104
+  },
+  {
+    "code": "37",
+    "name": "Ninh Bình",
+    "fullName": "Tỉnh Ninh Bình",
+    "type": "Tỉnh",
+    "communeCount": 129
+  },
+  {
+    "code": "38",
+    "name": "Thanh Hóa",
+    "fullName": "Tỉnh Thanh Hóa",
+    "type": "Tỉnh",
+    "communeCount": 166
+  },
+  {
+    "code": "40",
+    "name": "Nghệ An",
+    "fullName": "Tỉnh Nghệ An",
+    "type": "Tỉnh",
+    "communeCount": 130
+  },
+  {
+    "code": "42",
+    "name": "Hà Tĩnh",
+    "fullName": "Tỉnh Hà Tĩnh",
+    "type": "Tỉnh",
+    "communeCount": 69
+  },
+  {
+    "code": "44",
+    "name": "Quảng Trị",
+    "fullName": "Tỉnh Quảng Trị",
+    "type": "Tỉnh",
+    "communeCount": 78
+  },
+  {
+    "code": "46",
+    "name": "Huế",
+    "fullName": "Thành phố Huế",
+    "type": "Thành phố",
+    "communeCount": 40
+  },
+  {
+    "code": "48",
+    "name": "Đà Nẵng",
+    "fullName": "Thành phố Đà Nẵng",
+    "type": "Thành phố",
+    "communeCount": 94
+  },
+  {
+    "code": "51",
+    "name": "Quảng Ngãi",
+    "fullName": "Tỉnh Quảng Ngãi",
+    "type": "Tỉnh",
+    "communeCount": 96
+  },
+  {
+    "code": "52",
+    "name": "Gia Lai",
+    "fullName": "Tỉnh Gia Lai",
+    "type": "Tỉnh",
+    "communeCount": 135
+  },
+  {
+    "code": "56",
+    "name": "Khánh Hòa",
+    "fullName": "Tỉnh Khánh Hòa",
+    "type": "Tỉnh",
+    "communeCount": 65
+  },
+  {
+    "code": "66",
+    "name": "Đắk Lắk",
+    "fullName": "Tỉnh Đắk Lắk",
+    "type": "Tỉnh",
+    "communeCount": 102
+  },
+  {
+    "code": "68",
+    "name": "Lâm Đồng",
+    "fullName": "Tỉnh Lâm Đồng",
+    "type": "Tỉnh",
+    "communeCount": 124
+  },
+  {
+    "code": "75",
+    "name": "Đồng Nai",
+    "fullName": "Thành phố Đồng Nai",
+    "type": "Thành phố",
+    "communeCount": 95
+  },
+  {
+    "code": "79",
+    "name": "TP. Hồ Chí Minh",
+    "fullName": "Thành phố Hồ Chí Minh",
+    "type": "Thành phố",
+    "communeCount": 168
+  },
+  {
+    "code": "80",
+    "name": "Tây Ninh",
+    "fullName": "Tỉnh Tây Ninh",
+    "type": "Tỉnh",
+    "communeCount": 96
+  },
+  {
+    "code": "82",
+    "name": "Đồng Tháp",
+    "fullName": "Tỉnh Đồng Tháp",
+    "type": "Tỉnh",
+    "communeCount": 102
+  },
+  {
+    "code": "86",
+    "name": "Vĩnh Long",
+    "fullName": "Tỉnh Vĩnh Long",
+    "type": "Tỉnh",
+    "communeCount": 124
+  },
+  {
+    "code": "91",
+    "name": "An Giang",
+    "fullName": "Tỉnh An Giang",
+    "type": "Tỉnh",
+    "communeCount": 102
+  },
+  {
+    "code": "92",
+    "name": "Cần Thơ",
+    "fullName": "Thành phố Cần Thơ",
+    "type": "Thành phố",
+    "communeCount": 103
+  },
+  {
+    "code": "96",
+    "name": "Cà Mau",
+    "fullName": "Tỉnh Cà Mau",
+    "type": "Tỉnh",
+    "communeCount": 64
+  }
+]

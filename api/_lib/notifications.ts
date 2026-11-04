@@ -175,7 +175,7 @@ export async function sendShopOrderNotification(order: OrderRecord): Promise<Not
             <tr><td style="color: #666;">Hình thức:</td><td><strong>${order.customer.shippingMode === 'pickup' ? 'Đến lấy hàng tại không gian trà' : 'Giao hàng tận nơi'}</strong></td></tr>
             <tr>
               <td style="color: #666;">Địa chỉ / Cơ sở:</td>
-              <td>${order.customer.shippingMode === 'pickup' ? (order.customer.pickupStore || '42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội') : [order.customer.address, order.customer.ward, order.customer.district, order.customer.city].filter(Boolean).join(', ')}</td>
+              <td>${order.customer.shippingMode === 'pickup' ? (order.customer.pickupStore || '42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội') : (order.customer.formattedAddress || (order.customer.communeName ? [order.customer.address, order.customer.communeName, order.customer.provinceName].filter(Boolean).join(', ') : [order.customer.address, order.customer.ward, order.customer.district, order.customer.city].filter(Boolean).join(', ')))}</td>
             </tr>
             ${order.customer.note ? `<tr><td style="color: #666;">Ghi chú:</td><td style="color: #d97706;"><em>"${order.customer.note}"</em></td></tr>` : ''}
           </table>
@@ -336,7 +336,7 @@ export async function sendCustomerOrderConfirmation(order: OrderRecord): Promise
             </tr>
             <tr>
               <td style="color: #666;">Địa chỉ / Điểm hẹn:</td>
-              <td>${order.customer.shippingMode === 'pickup' ? (order.customer.pickupStore || '42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội') : [order.customer.address, order.customer.ward, order.customer.district, order.customer.city].filter(Boolean).join(', ')}</td>
+              <td>${order.customer.shippingMode === 'pickup' ? (order.customer.pickupStore || '42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội') : (order.customer.formattedAddress || (order.customer.communeName ? [order.customer.address, order.customer.communeName, order.customer.provinceName].filter(Boolean).join(', ') : [order.customer.address, order.customer.ward, order.customer.district, order.customer.city].filter(Boolean).join(', ')))}</td>
             </tr>
             <tr>
               <td style="color: #666;">Phương thức:</td>
