@@ -1,4 +1,7 @@
-{
+// Catalog metadata
+import type { AddressCatalogMeta } from "./types.js";
+
+export const ADMIN_CATALOG_META: AddressCatalogMeta = {
   "decision": "19/2025/QĐ-TTg",
   "title": "Bảng danh mục và mã số các đơn vị hành chính Việt Nam",
   "effectiveDate": "2025-07-01",
@@ -14,4 +17,4 @@
     }
   },
   "source": "https://chinhphu.vn/?classid=1&docid=214409&orggroupid=3&pageid=27160"
-}
+};

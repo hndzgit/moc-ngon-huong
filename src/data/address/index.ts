@@ -3,10 +3,10 @@
 // Legal Baseline: Decision 19/2025/QĐ-TTg (Effective from 01/07/2025)
 // 34 Provinces/Centrally-Governed Cities & 3,321 Commune-Level Units
 
-import provincesData from './provinces.json';
-import communesData from './communes.json';
-import metaData from './meta.json';
-import legacyMappingsData from './legacyMappings.json';
+import { PROVINCES } from './provincesData.js';
+import { COMMUNES_BY_PROVINCE } from './communesData.js';
+import { ADMIN_CATALOG_META } from './metaData.js';
+import { LEGACY_MAPPINGS } from './legacyMappingsData.js';
 
 import type {
   Province,
@@ -18,11 +18,7 @@ import type {
 } from './types.js';
 
 export type * from './types.js';
-
-export const ADMIN_CATALOG_META: AddressCatalogMeta = metaData as AddressCatalogMeta;
-export const PROVINCES: Province[] = provincesData as Province[];
-export const COMMUNES_BY_PROVINCE: Record<string, Commune[]> = communesData as Record<string, Commune[]>;
-const LEGACY_MAPPINGS: Record<string, [string, string]> = legacyMappingsData as unknown as Record<string, [string, string]>;
+export { PROVINCES, COMMUNES_BY_PROVINCE, ADMIN_CATALOG_META };
 
 // Index maps for constant-time lookups
 const PROVINCE_MAP = new Map<string, Province>();
