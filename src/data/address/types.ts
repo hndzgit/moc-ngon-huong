@@ -65,3 +65,4 @@ export interface ConversionProposal {
   proposedFormattedAddress?: string;
   note?: string;
 }
+

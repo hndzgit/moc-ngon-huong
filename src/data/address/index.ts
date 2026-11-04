@@ -8,16 +8,16 @@ import communesData from './communes.json';
 import metaData from './meta.json';
 import legacyMappingsData from './legacyMappings.json';
 
-import {
+import type {
   Province,
   Commune,
   AddressCatalogMeta,
   ValidatedDeliveryAddress,
   LegacyAddressInput,
   ConversionProposal,
-} from './types';
+} from './types.js';
 
-export * from './types';
+export type * from './types.js';
 
 export const ADMIN_CATALOG_META: AddressCatalogMeta = metaData as AddressCatalogMeta;
 export const PROVINCES: Province[] = provincesData as Province[];
