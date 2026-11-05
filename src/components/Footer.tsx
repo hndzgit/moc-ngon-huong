@@ -35,8 +35,27 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <p className="text-[13px] leading-[20px] text-[#f7f4d5]/85 mb-4 max-w-[260px]">
               Thương hiệu quà tặng trà đặc sản Thái Nguyên định vị kết nối cảm xúc. Chọn hương thơm, gửi gắm trọn vẹn lời thương khó nói.
             </p>
-            <div className="flex items-center gap-6" aria-label="Mạng xã hội">
-              <FigmaIcon name="facebook" /><FigmaIcon name="instagram" /><FigmaIcon name="tiktok" />
+            <div className="flex items-center gap-3 -ml-2.5" aria-label="Mạng xã hội">
+              <a
+                href="https://www.facebook.com/p/M%E1%BB%99c-Ng%C3%B4n-H%C6%B0%C6%A1ng-61590217692405/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook Mộc Ngôn Hương"
+                title="Facebook Mộc Ngôn Hương"
+                className="inline-flex items-center justify-center w-11 h-11 rounded-full text-[#f7f4d5] opacity-90 hover:opacity-100 hover:bg-white/10 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f7f4d5] focus-visible:ring-offset-2 focus-visible:ring-offset-[#3e5641] transition-all"
+              >
+                <FigmaIcon name="facebook" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@mocngonhuong"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok Mộc Ngôn Hương"
+                title="TikTok Mộc Ngôn Hương"
+                className="inline-flex items-center justify-center w-11 h-11 rounded-full text-[#f7f4d5] opacity-90 hover:opacity-100 hover:bg-white/10 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f7f4d5] focus-visible:ring-offset-2 focus-visible:ring-offset-[#3e5641] transition-all"
+              >
+                <FigmaIcon name="tiktok" />
+              </a>
             </div>
           </div>
 
