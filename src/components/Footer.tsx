@@ -1,4 +1,3 @@
-import { isFigmaPreview } from '../lib/previewMode';
 import { BrandLogo } from './BrandLogo';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState } from 'react';
@@ -10,18 +9,14 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-  const [subscribeError, setSubscribeError] = useState('');
+  const [subscribeNotice, setSubscribeNotice] = useState('');
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (newsletterEmail.trim()) {
-      if (!isFigmaPreview) {
-        setSubscribeError('Đăng ký nhận tin trực tuyến hiện chưa khả dụng.');
-        return;
-      }
-      setSubscribed(true);
-      setNewsletterEmail('');
+      setSubscribeNotice(
+        'Kênh bản tin email đang được cập nhật. Quý khách vui lòng kết nối qua Facebook hoặc trang Liên hệ để được tư vấn trực tiếp.'
+      );
     }
   };
 
@@ -65,15 +60,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               BỘ SƯU TẬP
             </h3>
             <ul className="space-y-2.5 text-[13px] text-[#f7f4d5]/85">
-              <li><button type="button" onClick={()=>onNavigate('gift-journey')} className="hover:text-white transition-colors text-left">Tự tay chọn món quà</button></li>
-              <li><button type="button" onClick={()=>onNavigate('corporate')} className="hover:text-white transition-colors text-left">Quà tặng doanh nghiệp</button></li>
               <li>
                 <button
                   type="button"
                   onClick={() => onNavigate('detail', 'buoi-an')}
                   className="hover:text-white transition-colors text-left"
                 >
-                  Trà Bưởi (AN) — Bình An
+                  Trà hương Hoa Bưởi – AN
                 </button>
               </li>
               <li>
@@ -82,7 +75,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('detail', 'nhai-thuong')}
                   className="hover:text-white transition-colors text-left"
                 >
-                  Trà Nhài (THƯƠNG) — Yêu thương
+                  Trà hương Hoa Nhài – THƯƠNG
                 </button>
               </li>
               <li>
@@ -91,7 +84,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('detail', 'soi-cam')}
                   className="hover:text-white transition-colors text-left"
                 >
-                  Trà Hoa Sói (CẢM) — Tri Ân
+                  Trà hương Hoa Sói – CẢM
                 </button>
               </li>
               <li>
@@ -100,7 +93,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('detail', 'com-nho')}
                   className="hover:text-white transition-colors text-left"
                 >
-                  Trà Cốm (NHỚ) — Kỷ Niệm
+                  Trà hương Cốm – NHỚ
                 </button>
               </li>
               <li>
@@ -160,19 +153,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </ul>
           </div>
 
-          {/* Column 4: Đăng Ký Nhận Thưởng */}
+          {/* Column 4: Bản Tin Văn Hóa Trà */}
           <div className="lg:pl-8">
             <h3 className="font-bold text-[14px] text-[#f7f4d5] mb-3">
-              Đăng Ký Nhận Thưởng
+              Bản Tin Văn Hóa Trà
             </h3>
             <p className="text-[12.5px] leading-[19px] text-[#f7f4d5]/85 mb-3">
-              Nhận Cẩm Nang Thưởng Trà Và Mã Ưu Đãi 10% Cho Đơn Hàng Đầu Tiên Của Bạn.
+              Khám phá cẩm nang thưởng trà và thông tin bộ sưu tập mới từ Mộc Ngôn Hương.
             </p>
             <form onSubmit={handleSubscribe} className="flex items-center">
               <input
                 type="email"
                 value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
+                onChange={(e) => {
+                  setNewsletterEmail(e.target.value);
+                  if (subscribeNotice) setSubscribeNotice('');
+                }}
                 placeholder="Nhập email của bạn"
                 className="h-[36px] px-3 rounded-l-[6px] bg-white/10 border border-[#f7f4d5]/30 text-[12.5px] text-[#f7f4d5] placeholder:text-[#f7f4d5]/60 focus:outline-none flex-1 min-w-0"
               />
@@ -183,8 +179,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 Gửi
               </button>
             </form>
-            <p aria-live="polite" className="text-[11px] text-[#f7f4d5]/70 mt-2">
-              {subscribeError || (subscribed ? 'Đã đăng ký nhận ưu đãi 10%!' : 'Bảo Mật Thông Tin 100%')}
+            <p aria-live="polite" className="text-[11px] leading-[16px] text-[#f7f4d5]/75 mt-2">
+              {subscribeNotice || 'Bảo Mật Thông Tin 100%'}
             </p>
           </div>
         </div>

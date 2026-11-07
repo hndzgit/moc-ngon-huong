@@ -260,8 +260,8 @@ export function composeResponse(
         text,
         suggestedQuickReplies: [
           'Xem combo Tâm Ý',
-          'Trà Bưởi - AN',
-          'Trà Nhài - THƯƠNG',
+          'Trà Hương Hoa Bưởi - AN',
+          'Trà Hương Hoa Nhài - THƯƠNG',
         ],
       };
     }

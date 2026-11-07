@@ -70,7 +70,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const [activeImage, setActiveImage] = useState(galleryItems[0].full);
   const [buyQty, setBuyQty] = useState(1);
-  const [selectedComboFlavor, setSelectedComboFlavor] = useState(EMOTION_CARDS[0]);
+  const [selectedComboFlavor, setSelectedComboFlavor] = useState<typeof EMOTION_CARDS[number] | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'media'>('all');
   const reviewsMotion=useChangeMotion<HTMLDivElement>(activeFilter,undefined,.25);
   const quantityMotion=useChangeMotion<HTMLSpanElement>(buyQty,undefined,.18);
@@ -78,6 +78,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   useEffect(() => {
     setActiveImage(galleryItems[0].full);
     setBuyQty(1);
+    setSelectedComboFlavor(null);
     if (typeof window !== 'undefined') {
       galleryItems.slice(1).forEach((item) => {
         const img = new Image();
@@ -88,20 +89,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const otherProducts = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
 
+  const selectedFlavorCopy = selectedComboFlavor ? FIGMA_PRODUCT_COPY[selectedComboFlavor.productId] : null;
+
   const storyData =
-    product.id === 'hop-qua-tam-y'
+    product.id === 'hop-qua-tam-y' && selectedComboFlavor
       ? {
-          title: selectedComboFlavor.heading,
-          quote: selectedComboFlavor.quote,
-          scent: 'Hoa bưởi đầu mùa, thanh mát dịu ngọt',
-          giftFor: 'Bố mẹ, Thầy cô, Bạn tri kỷ lâu năm',
-          image: media ? figmaImage(media.story) : selectedComboFlavor.image,
+          title: selectedFlavorCopy?.storyTitle || selectedComboFlavor.heading,
+          quote: selectedFlavorCopy?.quote || selectedComboFlavor.quote,
+          scent: selectedFlavorCopy?.scent || selectedComboFlavor.scentProfile,
+          giftFor: selectedFlavorCopy?.giftFor || selectedComboFlavor.occasion,
+          image: selectedComboFlavor.image,
         }
       : {
-          title: product.storyTitle,
-          quote: product.storyQuote,
-          scent: product.scentNotes.join(' '),
-          giftFor: product.perfectGiftFor.join(' '),
+          title: copy?.storyTitle || product.storyTitle,
+          quote: copy?.quote || product.storyQuote,
+          scent: copy?.scent || product.scentNotes.join(' '),
+          giftFor: copy?.giftFor || product.perfectGiftFor.join(' '),
           image: media ? figmaImage(media.story) : product.storyImage,
         };
 
@@ -204,12 +207,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {product.id === 'hop-qua-tam-y' && (
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {EMOTION_CARDS.map((card) => {
-                    const active = selectedComboFlavor.key === card.key;
+                    const active = selectedComboFlavor?.key === card.key;
+                    const codeLabel = card.key === 'THUONG' ? 'THƯƠNG' : card.key === 'CAM' ? 'CẢM' : card.key === 'NHO' ? 'NHỚ' : 'AN';
                     return (
                       <button
                         key={card.key}
                         type="button"
-                        onClick={() => setSelectedComboFlavor(card)}
+                        onClick={() => setSelectedComboFlavor((prev) => (prev?.key === card.key ? null : card))}
+                        aria-pressed={active}
                         className={`text-left rounded-[12px] p-3 border transition-all flex items-center justify-between bg-white ${
                           active
                             ? 'border-[#3e5641] ring-1 ring-[#3e5641]/20'
@@ -217,11 +222,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         }`}
                       >
                         <div>
-                          <p className="font-philosopher font-bold text-[15px] text-[#222222]">
+                          <p className="font-minion font-normal text-[17px] text-[#222222] leading-[1.21]">
                             {card.cardTitle}
                           </p>
                           <p className="text-[12px] text-[#666666] mb-1">
-                            {card.teaName}
+                            {card.teaName} – {codeLabel}
                           </p>
                           <span
                             className="inline-block px-3 py-0.5 rounded-full text-[11px] font-semibold"
@@ -316,11 +321,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
             <div className="lg:col-span-7 space-y-4">
               <h2 className="font-philosopher font-bold text-[26px] sm:text-[34px] text-[#f7f4d5] leading-[1.2]">
-                {copy?.storyTitle || storyData.title}
+                {storyData.title}
               </h2>
 
               <blockquote className="border-l-[3px] border-[#c89f5d] pl-4 py-0.5 italic text-[14px] md:text-[15px] leading-[24px] text-[#f7f4d5]/90">
-                {copy?.quote || storyData.quote}
+                {storyData.quote}
               </blockquote>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
@@ -329,7 +334,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     Tầng hương:
                   </h3>
                   <p className="text-[13px] font-medium text-[#f7f4d5]">
-                    {copy?.scent || storyData.scent}
+                    {storyData.scent}
                   </p>
                 </div>
 
@@ -338,7 +343,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     Món quà hoàn hảo cho:
                   </h3>
                   <p className="text-[13px] font-medium text-[#f7f4d5]">
-                    {copy?.giftFor || storyData.giftFor}
+                    {storyData.giftFor}
                   </p>
                 </div>
               </div>

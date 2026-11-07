@@ -1,5 +1,6 @@
 import { assetUrl } from '../lib/assets';
 import { FIGMA_PRODUCT_COPY } from '../data/figmaMedia';
+import { QR_SVG_DATA_URLS } from '../data/qrCodes';
 import { MotionDialog } from '../motion/MotionDialog';
 import { MotionImage } from '../motion/MotionImage';
 import { useChangeMotion } from '../motion/motion';
@@ -89,7 +90,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                 </div>
 
                 <div>
-                  <h3 className="font-philosopher font-bold text-[17px] text-[#222222] leading-snug">
+                  <h3 className="font-minion font-normal text-[17px] text-[#222222] leading-[1.21]">
                     {card.cardTitle}
                   </h3>
                   <p className="text-[12.5px] text-[#777777] mt-0.5">
@@ -167,7 +168,10 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => onNavigate('detail', matchedProduct.id)}
+                    onClick={() => {
+                      onAddToCart(matchedProduct, 1);
+                      onNavigate('checkout');
+                    }}
                     className="h-[44px] px-5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[14px] hover:bg-[#203323] transition-colors shadow-xs flex items-center justify-center gap-2"
                   >
                     <FigmaIcon name="wallet" /><span>Mua Ngay</span>
@@ -200,13 +204,38 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                   </div>
                 ) : null}
                 <MotionDialog open={qrOpen} onClose={()=>setQrOpen(false)}>
-                  <div role="dialog" aria-modal="true" aria-label="Mã QR nghe chuyện trà" className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 animate-fadeIn">
-                    <div className="bg-white p-3.5 rounded-[14px] shadow-2xl mb-4">
+                  <div role="dialog" aria-modal="true" aria-label="Mã QR nghe chuyện trà" className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 sm:p-6 animate-fadeIn text-center">
+                    <div className="bg-white p-4 rounded-[16px] shadow-2xl mb-3 max-w-[280px] w-full flex flex-col items-center">
+                      <span
+                        className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold mb-1"
+                        style={{
+                          backgroundColor: activeItem.pillBg,
+                          color: activeItem.pillText,
+                        }}
+                      >
+                        {activeItem.cardTitle}
+                      </span>
+                      <p className="font-philosopher font-bold text-[15px] text-[#203323] mb-2">
+                        {activeItem.teaName} ({activeItem.key === 'THUONG' ? 'THƯƠNG' : activeItem.key === 'CAM' ? 'CẢM' : activeItem.key === 'NHO' ? 'NHỚ' : 'AN'})
+                      </p>
                       <img
-                        src={assetUrl("/assets/figma/qr-code.png")}
-                        alt="Mã QR nghe Audio chuyện trà"
-                        className="w-[180px] h-[180px] object-contain"
+                        src={QR_SVG_DATA_URLS[activeItem.productId] || assetUrl("/assets/figma/qr-code.png")}
+                        alt={`Mã QR nghe Audio chuyện trà — ${activeItem.teaName}`}
+                        className="w-[164px] h-[164px] object-contain"
                       />
+                      <p className="text-[11.5px] text-[#555555] leading-snug mt-2 mb-2.5">
+                        Quét mã hoặc chạm bên dưới để mở trang chuyện trà và thông tin chi tiết.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQrOpen(false);
+                          onNavigate('detail', activeItem.productId);
+                        }}
+                        className="w-full h-[36px] px-3 rounded-full bg-[#3e5641] text-[#f7f4d5] font-medium text-[12px] hover:bg-[#203323] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>Mở trang chuyện trà & chi tiết</span>
+                      </button>
                     </div>
                     <button
                       type="button"

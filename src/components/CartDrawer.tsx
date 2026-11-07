@@ -155,7 +155,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         {product.id === 'hop-qua-tam-y' ? 'Hộp Quà Tâm Ý' : FIGMA_PRODUCT_COPY[product.id]?.title || product.name}
                       </h3>
                       <p className="cart-item-subtitle text-[12px] text-[#222] mt-1">
-                        {product.emotion === 'COMBO' ? 'AN · THƯƠNG · CẢM · NHỚ' : {AN:'Trà Bưởi',THUONG:'Trà Nhài',CAM:'Trà Hoa Sói',NHO:'Trà Cốm',ALL:'Các hương trà'}[product.emotion]}
+                        {product.emotion === 'COMBO' ? 'AN · THƯƠNG · CẢM · NHỚ' : {AN:'Trà Hương Hoa Bưởi',THUONG:'Trà Hương Hoa Nhài',CAM:'Trà Hương Hoa Sói',NHO:'Trà Hương Cốm',ALL:'Các hương trà'}[product.emotion]}
                       </p>
                       <p className="cart-item-price text-[14px] text-[#444444] mt-1">
                         {product.price.toLocaleString('en-US')}đ

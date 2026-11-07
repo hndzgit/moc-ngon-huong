@@ -62,7 +62,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .checkout-page:not(.checkout-premium) { padding:clamp(64px,4.166667vw,80px) 0; background:#faf7f2; }
   .checkout-page:not(.checkout-premium) > .figma-container { max-width:1680px; }
   .checkout-page:not(.checkout-premium) h1 { font-size:clamp(56px,4.166667vw,80px); line-height:1.125; }
-  .checkout-page:not(.checkout-premium) .text-center > p { font:400 24px/29px 'Minion Pro',Georgia,serif; letter-spacing:4.8px; }
+  .checkout-page:not(.checkout-premium) .text-center > p { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; letter-spacing:4.8px; }
   .checkout-page:not(.checkout-premium) form { padding:24px; border:0; border-radius:24px; box-shadow:none; }
   .checkout-page:not(.checkout-premium) form > div:first-child > .grid { font:400 20px/30px Philosopher,serif; padding:24px; }
   .checkout-page:not(.checkout-premium) form .divide-y > div { padding:40px 0; font-size:24px; }
@@ -113,7 +113,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .contact-page { padding:clamp(64px,4.166667vw,80px) 0; }
   .contact-page > .figma-container { max-width:1394px; }
   .contact-page h1 { font-size:clamp(56px,4.166667vw,80px); line-height:1.125; color:#3e5641; margin-bottom:4px; }
-  .contact-page .text-center > p:first-child { font:400 24px/29px 'Minion Pro',Georgia,serif; color:#8e6746; letter-spacing:4.8px; }
+  .contact-page .text-center > p:first-child { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; color:#8e6746; letter-spacing:4.8px; }
   .contact-page .text-center > p:last-of-type { font-size:20px; line-height:30px; max-width:764px; }
   .contact-page .contact-info { display:grid; grid-template-columns:1fr 1fr; gap:24px; text-align:left; max-width:1394px; margin-inline:auto; }
   .contact-page .contact-info > div { gap:16px; }
@@ -155,7 +155,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-emotion > .figma-container > .grid { gap:24px; margin-bottom:24px; }
   .home-emotion > .figma-container > .grid > button { min-height:156px; border-radius:12px; box-shadow:none; --tw-ring-shadow:0 0 #0000; }
   .home-emotion > .figma-container > .grid > button[aria-pressed=true] { background:#f3fbf2; }
-  .home-emotion > .figma-container > .grid h3 { font-family:'Minion Pro',Georgia,serif; font-size:clamp(18px,1.25vw,24px); line-height:1.208333; font-weight:400; }
+  .home-emotion > .figma-container > .grid h3 { font-family:'Crimson Pro','Playfair Display',Georgia,serif; font-size:clamp(18px,1.25vw,24px); line-height:1.208333; font-weight:400; }
   .home-emotion > .figma-container > .grid p { font-size:16px; }
   .home-emotion > .figma-container > .grid img { height:57px; width:60px; }
   .home-emotion > .figma-container > .grid span { font-size:14px; font-weight:400; border-radius:12px; }
@@ -168,7 +168,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-emotion blockquote + .grid > div { padding:12px; border:1px solid #d9d9d9; border-radius:8px; }
   .home-emotion blockquote + .grid p,.home-emotion blockquote + .grid h4 { font-size:16px; line-height:19.5px; font-weight:400; }
   .home-emotion .pt-3.border-t { padding-top:0; border-top:0; }
-  .home-emotion .pt-3.border-t > .font-philosopher { font:500 32px/38px 'Minion Pro',Georgia,serif; margin-bottom:16px; }
+  .home-emotion .pt-3.border-t > .font-philosopher { font:500 32px/38px 'Crimson Pro','Playfair Display',Georgia,serif; margin-bottom:16px; }
   .home-emotion .pt-3.border-t > .grid { border-top:1px solid #d9d9d9; padding-top:24px; gap:24px; }
   .home-emotion .pt-3.border-t button { min-height:56px; height:auto; font-size:clamp(15px,1.041667vw,20px); font-weight:400; }
   .home-emotion .lg\:col-span-6 > .relative { height:100%; min-height:clamp(360px,27.03125vw,519px); border-radius:12px; }
@@ -199,14 +199,14 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .signature-box .grid-cols-1.sm\:grid-cols-3 > div { padding:12px; border:1px solid #d9d9d9; background:none; }
   .signature-box .grid-cols-1.sm\:grid-cols-3 p { font-size:16px; line-height:19px; }
   .signature-box .grid-cols-1.sm\:grid-cols-3 p:first-child { font-size:14px; }
-  .signature-box .font-philosopher.font-bold.text-\[28px\] { font:500 32px/38px 'Minion Pro',Georgia,serif; color:white; }
+  .signature-box .font-philosopher.font-bold.text-\[28px\] { font:500 32px/38px 'Crimson Pro','Playfair Display',Georgia,serif; color:white; }
   .signature-box .sm\:grid-cols-2 { border-top:1px solid #d9d9d9; padding-top:24px; gap:24px; }
   .signature-box .sm\:grid-cols-2 button { min-height:56px; height:auto; font-size:clamp(15px,1.041667vw,20px); font-weight:400; box-shadow:none; }
   .home-unboxing { padding:clamp(80px,6.25vw,120px) 0; }
   .home-unboxing .text-center { max-width:939px; margin-bottom:40px; }
   .home-unboxing .md\:grid-cols-3 { gap:clamp(24px,2.083333vw,40px); }
   .home-unboxing .md\:grid-cols-3 > div { min-height:240px; padding:16px; border-radius:12px; box-shadow:none; }
-  .home-unboxing .md\:grid-cols-3 h3 { font:400 24px/29px 'Minion Pro',Georgia,serif; color:#222; margin-bottom:4px; }
+  .home-unboxing .md\:grid-cols-3 h3 { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; color:#222; margin-bottom:4px; }
   .home-unboxing .md\:grid-cols-3 p { font-size:16px; line-height:19px; margin-bottom:0; }
   .home-unboxing .md\:grid-cols-3 > div > p { font-size:14px; font-weight:400; padding:0; border:0; letter-spacing:0; }
   .home-philosophy { padding:clamp(64px,4.21875vw,81px) 0; }
@@ -216,7 +216,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-philosophy .lg\:col-span-6:first-child > h3 { font-size:clamp(30px,2.083333vw,40px); line-height:1.125; color:#3e5641; margin-bottom:24px; }
   .home-philosophy .lg\:col-span-6:first-child > div { min-height:226px; border-radius:12px; padding:16px; box-shadow:none; margin-top:24px; }
   .home-philosophy .lg\:col-span-6:first-child > div span { font:700 36px/40px Philosopher,serif; width:60px; height:60px; background:#f3fbf2; margin-bottom:24px; }
-  .home-philosophy .lg\:col-span-6:first-child > div h4 { font:400 24px/29px 'Minion Pro',Georgia,serif; margin-bottom:4px; }
+  .home-philosophy .lg\:col-span-6:first-child > div h4 { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; margin-bottom:4px; }
   .home-philosophy .lg\:col-span-6:first-child > div p { font-size:16px; line-height:19px; }
   .home-philosophy .lg\:col-span-6:last-child { padding-top:0; }
   .home-philosophy .lg\:col-span-6:last-child > div { height:auto; aspect-ratio:677/400; box-shadow:none; }
@@ -258,7 +258,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-emotion > .figma-container > .text-center { margin-bottom:38px; }
   .products-page,.story-page,.product-detail-page { background:#faf7f2; }
   .products-page > section:first-child { padding:clamp(64px,4.166667vw,80px) 0 40px; height:276px; }
-  .products-page > section:first-child p:first-child { font:400 24px/29px 'Minion Pro',Georgia,serif; color:#8e6746; letter-spacing:4.8px; }
+  .products-page > section:first-child p:first-child { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; color:#8e6746; letter-spacing:4.8px; }
   .products-page > section:first-child h1 { font-size:clamp(56px,4.166667vw,80px); line-height:1.125; }
   .products-page > section:first-child p:last-child { font-size:clamp(18px,1.25vw,24px); line-height:1.208333; font-style:normal; }
   .products-page > section:last-child { padding:40px 0 80px; background:#faf7f2; }
@@ -288,7 +288,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .product-detail-page > section:first-child .grid-cols-3 button { width:100%; height:auto; aspect-ratio:1; border-radius:16px; }
   .product-detail-page h1 { font-size:clamp(36px,2.604167vw,50px); line-height:1.12; color:#3e5641; }
   .product-detail-page h1 + p { font-size:clamp(18px,1.25vw,24px); line-height:1.208333; margin-top:4px; }
-  .product-detail-page h1 + p + div { font:500 48px/72px 'Minion Pro',Georgia,serif; margin-top:16px; }
+  .product-detail-page h1 + p + div { font:500 48px/72px 'Crimson Pro','Playfair Display',Georgia,serif; margin-top:16px; }
   .product-detail-page .mt-5.pt-5 { padding:40px 0; margin-top:40px; }
   .product-detail-page .mt-5.pt-5 p:first-child { font:700 30px/34px Philosopher,serif; color:#3e5641; }
   .product-detail-page .mt-5.pt-5 p:last-child { font-size:20px; line-height:30px; }
@@ -370,7 +370,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .products-page .product-card-large > .relative { width:calc(100% + min(.260417vw,5px)); height:auto; aspect-ratio:3/2; flex-shrink:0; border-radius:24px; }
   .products-page .product-card-large > .relative img { width:100%; }
   .products-page .product-card-large > .pt-3 { justify-content:flex-start; }
-  .products-page .product-card-large h3 { font-weight:700; text-transform:capitalize; }
+  .products-page .product-card-large h3 { font-weight:700; }
   .products-page .product-card-large p { margin-top:8px; font-weight:400; }
   .products-page .product-card-large .border-t { margin-top:8px; padding-top:16px; border-color:#d9d9d9; }
   .products-page .product-card-large .border-t > div span { font-size:32px; }
@@ -428,14 +428,14 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .cart-drawer aside .cart-item h3 { white-space:nowrap; text-overflow:clip; font:400 24px/27px Philosopher,serif; }
   .cart-drawer aside .cart-item img.object-cover { border-radius:16px; }
   .cart-drawer aside .cart-item-subtitle { font:400 16px/20px Montserrat,sans-serif; margin-top:4px; }
-  .cart-drawer aside .cart-item-price { font:400 24px/29px 'Minion Pro',Georgia,serif; color:#8e6746; margin-top:21px; }
+  .cart-drawer aside .cart-item-price { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; color:#8e6746; margin-top:21px; }
   .cart-drawer aside .cart-item > .h-\[34px\] { position:absolute; right:0; top:112.5px; width:98px; height:38px; padding:0; gap:0; border-radius:16px; border-color:#3e5641; }
   .cart-drawer aside .cart-item > .h-\[34px\] > * { width:32px; padding:0; font:400 20px/30px Roboto,sans-serif; }
   .cart-drawer aside > div:last-child:not(.flex-1) { padding:40px 0; }
   .cart-drawer aside > .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top:8px; }
   .cart-drawer aside > .space-y-5 > .flex { height:36px; }
   .cart-drawer aside > .space-y-5 > .flex > span:first-child { font:400 20px/30px Montserrat,sans-serif; }
-  .cart-drawer aside > .space-y-5 > .flex > span:last-child { font:400 24px/36px 'Minion Pro',Georgia,serif; color:#8e6746; }
+  .cart-drawer aside > .space-y-5 > .flex > span:last-child { font:400 24px/36px 'Crimson Pro','Playfair Display',Georgia,serif; color:#8e6746; }
   .cart-drawer aside > .space-y-5 > button { height:62px; font:400 20px/30px Roboto,sans-serif; color:white; box-shadow:none; }
   .cart-drawer aside > .flex-1.text-center > div.rounded-full { width:88px; height:88px; margin-bottom:24px; }
   .cart-drawer aside > .flex-1.text-center h3 { line-height:34px; margin-bottom:0; color:#3e5641; text-transform:capitalize; }

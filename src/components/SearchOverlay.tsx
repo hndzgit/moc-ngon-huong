@@ -31,16 +31,24 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   ]);
 
   const filteredProducts = useMemo(() => {
-    const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
+    const normalize = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .toLowerCase();
     const q = normalize(query.trim());
     if (!q) return PRODUCTS;
-    return PRODUCTS.filter(
-      (p) =>
-        normalize(p.name).includes(q) ||
-        normalize(p.shortName).includes(q) ||
-        normalize(p.emotionLabel).includes(q) ||
-        normalize(p.shortDesc).includes(q)
-    );
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return PRODUCTS.filter((p) => {
+      const titleText = normalize(`${p.name} ${p.shortName} ${p.emotionLabel}`);
+      const descText = normalize(p.shortDesc);
+      return (
+        titleText.includes(q) ||
+        descText.includes(q) ||
+        (tokens.length > 0 && tokens.every((token) => titleText.includes(token)))
+      );
+    });
   }, [query]);
 
   if (!present) return null;

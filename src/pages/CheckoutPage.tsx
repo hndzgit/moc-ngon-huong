@@ -1062,10 +1062,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           {product.emotion === 'COMBO'
                             ? 'AN · THƯƠNG · CẢM · NHỚ'
                             : {
-                                AN: 'Trà Bưởi · Bình An',
-                                THUONG: 'Trà Nhài · Yêu Thương',
-                                CAM: 'Trà Hoa Sói · Tri Ân',
-                                NHO: 'Trà Cốm · Kỷ Niệm',
+                                AN: 'Trà Hương Hoa Bưởi · Bình An',
+                                THUONG: 'Trà Hương Hoa Nhài · Yêu Thương',
+                                CAM: 'Trà Hương Hoa Sói · Tri Ân',
+                                NHO: 'Trà Hương Cốm · Dịu Êm',
                                 ALL: 'Các hương trà đặc sản',
                               }[product.emotion]}
                         </p>

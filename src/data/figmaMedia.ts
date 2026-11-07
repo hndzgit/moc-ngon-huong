@@ -48,36 +48,36 @@ export const FIGMA_ORDER_MEDIA: Record<string, {image:string;position:string}> =
 export const FIGMA_PRODUCT_COPY: Record<string, {node:string;title:string;summary:string;storyTitle:string;quote:string;scent:string;giftFor:string}> = {
   "buoi-an": {
     "node": "35:3068",
-    "title": "Trà hương Bưởi – AN",
-    "summary": "Hương bưởi thanh mát và gần gũi, đại diện cho lòng biết ơn, sự trân trọng.",
-    "storyTitle": "Trà Hương Bưởi - Gửi trọn ước nguyện Bình An",
+    "title": "Trà Hương Hoa Bưởi – AN",
+    "summary": "Hương hoa bưởi thanh dịu, vị trà êm và hậu ngọt nhẹ, gợi cảm giác an nhiên và thư thái.",
+    "storyTitle": "Trà Hương Hoa Bưởi - Gửi trọn ước nguyện Bình An",
     "quote": "\"Hương hoa bưởi La Bằng thanh tao quấn quýt cùng vị tiền chát hậu ngọt của búp chè non, tựa như một cái ôm dịu dàng xoa dịu những nhọc nhằn ngày cũ.\"",
     "scent": "Hoa bưởi đầu mùa, thanh mát dịu ngọt",
     "giftFor": "Bố mẹ, Thầy cô, Bạn tri kỷ lâu năm"
   },
   "nhai-thuong": {
     "node": "120:2859",
-    "title": "Trà hương Nhài – THƯƠNG",
-    "summary": "Hương nhài nhẹ nhàng, tinh tế, gợi sự yêu thương và quan tâm.",
-    "storyTitle": "Trà Hương Nhài — Dịu ngọt lời yêu thương",
+    "title": "Trà Hương Hoa Nhài – THƯƠNG",
+    "summary": "Hương hoa nhài nhẹ nhàng, tinh tế, gợi sự yêu thương và quan tâm.",
+    "storyTitle": "Trà Hương Hoa Nhài — Dịu ngọt lời yêu thương",
     "quote": "\"Từng cánh hoa nhài ủ hương đêm tinh khôi, lưu lại vị ngọt ngào bền lâu trong tâm tưởng, thay lời thương tha thiết khó cất thành tiếng.\"",
     "scent": "Hoa nhài quỳnh đêm, ngọt sâu lắng đọng",
     "giftFor": "Người yêu, Bạn gái, Phái đẹp dịu dàng"
   },
   "soi-cam": {
     "node": "120:3302",
-    "title": "Trà hương Sói – CẢM",
+    "title": "Trà Hương Hoa Sói – CẢM",
     "summary": "Hương hoa đặc trưng, dịu nhẹ và sâu lắng, gợi cảm giác hoài niệm và nhớ thương.",
-    "storyTitle": "Trà Hoa Sói — Tấm lòng Tri Ân trầm lắng",
+    "storyTitle": "Trà Hương Hoa Sói — Tấm lòng Tri Ân trầm lắng",
     "quote": "\"Hoa sói cổ truyền nồng ấm, sắc sảo và mang đậm hồn xưa cũ. Món quà hoàn hảo để tỏ lòng biết ơn sâu sắc tới người thầy, người nâng đỡ mình.\"",
     "scent": "Hương hoa sói hoài niệm, trầm ấm bền lâu",
     "giftFor": "Thầy cô 20/11, Cấp trên, Người dẫn dắt"
   },
   "com-nho": {
     "node": "120:3541",
-    "title": "Trà hương Cốm - NHỚ",
-    "summary": "hương cốm dịu dàng, mộc mạc, mang lại cảm giác thư thái, nhẹ nhàng và bình yên.",
-    "storyTitle": "Trà Cốm — Nhắc lại những ngày tháng êm đềm",
+    "title": "Trà Hương Cốm – NHỚ",
+    "summary": "Hương cốm dịu dàng, mộc mạc, mang lại cảm giác thư thái, nhẹ nhàng và bình yên.",
+    "storyTitle": "Trà Hương Cốm — Nhắc lại những ngày tháng êm đềm",
     "quote": "\"Vị thơm thoang thoảng của hương cốm non quyện trong búp chè tươi, làm sống lại những kỷ niệm ấu thơ và lời hẹn ước thời hoa niên.\"",
     "scent": "Lúa non, mật ong hoa dại & cốm mới",
     "giftFor": "Bạn học cũ, Bạn đồng hành thời sinh viên"
@@ -85,10 +85,10 @@ export const FIGMA_PRODUCT_COPY: Record<string, {node:string;title:string;summar
   "hop-qua-tam-y": {
     "node": "120:6560",
     "title": "Hộp Quà Trà Đa Hương — \"TÂM Ý\"",
-    "summary": "Hương hoa đặc trưng, dịu nhẹ và sâu lắng, gợi cảm giác hoài niệm và nhớ thương.",
+    "summary": "Giải pháp quà tặng trọn vẹn dành cho các dịp lễ kỷ niệm, Ngày Nhà giáo 20/11 hay ra mắt gia đình. Một chiếc hộp chứa đựng cả 4 phong vị trà trứ danh cùng phụ kiện thủ công kỷ niệm.",
     "storyTitle": "Hộp Quà Tâm Ý — Đong đầy mọi sắc thái yêu thương",
     "quote": "\"Khi mọi cảm xúc đều đáng trân trọng, bộ quà tặng đa hương mang đến trải nghiệm thưởng trà trọn vẹn kèm muỗng gỗ kỷ niệm và thiệp viết nắn nót.\"",
-    "scent": "Đa hương vị: Bưởi, Nhài, Sói và Cốm non",
+    "scent": "Đa hương vị: Hoa Bưởi, Hoa Nhài, Hoa Sói và Cốm",
     "giftFor": "Dịp lễ lớn, Ra mắt gia đình, Quà biếu trang trọng"
   }
 };
@@ -104,9 +104,9 @@ export const FIGMA_LISTING_COPY: Record<string,string> = {
 // Compact subtitles: 127:13403–13454. Related copy/note: 103:6314–6374.
 // These are display slots; catalog prices and cart product objects stay unchanged.
 export const FIGMA_CARD_COPY: Record<string, {title:string; subtitle:string; description:string; note?:string}> = {
-  'buoi-an': {title:'Trà hương Bưởi (AN)', subtitle:'Trà Bưởi', description:FIGMA_LISTING_COPY['buoi-an']},
-  'nhai-thuong': {title:'Trà Nhài (THƯƠNG)', subtitle:'Trà Nhài', description:FIGMA_LISTING_COPY['nhai-thuong']},
-  'soi-cam': {title:'Trà Hoa Sói (CẢM)', subtitle:'Trà Hoa Sói', description:FIGMA_LISTING_COPY['soi-cam']},
-  'com-nho': {title:'Trà Cốm (NHỚ)', subtitle:'Trà Cốm', description:FIGMA_LISTING_COPY['com-nho']},
+  'buoi-an': {title:'Trà Hương Hoa Bưởi (AN)', subtitle:'Trà Hương Hoa Bưởi', description:FIGMA_LISTING_COPY['buoi-an']},
+  'nhai-thuong': {title:'Trà Hương Hoa Nhài (THƯƠNG)', subtitle:'Trà Hương Hoa Nhài', description:FIGMA_LISTING_COPY['nhai-thuong']},
+  'soi-cam': {title:'Trà Hương Hoa Sói (CẢM)', subtitle:'Trà Hương Hoa Sói', description:FIGMA_LISTING_COPY['soi-cam']},
+  'com-nho': {title:'Trà Hương Cốm (NHỚ)', subtitle:'Trà Hương Cốm', description:FIGMA_LISTING_COPY['com-nho']},
   'hop-qua-tam-y': {title:'Combo Signature "Tâm Ý"', subtitle:'Đầy đủ 4 phong vị trà', description:'Đầy đủ 4 phong vị trà, muỗng gỗ & thiệp', note:'Có thể mix theo sở thích cá nhân'},
 };

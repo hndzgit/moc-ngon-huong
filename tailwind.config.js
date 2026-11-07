@@ -27,6 +27,7 @@ export default {
       },
       fontFamily: {
         philosopher: ['"Philosopher"', 'serif'],
+        minion: ['"Crimson Pro"', '"Playfair Display"', 'Georgia', 'serif'],
         montserrat: ['"Montserrat"', 'sans-serif'],
         inter: ['"Inter"', 'sans-serif'],
         serif: ['"Philosopher"', '"Playfair Display"', 'Georgia', 'serif'],

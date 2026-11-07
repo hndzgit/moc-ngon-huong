@@ -13,6 +13,12 @@
   h1, h2, h3, .font-philosopher {
     font-family: 'Philosopher', serif;
   }
+
+  .font-minion {
+    font-family: 'Crimson Pro', 'Playfair Display', Georgia, serif;
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures;
+  }
 }
 
 /* One continuous content grid: 40px gutters at 768, 120px at 1920.

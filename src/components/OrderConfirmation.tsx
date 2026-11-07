@@ -285,10 +285,10 @@ export function OrderConfirmation({
                       {product.emotion === 'COMBO'
                         ? 'AN, THƯƠNG, CẢM, NHỚ'
                         : {
-                            AN: 'Trà Bưởi thanh khiết',
-                            THUONG: 'Trà Nhài đượm hương',
-                            CAM: 'Trà Hoa Sói trầm ấm',
-                            NHO: 'Trà Cốm dịu ngọt',
+                            AN: 'Trà Hương Hoa Bưởi thanh khiết',
+                            THUONG: 'Trà Hương Hoa Nhài đượm hương',
+                            CAM: 'Trà Hương Hoa Sói trầm ấm',
+                            NHO: 'Trà Hương Cốm dịu ngọt',
                             ALL: 'Bộ sưu tập hương trà',
                           }[product.emotion] || product.emotion}
                     </p>

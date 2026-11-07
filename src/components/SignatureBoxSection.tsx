@@ -200,7 +200,10 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
 
               <button
                 type="button"
-                onClick={() => onNavigate('detail', signatureProduct.id)}
+                onClick={() => {
+                  onAddToCart(signatureProduct, 1);
+                  onNavigate('checkout');
+                }}
                 className="h-[46px] px-6 rounded-full bg-[#c89f5d] text-white font-semibold text-[14.5px] hover:bg-[#b58d4b] transition-colors shadow-md flex items-center justify-center gap-2"
               >
                 <FigmaIcon name="wallet" /><span>Mua Ngay</span>
