@@ -109,9 +109,9 @@ const TASKS = [
     ],
   },
   {
-    input: 'public/assets/figma/cam-outdoor.png',
+    input: 'public/assets/figma/cam-tray.png',
     outputs: [
-      { file: 'card-soi-cam-800.webp', width: 800, quality: 88 },
+      { file: 'card-soi-cam-800.webp', width: 1280, quality: 90 },
     ],
   },
   {

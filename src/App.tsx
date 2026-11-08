@@ -10,6 +10,7 @@ import { CartItem, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
 import { changeEmotion, createGiftDraft, INTENTIONS, journeyHash } from './data/giftJourney';
 import { AtelierIntroduction } from './components/AtelierIntroduction';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from './data/products';
+import { FIGMA_CARD_COPY } from './data/figmaMedia';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { EmotionSelector } from './components/EmotionSelector';
@@ -249,6 +250,8 @@ export function App() {
                     <ProductCard
                       key={product.id}
                       imageSrc={`/assets/optimized/discovery-card-${product.id}.webp`}
+                      displayTitle={FIGMA_CARD_COPY[product.id]?.title}
+                      displayDescription={FIGMA_CARD_COPY[product.id]?.description}
                       product={product}
                       quantity={cartQuantities[product.id] || 0}
                       onUpdateQuantity={handleUpdateProductQuantity}

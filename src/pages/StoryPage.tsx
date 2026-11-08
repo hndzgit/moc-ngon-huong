@@ -126,7 +126,6 @@ export const StoryPage: React.FC<StoryPageProps> = ({ onNavigate }) => {
                   height={1280}
                 />
               </picture>
-              <figcaption>Một món quà được bắt đầu bằng sự chân thành.</figcaption>
             </figure>
           </div>
         </article>
@@ -184,7 +183,6 @@ export const StoryPage: React.FC<StoryPageProps> = ({ onNavigate }) => {
                   height={1280}
                 />
               </picture>
-              <figcaption>Chọn một hương trà để thay lời muốn nói.</figcaption>
             </figure>
             <div className="story-chapter-copy">
               <p className="story-chapter-number">03 / Lời muốn gửi</p>

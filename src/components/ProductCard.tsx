@@ -67,9 +67,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               large
                 ? 'text-[22px] md:text-[26px]'
                 : compact
-                ? 'text-[16px]'
+                ? 'text-[16px] line-clamp-1'
                 : 'text-[18px] md:text-[19px]'
-            } text-[#222222] group-hover:text-[#3e5641] transition-colors cursor-pointer line-clamp-1`}
+            } text-[#222222] group-hover:text-[#3e5641] transition-colors cursor-pointer`}
           >
             <button type="button" onClick={()=>onSelect(detailId)} className="w-full text-left" aria-label={`Chi tiết ${product.name}`}>
               {displayTitle || (large ? product.name : product.shortName || product.name)}
@@ -79,7 +79,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <p
               className={`${
                 large ? 'text-[14px] leading-[22px] mt-1.5' : 'text-[12.5px] leading-[18px] mt-1'
-              } text-[#666666] ${!large && displayDescription ? 'line-clamp-3' : 'line-clamp-2'}`}
+              } text-[#666666] ${displayDescription ? '' : 'line-clamp-2'}`}
             >
               {displayDescription || product.shortDesc}
             </p>

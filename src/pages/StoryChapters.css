@@ -13,9 +13,9 @@
 .story-page.story-editorial .story-chapter h2 { font-size:clamp(32px,3.3vw,56px); line-height:1.12; color:#3e5641; margin:0 0 28px; font-weight:400; }
 .story-page.story-editorial .story-chapter-copy > p:not(.story-chapter-number) { font-size:14px; line-height:1.9; color:#53594f; margin:0 0 20px; }
 .story-page.story-editorial .story-chapter-copy blockquote { font-family:Philosopher,serif; font-size:clamp(26px,2.2vw,38px); line-height:1.4; color:#3e5641; margin:32px 0 0; }
-.story-page.story-editorial .story-chapter-figure { margin:0; min-width:0; }
-.story-page.story-editorial .story-chapter-figure img { display:block; width:100%; height:auto; }
-.story-page.story-editorial .story-chapter-figure figcaption { margin-top:14px; font-size:11px; line-height:1.8; letter-spacing:.03em; color:#6b7065; }
+.story-page.story-editorial .story-chapter-figure { margin:0; min-width:0; border-radius:24px; overflow:hidden; }
+.story-page.story-editorial .story-chapter-figure picture { display:block; border-radius:24px; overflow:hidden; }
+.story-page.story-editorial .story-chapter-figure img { display:block; width:100%; height:auto; border-radius:24px; }
 .story-page.story-editorial .story-flavor-chapter { background:#f0ede5; }
 .story-page.story-editorial .story-flavor-heading { max-width:840px; }
 .story-page.story-editorial .story-flavor-heading > p:last-child { font-size:14px; line-height:1.7; color:#53594f; }

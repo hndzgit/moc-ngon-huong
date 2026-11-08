@@ -144,14 +144,14 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-emotion { padding:clamp(80px,6.25vw,120px) 0 0; }
   .home-emotion .text-center:first-child { max-width:1073px; margin-bottom:40px; }
   .home-emotion .text-center > p:first-child,
-  .home-teas .text-center > p:first-child,
-  .home-unboxing .text-center > p:first-child,
-  .home-philosophy .text-center > p:first-child { font:400 clamp(18px,1.25vw,24px)/1.208333 Montserrat,sans-serif; color:#8e6746; margin-bottom:16px; }
+  .home-teas > .figma-container > .text-center > p:first-child,
+  .home-unboxing > .figma-container > .text-center > p:first-child,
+  .home-philosophy > .figma-container > .text-center > p:first-child { font:400 clamp(18px,1.25vw,24px)/1.208333 Montserrat,sans-serif; color:#8e6746; margin-bottom:16px; }
   .home-emotion h2,.home-teas h2,.home-unboxing h2,.home-philosophy h2 { font-size:clamp(30px,2.083333vw,40px); line-height:1.125; color:#3e5641; margin-bottom:12px; }
   .home-emotion .text-center > p:last-child,
-  .home-teas .text-center > p:last-child,
-  .home-unboxing .text-center > p:last-child,
-  .home-philosophy .text-center > p:last-child { font-size:clamp(18px,1.25vw,24px); line-height:1.208333; max-width:none; }
+  .home-teas > .figma-container > .text-center > p:last-child,
+  .home-unboxing > .figma-container > .text-center > p:last-child,
+  .home-philosophy > .figma-container > .text-center > p:last-child { font-size:clamp(18px,1.25vw,24px); line-height:1.208333; max-width:none; }
   .home-emotion > .figma-container > .grid { gap:24px; margin-bottom:24px; }
   .home-emotion > .figma-container > .grid > button { min-height:156px; border-radius:12px; box-shadow:none; --tw-ring-shadow:0 0 #0000; }
   .home-emotion > .figma-container > .grid > button[aria-pressed=true] { background:#f3fbf2; }
@@ -175,7 +175,7 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-emotion .lg\:col-span-6 > .relative > img { object-fit:cover; }
   .home-emotion .lg\:col-span-6 .absolute button { font-size:16px; height:44px; }
   .home-teas { padding:clamp(80px,6.25vw,120px) 0; }
-  .home-teas .text-center { max-width:922px; margin-bottom:40px; }
+  .home-teas > .figma-container > .text-center { max-width:922px; margin-bottom:40px; }
   .home-teas .grid { gap:clamp(24px,2.083333vw,40px); }
   .home-teas .product-card { min-height:clamp(340px,22.34375vw,429px); }
   .product-card { padding:0; border-radius:12px; border-color:#d9d9d9; overflow:hidden; }
@@ -183,11 +183,15 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .product-card > .pt-3 { padding:16px 12px; }
   .product-card h3 { font-size:24px; font-weight:400; line-height:27px; color:#3e5641; }
   .product-card p { font-size:16px; line-height:19.5px; font-weight:500; }
+  .home-teas .product-card h3,
+  .product-detail-page > section:nth-child(3) .product-card h3 { font-size:clamp(17px,1.25vw,24px); line-height:1.125; }
+  .home-teas .product-card p,
+  .product-detail-page > section:nth-child(3) .product-card p { font-size:clamp(12px,.833333vw,16px); line-height:1.21875; }
   .product-card .border-t { margin-top:8px; padding-top:8px; }
   .product-card .border-t > button { font-size:16px; font-weight:500; }
   .product-card .border-t > div { border:0; background:none; padding:0; gap:16px; height:28px; }
   .product-card .border-t > div button { width:28px; height:28px; }
-  .product-card .border-t > div span { font-size:16px; font-weight:500; }
+  .product-card .border-t > div span { font-size:16px; font-weight:500; line-height:1; }
   .signature-box { padding:40px 0; min-height:642px; }
   .signature-box > .figma-container > .grid { grid-template-columns:minmax(0,789fr) minmax(0,851fr); gap:clamp(24px,2.083333vw,40px); align-items:start; }
   .signature-box .lg\:col-span-6 { grid-column:auto; }
@@ -203,14 +207,14 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .signature-box .sm\:grid-cols-2 { border-top:1px solid #d9d9d9; padding-top:24px; gap:24px; }
   .signature-box .sm\:grid-cols-2 button { min-height:56px; height:auto; font-size:clamp(15px,1.041667vw,20px); font-weight:400; box-shadow:none; }
   .home-unboxing { padding:clamp(80px,6.25vw,120px) 0; }
-  .home-unboxing .text-center { max-width:939px; margin-bottom:40px; }
+  .home-unboxing > .figma-container > .text-center { max-width:939px; margin-bottom:40px; }
   .home-unboxing .md\:grid-cols-3 { gap:clamp(24px,2.083333vw,40px); }
   .home-unboxing .md\:grid-cols-3 > div { min-height:240px; padding:16px; border-radius:12px; box-shadow:none; }
   .home-unboxing .md\:grid-cols-3 h3 { font:400 24px/29px 'Crimson Pro','Playfair Display',Georgia,serif; color:#222; margin-bottom:4px; }
   .home-unboxing .md\:grid-cols-3 p { font-size:16px; line-height:19px; margin-bottom:0; }
   .home-unboxing .md\:grid-cols-3 > div > p { font-size:14px; font-weight:400; padding:0; border:0; letter-spacing:0; }
   .home-philosophy { padding:clamp(64px,4.21875vw,81px) 0; }
-  .home-philosophy .text-center { max-width:915px; margin-bottom:40px; }
+  .home-philosophy > .figma-container > .text-center { max-width:915px; margin-bottom:40px; }
   .home-philosophy .lg\:grid-cols-12 { grid-template-columns:minmax(0,963fr) minmax(0,677fr); gap:clamp(24px,2.083333vw,40px); }
   .home-philosophy .lg\:col-span-6 { grid-column:auto; }
   .home-philosophy .lg\:col-span-6:first-child > h3 { font-size:clamp(30px,2.083333vw,40px); line-height:1.125; color:#3e5641; margin-bottom:24px; }
@@ -534,4 +538,8 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .search-card .product-card .border-t > button { line-height:20px; }
   .product-detail-page .product-card .product-card-note { height:45px; margin-top:4px; padding-bottom:8px; border-bottom:1px solid #d9d9d9; font:400 14px/17px Montserrat,sans-serif; }
   .product-detail-page .product-card-with-note .border-t { border-top:0; padding-top:0; }
+}
+@media (min-width:1024px) and (max-width:1240px) {
+  .home-teas .product-card h3,
+  .product-detail-page > section:nth-child(3) .product-card h3 { min-height:2.25em; }
 }
