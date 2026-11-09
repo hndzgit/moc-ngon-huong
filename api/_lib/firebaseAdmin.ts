@@ -176,8 +176,8 @@ export async function verifyAuthToken(
     try {
       const decoded = await auth.verifyIdToken(token);
       return { uid: decoded.uid, email: decoded.email };
-    } catch (err) {
-      console.warn('[MNH Admin Auth] Token verification failed:', err);
+    } catch {
+      console.warn('[MNH Admin Auth] Token verification failed.');
       throw new Error('AUTH_TOKEN_INVALID');
     }
   }
@@ -232,14 +232,14 @@ export async function verifyAdminAuth(
       authorized: false,
       statusCode: 401,
       errorCode: 'UNAUTHENTICATED',
-      errorMessage: 'Yêu cầu đăng nhập quản trị viên (Thiếu Authorization header).',
+      errorMessage: 'Vui lòng đăng nhập để tiếp tục.',
     };
   }
 
   let user: { uid: string; email?: string } | null = null;
   try {
     user = await verifyAuthToken(authHeader);
-  } catch (err: any) {
+  } catch {
     return {
       authorized: false,
       statusCode: 401,
@@ -253,28 +253,28 @@ export async function verifyAdminAuth(
       authorized: false,
       statusCode: 401,
       errorCode: 'UNAUTHENTICATED',
-      errorMessage: 'Không xác định được danh tính tài khoản quản trị.',
+      errorMessage: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
     };
   }
 
   const allowedUids = getAdminUids();
   if (allowedUids.length === 0) {
-    console.error('[MNH Admin Auth] ADMIN_UIDS is missing or empty. Refusing all admin access (FAIL CLOSED).');
-    return {
-      authorized: false,
-      statusCode: 403,
-      errorCode: 'ADMIN_NOT_CONFIGURED',
-      errorMessage: 'Hệ thống quản trị chưa được cấu hình danh sách quản trị viên (ADMIN_UIDS). Vui lòng cấu hình biến môi trường ADMIN_UIDS trên Vercel.',
-    };
-  }
-
-  if (!allowedUids.includes(user.uid)) {
-    console.warn(`[MNH Admin Auth] Forbidden: UID ${user.uid} is not in ADMIN_UIDS.`);
+    console.error('[MNH Admin Auth] Admin allowlist is not configured. Refusing all admin access (FAIL CLOSED).');
     return {
       authorized: false,
       statusCode: 403,
       errorCode: 'FORBIDDEN',
-      errorMessage: 'Tài khoản của bạn không nằm trong danh sách quản trị viên.',
+      errorMessage: 'Không có quyền truy cập khu vực quản trị.',
+    };
+  }
+
+  if (!allowedUids.includes(user.uid)) {
+    console.warn('[MNH Admin Auth] Forbidden: authenticated account is not authorized for admin access.');
+    return {
+      authorized: false,
+      statusCode: 403,
+      errorCode: 'FORBIDDEN',
+      errorMessage: 'Không có quyền truy cập khu vực quản trị.',
     };
   }
 

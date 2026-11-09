@@ -133,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       JSON.stringify({
         success: false,
         code: authOutcome.errorCode || 'UNAUTHENTICATED',
-        error: authOutcome.errorMessage || 'Bạn không có quyền truy cập trang quản trị.',
+        error: authOutcome.errorMessage || 'Không có quyền truy cập khu vực quản trị.',
       })
     );
     return;
@@ -383,7 +383,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const updatedOrder = updatedSnap.data() as OrderRecord;
 
         console.log(
-          `[MNH Admin Orders] Order ${updatedOrder.orderCode || orderId} status updated to "${status || updatedOrder.orderStatus}" by admin ${adminUid}`
+          `[MNH Admin Orders] Order ${updatedOrder.orderCode || orderId} status updated to "${status || updatedOrder.orderStatus}".`
         );
 
         res.setHeader('Content-Type', 'application/json');

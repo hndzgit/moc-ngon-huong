@@ -207,7 +207,7 @@ export function App() {
         onOpenCart={() => setCartOpen(true)}
         onOpenSearch={() => setSearchOpen(true)}
         onOpenAuth={() => handleNavigate('auth')}
-        userEmail={effectiveUserEmail}
+        userEmail={currentPage === 'admin' ? null : effectiveUserEmail}
       />
 
       {/* Main Page Router */}

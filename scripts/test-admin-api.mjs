@@ -61,6 +61,25 @@ async function runTests() {
   process.env.NODE_ENV = 'test';
 
   try {
+    const assertNoInternalLeakage = (payload, label) => {
+      const serialized = JSON.stringify(payload || {});
+      for (const forbiddenToken of [
+        'ADMIN_UIDS',
+        'ADMIN_NOT_CONFIGURED',
+        'Vercel',
+        'Environment Variables',
+        'Thiếu Authorization header',
+        'testuser123',
+        'customer_not_admin',
+        'shop_owner_uid_abc',
+      ]) {
+        assert(
+          !serialized.includes(forbiddenToken),
+          `${label}: response must not leak "${forbiddenToken}" (got: ${serialized})`
+        );
+      }
+    };
+
     // 1. Anonymous request without Auth header -> 401
     {
       const { req, res } = createMockReqRes({ method: 'GET' });
@@ -68,7 +87,8 @@ async function runTests() {
       const out = res.getOutput();
       assert.strictEqual(out.statusCode, 401, 'Anonymous request must return 401');
       assert.strictEqual(out.data.code, 'UNAUTHENTICATED');
-      console.log('✓ PASS 1: Anonymous request returns 401');
+      assertNoInternalLeakage(out.data, 'Anonymous GET');
+      console.log('✓ PASS 1: Anonymous request returns 401 with generic safe message');
     }
 
     // 2. Invalid Bearer token -> 401
@@ -80,10 +100,11 @@ async function runTests() {
       await handler(req, res);
       const out = res.getOutput();
       assert.strictEqual(out.statusCode, 401, 'Invalid token must return 401');
-      console.log('✓ PASS 2: Invalid bearer token returns 401');
+      assertNoInternalLeakage(out.data, 'Invalid token GET');
+      console.log('✓ PASS 2: Invalid bearer token returns 401 with generic safe message');
     }
 
-    // 3. Valid token, but ADMIN_UIDS is NOT configured (empty) -> 403 ADMIN_NOT_CONFIGURED (Fail closed)
+    // 3. Valid token, but ADMIN_UIDS is NOT configured (empty) -> 403 FORBIDDEN (Fail closed, no internal config disclosure)
     {
       delete process.env.ADMIN_UIDS;
       const { req, res } = createMockReqRes({
@@ -93,8 +114,10 @@ async function runTests() {
       await handler(req, res);
       const out = res.getOutput();
       assert.strictEqual(out.statusCode, 403, 'Missing ADMIN_UIDS must return 403');
-      assert.strictEqual(out.data.code, 'ADMIN_NOT_CONFIGURED');
-      console.log('✓ PASS 3: Missing ADMIN_UIDS fails closed with 403 ADMIN_NOT_CONFIGURED');
+      assert.strictEqual(out.data.code, 'FORBIDDEN');
+      assert.strictEqual(out.data.error, 'Không có quyền truy cập khu vực quản trị.');
+      assertNoInternalLeakage(out.data, 'Missing ADMIN_UIDS GET');
+      console.log('✓ PASS 3: Missing ADMIN_UIDS fails closed with generic 403 FORBIDDEN (no config disclosure)');
     }
 
     // 4. Valid token, but UID is NOT in ADMIN_UIDS allowlist -> 403 FORBIDDEN
@@ -108,7 +131,25 @@ async function runTests() {
       const out = res.getOutput();
       assert.strictEqual(out.statusCode, 403, 'Non-admin customer must return 403');
       assert.strictEqual(out.data.code, 'FORBIDDEN');
-      console.log('✓ PASS 4: Authenticated customer not in ADMIN_UIDS receives 403 FORBIDDEN');
+      assert.strictEqual(out.data.error, 'Không có quyền truy cập khu vực quản trị.');
+      assertNoInternalLeakage(out.data, 'Non-admin GET');
+      console.log('✓ PASS 4: Authenticated customer not in ADMIN_UIDS receives generic 403 FORBIDDEN');
+    }
+
+    // 4b. Unauthorized user cannot PATCH order status -> 403 FORBIDDEN
+    {
+      process.env.ADMIN_UIDS = 'shop_owner_uid_abc,another_admin_xyz';
+      const { req, res } = createMockReqRes({
+        method: 'PATCH',
+        headers: { authorization: 'Bearer test_token_uid_customer_not_admin' },
+        body: { orderId: 'test_order_1', status: 'completed' },
+      });
+      await handler(req, res);
+      const out = res.getOutput();
+      assert.strictEqual(out.statusCode, 403, 'Non-admin PATCH must return 403');
+      assert.strictEqual(out.data.code, 'FORBIDDEN');
+      assertNoInternalLeakage(out.data, 'Non-admin PATCH');
+      console.log('✓ PASS 4b: Unauthorized user cannot PATCH order status (returns 403 FORBIDDEN)');
     }
 
     // 5. Valid admin token with matched UID -> 200 GET

@@ -16,34 +16,33 @@ import {
   LogOut,
   ShieldAlert,
   ShieldCheck,
-  ChevronRight,
   Store,
-  MapPin,
   Phone,
   Mail,
   User as UserIcon,
-  Copy,
   Check,
   AlertTriangle,
-  ArrowRight,
-  Filter,
 } from 'lucide-react';
 
 interface AdminPageProps {
   onNavigate?: (page: PageRoute, productId?: string) => void;
 }
 
+type AdminAccessState = 'verifying' | 'authorized' | 'denied' | 'unauthenticated';
+
 export function AdminPage({ onNavigate }: AdminPageProps) {
   const { user, loading: authLoading, getIdToken, login, logout } = useAuth();
+  const currentUid = user?.uid || null;
+  const getIdTokenRef = useRef(getIdToken);
+  getIdTokenRef.current = getIdToken;
 
   // Authentication & Authorization state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [authErrorCode, setAuthErrorCode] = useState<string | null>(null);
-  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
-  const [copiedUid, setCopiedUid] = useState(false);
+  const [adminAccessState, setAdminAccessState] = useState<AdminAccessState>('verifying');
+  const [verifiedUid, setVerifiedUid] = useState<string | null>(null);
 
   // Orders data state
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -59,12 +58,22 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   // Modals & Actions
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<OrderRecord | null>(null);
-  const detailDialog=useRef<HTMLDivElement>(null);
-  const cancelDialog=useRef<HTMLDivElement>(null);
-  useDialogLifecycle(Boolean(selectedOrder&&user),()=>setSelectedOrder(null),detailDialog);
-  useDialogLifecycle(Boolean(orderToCancel&&user),()=>setOrderToCancel(null),cancelDialog);
+  const detailDialog = useRef<HTMLDivElement>(null);
+  const cancelDialog = useRef<HTMLDivElement>(null);
+  const isAuthorizedSession = Boolean(
+    user && verifiedUid === user.uid && adminAccessState === 'authorized'
+  );
+  useDialogLifecycle(Boolean(selectedOrder && isAuthorizedSession), () => setSelectedOrder(null), detailDialog);
+  useDialogLifecycle(Boolean(orderToCancel && isAuthorizedSession), () => setOrderToCancel(null), cancelDialog);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const clearProtectedOrderState = useCallback(() => {
+    setOrders([]);
+    setSelectedOrder(null);
+    setOrderToCancel(null);
+    setOrdersError(null);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -104,16 +113,16 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
   // Fetch orders from server
   const fetchOrders = useCallback(async () => {
-    if (!user) return;
+    if (!currentUid) return;
     setLoadingOrders(true);
     setOrdersError(null);
 
     try {
-      const token = await getIdToken();
+      const token = await getIdTokenRef.current();
       if (!token) {
-        setAuthErrorCode('UNAUTHENTICATED');
-        setAuthErrorMessage('Không thể lấy mã phiên đăng nhập. Vui lòng đăng nhập lại.');
-        setLoadingOrders(false);
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
         return;
       }
 
@@ -128,44 +137,47 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 401) {
-        setAuthErrorCode('UNAUTHENTICATED');
-        setAuthErrorMessage(data.error || 'Phiên làm việc đã hết hạn.');
-        setOrders([]);
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
         return;
       }
 
       if (res.status === 403) {
-        setAuthErrorCode(data.code || 'FORBIDDEN');
-        setAuthErrorMessage(data.error || 'Tài khoản của bạn không có quyền quản trị.');
-        setOrders([]);
+        clearProtectedOrderState();
+        setVerifiedUid(currentUid);
+        setAdminAccessState('denied');
         return;
       }
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || `Lỗi tải danh sách đơn hàng (${res.status})`);
+        setVerifiedUid(currentUid);
+        setAdminAccessState('authorized');
+        setOrdersError('Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.');
+        return;
       }
 
-      setAuthErrorCode(null);
-      setAuthErrorMessage(null);
+      setVerifiedUid(currentUid);
+      setAdminAccessState('authorized');
       setOrders(data.orders || []);
-    } catch (err: any) {
-      console.error('[Admin Orders] Fetch error:', err);
-      setOrdersError(err.message || 'Không thể kết nối đến máy chủ.');
+    } catch {
+      setOrdersError('Không thể kết nối đến máy chủ. Vui lòng thử lại.');
     } finally {
       setLoadingOrders(false);
     }
-  }, [user, getIdToken]);
+  }, [currentUid, clearProtectedOrderState]);
 
-  // Load orders on user mount or change
+  // Reset protected state and re-verify whenever account/session changes
   useEffect(() => {
-    if (user) {
+    clearProtectedOrderState();
+    if (currentUid) {
+      setAdminAccessState('verifying');
       fetchOrders();
     } else {
-      setOrders([]);
-      setAuthErrorCode(null);
-      setAuthErrorMessage(null);
+      setVerifiedUid(null);
+      setAdminAccessState('unauthenticated');
     }
-  }, [user, fetchOrders]);
+  }, [currentUid, fetchOrders, clearProtectedOrderState]);
 
   // Handle Admin Login submission
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -177,14 +189,33 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setLoginLoading(true);
     setLoginError('');
     try {
+      clearProtectedOrderState();
+      setVerifiedUid(null);
+      setAdminAccessState('verifying');
       await login(loginEmail.trim(), loginPassword);
       setLoginPassword('');
-    } catch (err: any) {
-      console.error('[Admin Login] Failed:', err);
-      setLoginError(err.message || 'Email hoặc mật khẩu không chính xác.');
+    } catch {
+      setLoginError('Email hoặc mật khẩu không chính xác.');
     } finally {
       setLoginLoading(false);
     }
+  };
+
+  const handleGoHome = () => {
+    if (onNavigate) {
+      onNavigate('home');
+    } else {
+      window.location.hash = '#/';
+    }
+  };
+
+  const handleSwitchAccount = async () => {
+    clearProtectedOrderState();
+    setVerifiedUid(null);
+    setAdminAccessState('unauthenticated');
+    setLoginPassword('');
+    setLoginError('');
+    await logout();
   };
 
   // Handle status update (one-click action)
@@ -196,7 +227,12 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setActionLoadingId(orderId);
     try {
       const token = await getIdToken();
-      if (!token) throw new Error('Mất phiên đăng nhập, vui lòng tải lại trang.');
+      if (!token) {
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
+        return;
+      }
 
       const payload: Record<string, any> = { orderId, status: newStatus };
       if (paymentStatus) payload.paymentStatus = paymentStatus;
@@ -209,6 +245,20 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         },
         body: JSON.stringify(payload),
       });
+
+      if (res.status === 401) {
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
+        return;
+      }
+
+      if (res.status === 403) {
+        clearProtectedOrderState();
+        setVerifiedUid(user?.uid || null);
+        setAdminAccessState('denied');
+        return;
+      }
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
@@ -251,7 +301,12 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setActionLoadingId(orderId);
     try {
       const token = await getIdToken();
-      if (!token) throw new Error('Mất phiên đăng nhập.');
+      if (!token) {
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
+        return;
+      }
 
       const res = await fetch('/api/admin/orders', {
         method: 'PATCH',
@@ -261,6 +316,20 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         },
         body: JSON.stringify({ orderId, paymentStatus: newPaymentStatus }),
       });
+
+      if (res.status === 401) {
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
+        return;
+      }
+
+      if (res.status === 403) {
+        clearProtectedOrderState();
+        setVerifiedUid(user?.uid || null);
+        setAdminAccessState('denied');
+        return;
+      }
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
@@ -413,15 +482,6 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     );
   };
 
-  // Copy UID helper
-  const handleCopyUid = () => {
-    if (user?.uid) {
-      navigator.clipboard.writeText(user.uid);
-      setCopiedUid(true);
-      setTimeout(() => setCopiedUid(false), 3000);
-    }
-  };
-
   // ==========================================================================
   // VIEW: AUTH LOADING
   // ==========================================================================
@@ -437,7 +497,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   // ==========================================================================
   // VIEW: UNAUTHENTICATED (LOGIN FORM)
   // ==========================================================================
-  if (!user) {
+  if (!user || adminAccessState === 'unauthenticated') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center bg-[#faf8f3] py-12 px-4 sm:px-6">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-stone-200/80 p-8">
@@ -449,7 +509,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
               Đăng Nhập Quản Trị
             </h1>
             <p className="text-stone-500 text-sm mt-2">
-              Khu vực dành riêng cho chủ tiệm quản lý đơn hàng. Vui lòng đăng nhập bằng tài khoản quản lý.
+              Khu vực dành riêng cho quản trị viên Mộc Ngôn Hương. Vui lòng đăng nhập bằng tài khoản được cấp quyền.
             </p>
           </div>
 
@@ -463,13 +523,13 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">
-                Email quản trị
+                Email đăng nhập
               </label>
               <input
                 type="email"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="chutiem@mocngonhuong.com"
+                placeholder="email@example.com"
                 required
                 className="w-full px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:border-[#3e5641] focus:ring-1 focus:ring-[#3e5641] text-sm"
               />
@@ -508,7 +568,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <div className="mt-6 pt-6 border-t border-stone-100 text-center">
             <button
               type="button"
-              onClick={() => onNavigate?.('home')}
+              onClick={handleGoHome}
               className="text-xs text-stone-500 hover:text-[#3e5641] transition-colors"
             >
               ← Quay lại trang chủ Mộc Ngôn Hương
@@ -520,72 +580,55 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   }
 
   // ==========================================================================
-  // VIEW: 403 FORBIDDEN / ADMIN_NOT_CONFIGURED
+  // VIEW: VERIFYING SERVER-SIDE ADMIN AUTHORIZATION
   // ==========================================================================
-  if (authErrorCode === 'FORBIDDEN' || authErrorCode === 'ADMIN_NOT_CONFIGURED') {
+  if (verifiedUid !== user.uid || adminAccessState === 'verifying') {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-[#faf8f3] px-4">
+        <div className="w-12 h-12 border-4 border-[#3e5641]/20 border-t-[#3e5641] rounded-full animate-spin mb-4" />
+        <p className="text-[#3e5641] font-medium">Đang kiểm tra quyền truy cập hệ thống quản trị...</p>
+      </div>
+    );
+  }
+
+  // ==========================================================================
+  // VIEW: 403 ACCESS DENIED (MINIMAL & PRIVACY-HARDENED)
+  // ==========================================================================
+  if (adminAccessState === 'denied') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center bg-[#faf8f3] py-12 px-4 sm:px-6">
         <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-stone-200/80 p-8 text-center">
-          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-200">
-            <ShieldAlert className="w-8 h-8" />
+          <div className="w-14 h-14 bg-[#3e5641]/10 text-[#3e5641] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#3e5641]/20">
+            <ShieldAlert className="w-7 h-7" />
           </div>
 
-          <h2 className="text-xl font-philosopher font-bold text-[#3e5641]">
-            Chưa Phân Quyền Quản Trị
-          </h2>
+          <span className="text-[12px] font-serif uppercase tracking-[0.25em] text-[#c89f5d] font-semibold block">
+            Mộc Ngôn Hương
+          </span>
 
-          <p className="text-stone-600 text-sm mt-2 leading-relaxed">
-            {authErrorMessage ||
-              'Tài khoản của bạn đã xác thực qua Firebase nhưng chưa nằm trong danh sách quản trị viên (ADMIN_UIDS).'}
+          <h1 className="text-2xl font-philosopher font-bold text-[#3e5641] mt-1">
+            Không Có Quyền Truy Cập
+          </h1>
+
+          <p className="text-stone-600 text-sm mt-3 leading-relaxed">
+            Khu vực này chỉ dành cho quản trị viên Mộc Ngôn Hương. Vui lòng sử dụng tài khoản được cấp quyền.
           </p>
 
-          {/* Current User UID Box */}
-          <div className="mt-6 p-4 rounded-xl bg-stone-50 border border-stone-200 text-left">
-            <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-              Email đăng nhập:
-            </div>
-            <div className="text-sm font-medium text-stone-800 break-all mb-3">{user.email}</div>
-
-            <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-              Firebase UID của bạn:
-            </div>
-            <div className="flex items-center gap-2">
-              <code className="text-xs font-mono bg-white px-2.5 py-1.5 rounded-lg border border-stone-200 text-[#3e5641] flex-1 break-all select-all font-semibold">
-                {user.uid}
-              </code>
-              <button
-                type="button"
-                onClick={handleCopyUid}
-                className="px-3 py-1.5 text-xs rounded-lg bg-[#3e5641] text-[#f7f4d5] hover:bg-[#324635] flex items-center gap-1.5 transition-colors whitespace-nowrap"
-              >
-                {copiedUid ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedUid ? 'Đã chép' : 'Sao chép UID'}
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-5 text-left text-xs text-stone-500 bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/60 leading-relaxed">
-            <strong className="text-amber-900 block mb-1">Hướng dẫn kích hoạt cho chủ tiệm:</strong>
-            1. Mở trang cài đặt dự án trên <strong>Vercel</strong> → <strong>Settings</strong> → <strong>Environment Variables</strong>.<br />
-            2. Thêm biến môi trường <code className="bg-white px-1 py-0.5 rounded text-stone-800 font-mono font-bold">ADMIN_UIDS</code> với giá trị là UID ở trên.<br />
-            3. Nhấn <strong>Thử lại</strong> sau khi lưu biến môi trường.
-          </div>
-
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               type="button"
-              onClick={fetchOrders}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#3e5641] hover:bg-[#324635] text-[#f7f4d5] text-sm font-medium transition-colors"
+              onClick={handleGoHome}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#3e5641] hover:bg-[#324635] text-[#f7f4d5] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3e5641] focus-visible:ring-offset-2"
             >
-              Thử lại quyền truy cập
+              Về trang chủ
             </button>
             <button
               type="button"
-              onClick={() => logout()}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-50 text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+              onClick={handleSwitchAccount}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-50 text-sm font-medium transition-colors flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3e5641] focus-visible:ring-offset-2"
             >
               <LogOut className="w-4 h-4" />
-              Đăng xuất / Tài khoản khác
+              Đăng xuất / Đổi tài khoản
             </button>
           </div>
         </div>
@@ -641,7 +684,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
             <button
               type="button"
-              onClick={() => logout()}
+              onClick={handleSwitchAccount}
               title="Đăng xuất"
               className="px-3 py-1.5 rounded-lg border border-stone-200 hover:bg-rose-50 hover:text-rose-700 text-stone-600 text-xs font-medium transition-colors flex items-center gap-1.5"
             >
