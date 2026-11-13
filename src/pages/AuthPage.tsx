@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AuthStep, PageRoute, OrderRecord, OrderStatus, PaymentStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { getOrderMedia } from '../data/figmaMedia';
 
 interface AuthPageProps {
   onLoginSuccess: (email: string) => void;
@@ -389,6 +390,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   const allCatalog = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS];
   const getItemImage = (item: { productId: string; image?: string }) => {
+    const orderMedia = getOrderMedia(item.productId);
+    if (orderMedia) return assetUrl(orderMedia.image);
     if (item.image) return assetUrl(item.image);
     const found = allCatalog.find((p) => p.id === item.productId);
     return assetUrl(found?.image || '/assets/optimized/card-buoi-an-800.webp');
@@ -810,6 +813,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                 <div key={idx} className="flex items-center gap-4">
                                   <img
                                     src={getItemImage(item)}
+                                    style={{ objectPosition: getOrderMedia(item.productId)?.position }}
                                     alt={item.productName}
                                     className="w-14 h-14 sm:w-16 sm:h-16 rounded-[12px] object-cover border border-black/5 shrink-0 bg-[#faf7f2]"
                                   />
@@ -1583,6 +1587,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     <div key={idx} className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center gap-4">
                       <img
                         src={getItemImage(item)}
+                        style={{ objectPosition: getOrderMedia(item.productId)?.position }}
                         alt={item.productName}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-[14px] object-cover border border-black/5 shrink-0 bg-[#faf7f2]"
                       />

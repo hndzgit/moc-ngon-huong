@@ -4,7 +4,7 @@ import { assetUrl } from '../lib/assets';
 import { OrderConfirmation } from '../components/OrderConfirmation';
 import { GiftCardPreview } from '../components/GiftCardPreview';
 import { CartItem, PageRoute, OrderRecord } from '../types';
-import { FIGMA_PRODUCT_COPY, FIGMA_ORDER_MEDIA } from '../data/figmaMedia';
+import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
 import { useAuth } from '../context/AuthContext';
 import { calculateDemoDiscount, DEMO_DISCOUNT_DISCLAIMER } from '../assistant';
 import {
@@ -1042,8 +1042,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <div key={product.id} className="py-3.5 flex items-center gap-3.5 group">
                       <div className="relative shrink-0">
                         <img
-                          src={assetUrl(FIGMA_ORDER_MEDIA[product.id]?.image || product.image)}
-                          style={{ objectPosition: FIGMA_ORDER_MEDIA[product.id]?.position }}
+                          src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
+                          style={{ objectPosition: getOrderMedia(product.id)?.position }}
                           alt={product.name}
                           className="w-[60px] h-[60px] rounded-[10px] object-cover border border-[#E5DFD5] bg-[#FAF8F3]"
                         />

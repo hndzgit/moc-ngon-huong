@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { assetUrl } from '../lib/assets';
 import type { CartItem, PageRoute, PaymentStatus } from '../types';
-import { FIGMA_PRODUCT_COPY, FIGMA_ORDER_MEDIA } from '../data/figmaMedia';
+import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
 import confetti from 'canvas-confetti';
 import {
   Check,
@@ -265,8 +265,8 @@ export function OrderConfirmation({
                 <div key={product.id} className="flex gap-4 sm:gap-6 py-4.5 items-center">
                   <div className="relative shrink-0">
                     <img
-                      src={assetUrl(FIGMA_ORDER_MEDIA[product.id]?.image || product.image)}
-                      style={{ objectPosition: FIGMA_ORDER_MEDIA[product.id]?.position }}
+                      src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
+                      style={{ objectPosition: getOrderMedia(product.id)?.position }}
                       alt={product.name}
                       className="w-[84px] sm:w-[104px] aspect-square object-cover rounded-[14px] border border-[#E5DFD5] bg-[#FAF8F3]"
                     />

@@ -3,6 +3,7 @@ import { useDialogLifecycle } from '../components/useDialogLifecycle';
 import { useAuth } from '../context/AuthContext';
 import { assetUrl } from '../lib/assets';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { getOrderMedia } from '../data/figmaMedia';
 import type { OrderRecord, OrderStatus, PaymentStatus, PageRoute } from '../types';
 import {
   Package,
@@ -85,6 +86,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   // Catalogue lookup for product thumbnails
   const allCatalog = useMemo(() => [...PRODUCTS, ...LOOSE_TEA_PRODUCTS], []);
   const getItemThumbnail = (item: { productId: string; image?: string }) => {
+    const orderMedia = getOrderMedia(item.productId);
+    if (orderMedia) return assetUrl(orderMedia.image);
     if (item.image) return assetUrl(item.image);
     const found = allCatalog.find((p) => p.id === item.productId);
     return assetUrl(found?.image || '/assets/optimized/order-thumb-buoi-an.webp');
@@ -1414,6 +1417,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                   <div key={idx} className="p-3.5 flex items-center gap-3 bg-white">
                     <img
                       src={getItemThumbnail(item)}
+                      style={{ objectPosition: getOrderMedia(item.productId)?.position }}
                       alt={item.productName}
                       loading="lazy"
                       decoding="async"

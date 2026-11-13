@@ -7,23 +7,114 @@ export const FIGMA_PRODUCT_MEDIA: Record<string, { main: string; thumb: string; 
   'hop-qua-tam-y': { main: '/assets/optimized/detail-hop-qua-tam-y-1.webp', thumb: '/assets/optimized/detail-hop-qua-tam-y-1-thumb.webp', story: '/assets/optimized/detail-hop-qua-tam-y-story.webp' },
 };
 
-// Shared detail gallery slots (Figma 103:5875 and 103:6447), generated from exact originals b5d74.png and 191e7.png.
-export const FIGMA_DETAIL_GALLERY_SHARED = [
-  {
-    id: 'open-box',
-    full: '/assets/optimized/detail-gallery-b5d74-1280.webp',
-    thumb: '/assets/optimized/detail-gallery-b5d74-thumb.webp',
-    width: 1280,
-    height: 853,
-  },
-  {
-    id: 'hand-leaf',
-    full: '/assets/optimized/detail-gallery-191e7-1280.webp',
-    thumb: '/assets/optimized/detail-gallery-191e7-thumb.webp',
-    width: 1280,
-    height: 1919,
-  },
-] as const;
+export interface FigmaGalleryItem {
+  full: string;
+  thumb: string;
+  alt?: string;
+  fullFit?: 'cover' | 'contain';
+  fullPosition?: string;
+  thumbPosition?: string;
+  thumbScale?: string;
+}
+
+// Per-product Figma detail galleries (35:3068, 120:2859, 120:3302, 120:3541, 120:6560).
+export const FIGMA_DETAIL_GALLERY: Record<string, FigmaGalleryItem[]> = {
+  'buoi-an': [
+    {
+      full: '/assets/optimized/detail-buoi-an-1.webp',
+      thumb: '/assets/optimized/detail-buoi-an-1-thumb.webp',
+      alt: 'Trà Hương Hoa Bưởi – AN cùng túi quà Mộc Ngôn Hương',
+    },
+    {
+      full: '/assets/optimized/detail-gallery-191e7-1280.webp',
+      thumb: '/assets/optimized/detail-gallery-191e7-thumb.webp',
+      fullPosition: 'center 45%',
+      thumbPosition: 'center 45%',
+      thumbScale: 'scale(1.12)',
+      alt: 'Trên tay hộp trà Trà Hương Hoa Bưởi – AN',
+    },
+    {
+      full: '/assets/optimized/detail-gallery-4teas.webp',
+      thumb: '/assets/optimized/detail-gallery-4teas-thumb.webp',
+      alt: 'Bộ sưu tập 4 vị trà An, Thương, Cảm, Nhớ',
+    },
+  ],
+  'nhai-thuong': [
+    {
+      full: '/assets/optimized/detail-nhai-thuong-1.webp',
+      thumb: '/assets/optimized/detail-nhai-thuong-1-thumb.webp',
+      alt: 'Trà Hương Hoa Nhài – THƯƠNG cùng túi quà Mộc Ngôn Hương',
+    },
+    {
+      full: '/assets/optimized/detail-nhai-thuong-gallery-2.webp',
+      thumb: '/assets/optimized/detail-nhai-thuong-gallery-2-thumb.webp',
+      fullPosition: '42% center',
+      thumbPosition: '42% 45%',
+      alt: 'Trên tay hộp trà Trà Hương Hoa Nhài – THƯƠNG',
+    },
+    {
+      full: '/assets/optimized/detail-gallery-4teas.webp',
+      thumb: '/assets/optimized/detail-gallery-4teas-thumb.webp',
+      alt: 'Bộ sưu tập 4 vị trà An, Thương, Cảm, Nhớ',
+    },
+  ],
+  'soi-cam': [
+    {
+      full: '/assets/optimized/detail-soi-cam-1.webp',
+      thumb: '/assets/optimized/detail-soi-cam-1-thumb.webp',
+      alt: 'Trà Hương Hoa Sói – CẢM cùng túi quà Mộc Ngôn Hương',
+    },
+    {
+      full: '/assets/optimized/detail-soi-cam-gallery-2.webp',
+      thumb: '/assets/optimized/detail-soi-cam-gallery-2-thumb.webp',
+      fullPosition: '56% 45%',
+      thumbPosition: '58% 44%',
+      thumbScale: 'scale(1.22)',
+      alt: 'Trên tay hộp trà Trà Hương Hoa Sói – CẢM',
+    },
+    {
+      full: '/assets/optimized/detail-gallery-4teas.webp',
+      thumb: '/assets/optimized/detail-gallery-4teas-thumb.webp',
+      alt: 'Bộ sưu tập 4 vị trà An, Thương, Cảm, Nhớ',
+    },
+  ],
+  'com-nho': [
+    {
+      full: '/assets/optimized/detail-com-nho-1.webp',
+      thumb: '/assets/optimized/detail-com-nho-1-thumb.webp',
+      alt: 'Trà Hương Cốm – NHỚ cùng túi quà Mộc Ngôn Hương',
+    },
+    {
+      full: '/assets/optimized/detail-com-nho-gallery-2.webp',
+      thumb: '/assets/optimized/detail-com-nho-gallery-2-thumb.webp',
+      fullPosition: 'center 36%',
+      thumbPosition: 'center 36%',
+      alt: 'Trên tay hộp trà Trà Hương Cốm – NHỚ',
+    },
+    {
+      full: '/assets/optimized/detail-gallery-4teas.webp',
+      thumb: '/assets/optimized/detail-gallery-4teas-thumb.webp',
+      alt: 'Bộ sưu tập 4 vị trà An, Thương, Cảm, Nhớ',
+    },
+  ],
+  'hop-qua-tam-y': [
+    {
+      full: '/assets/optimized/detail-hop-qua-tam-y-1.webp',
+      thumb: '/assets/optimized/detail-hop-qua-tam-y-1-thumb.webp',
+      alt: 'Hộp Quà Trà Đa Hương — TÂM Ý cùng bộ ấm chén và túi quà',
+    },
+    {
+      full: '/assets/optimized/detail-hop-qua-tam-y-gallery-2.webp',
+      thumb: '/assets/optimized/detail-hop-qua-tam-y-gallery-2-thumb.webp',
+      alt: 'Hộp Quà TÂM Ý cùng 4 hộp trà An, Thương, Cảm, Nhớ',
+    },
+    {
+      full: '/assets/optimized/detail-hop-qua-tam-y-gallery-3.webp',
+      thumb: '/assets/optimized/detail-hop-qua-tam-y-gallery-3-thumb.webp',
+      alt: 'Bộ Hộp Quà TÂM Ý và 4 phong vị trà trên bàn gỗ',
+    },
+  ],
+};
 
 export const figmaImage = (file: string) => file.startsWith('/') ? file : `/assets/figma/originals/${file}`;
 
@@ -32,8 +123,17 @@ export const FIGMA_LISTING_MEDIA: Record<string, string> = {
   'buoi-an': '/assets/optimized/card-buoi-an-800.webp',
   'nhai-thuong': '/assets/optimized/card-nhai-thuong-800.webp',
   'soi-cam': '/assets/optimized/card-soi-cam-800.webp',
-  'com-nho': '/assets/optimized/card-com-nho-800.webp',
+  'com-nho': '/assets/optimized/discovery-card-com-nho.webp',
   'hop-qua-tam-y': '/assets/optimized/card-hop-qua-tam-y-800.webp',
+};
+
+// Related product cards on ProductDetailPage (35:3068, 120:2859, 120:3302, 120:3541, 120:6560).
+export const FIGMA_RELATED_MEDIA: Record<string, string> = {
+  'buoi-an': '/assets/optimized/discovery-card-buoi-an.webp',
+  'nhai-thuong': '/assets/optimized/discovery-card-nhai-thuong.webp',
+  'soi-cam': '/assets/optimized/discovery-card-soi-cam.webp',
+  'com-nho': '/assets/optimized/discovery-card-com-nho.webp',
+  'hop-qua-tam-y': '/assets/optimized/detail-hop-qua-tam-y-story.webp',
 };
 
 // Lightweight thumbnails for cart, checkout and receipt (replaces 7-9MB originals).
@@ -44,6 +144,17 @@ export const FIGMA_ORDER_MEDIA: Record<string, {image:string;position:string}> =
   'com-nho': {image:'/assets/optimized/order-thumb-com-nho.webp',position:'center'},
   'hop-qua-tam-y': {image:'/assets/optimized/order-thumb-hop-qua-tam-y.webp',position:'center'},
 };
+
+/** Resolve canonical order/cart thumbnail media for base and `-le` product IDs. */
+export function getOrderMedia(productId?: string): { image: string; position: string } | undefined {
+  if (!productId) return undefined;
+  if (FIGMA_ORDER_MEDIA[productId]) return FIGMA_ORDER_MEDIA[productId];
+  if (productId === 'combo-tam-y-le' || productId === 'tam-y-le') {
+    return FIGMA_ORDER_MEDIA['hop-qua-tam-y'];
+  }
+  const baseId = productId.replace(/-le$/, '');
+  return FIGMA_ORDER_MEDIA[baseId];
+}
 
 export const FIGMA_PRODUCT_COPY: Record<string, {node:string;title:string;summary:string;storyTitle:string;quote:string;scent:string;giftFor:string}> = {
   "buoi-an": {

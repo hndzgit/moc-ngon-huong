@@ -18,9 +18,8 @@ export const PRODUCTS: Product[] = [
     image: '/assets/optimized/card-buoi-an-800.webp',
     gallery: [
       '/assets/optimized/detail-buoi-an-1.webp',
-      '/assets/optimized/detail-buoi-an-2.webp',
-      '/assets/figma/an-thumb-3.png',
-      '/assets/optimized/detail-buoi-an-4.webp',
+      '/assets/optimized/detail-gallery-191e7-1280.webp',
+      '/assets/optimized/detail-gallery-4teas.webp',
     ],
     badge: 'Bán chạy',
     shortDesc:
@@ -65,9 +64,8 @@ export const PRODUCTS: Product[] = [
     image: '/assets/optimized/card-nhai-thuong-800.webp',
     gallery: [
       '/assets/optimized/detail-nhai-thuong-1.webp',
-      '/assets/optimized/detail-nhai-thuong-2.webp',
-      '/assets/figma/thuong-thumb-3.png',
-      '/assets/optimized/detail-nhai-thuong-4.webp',
+      '/assets/optimized/detail-nhai-thuong-gallery-2.webp',
+      '/assets/optimized/detail-gallery-4teas.webp',
     ],
     badge: 'Yêu thích',
     shortDesc:
@@ -112,9 +110,8 @@ export const PRODUCTS: Product[] = [
     image: '/assets/optimized/card-soi-cam-800.webp',
     gallery: [
       '/assets/optimized/detail-soi-cam-1.webp',
-      '/assets/optimized/detail-soi-cam-2.webp',
-      '/assets/figma/cam-thumb-3.png',
-      '/assets/optimized/detail-soi-cam-4.webp',
+      '/assets/optimized/detail-soi-cam-gallery-2.webp',
+      '/assets/optimized/detail-gallery-4teas.webp',
     ],
     badge: 'Cổ truyền',
     shortDesc:
@@ -159,9 +156,8 @@ export const PRODUCTS: Product[] = [
     image: '/assets/optimized/card-com-nho-800.webp',
     gallery: [
       '/assets/optimized/detail-com-nho-1.webp',
-      '/assets/optimized/detail-com-nho-2.webp',
-      '/assets/figma/nho-thumb-3.png',
-      '/assets/optimized/detail-com-nho-4.webp',
+      '/assets/optimized/detail-com-nho-gallery-2.webp',
+      '/assets/optimized/detail-gallery-4teas.webp',
     ],
     badge: 'Độc đáo',
     shortDesc:
@@ -206,9 +202,8 @@ export const PRODUCTS: Product[] = [
     image: '/assets/optimized/card-hop-qua-tam-y-800.webp',
     gallery: [
       '/assets/optimized/detail-hop-qua-tam-y-1.webp',
-      '/assets/optimized/detail-hop-qua-tam-y-2.webp',
-      '/assets/optimized/detail-hop-qua-tam-y-3.webp',
-      '/assets/optimized/detail-hop-qua-tam-y-4.webp',
+      '/assets/optimized/detail-hop-qua-tam-y-gallery-2.webp',
+      '/assets/optimized/detail-hop-qua-tam-y-gallery-3.webp',
     ],
     badge: 'Món quà đặc biệt',
     shortDesc:

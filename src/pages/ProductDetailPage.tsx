@@ -2,7 +2,15 @@ import './ProductDetailPage.css';
 import { assetUrl } from '../lib/assets';
 import { MotionImage } from '../motion/MotionImage';
 import { useChangeMotion } from '../motion/motion';
-import { FIGMA_PRODUCT_MEDIA, FIGMA_PRODUCT_COPY, FIGMA_CARD_COPY, FIGMA_LISTING_MEDIA, FIGMA_DETAIL_GALLERY_SHARED, figmaImage } from '../data/figmaMedia';
+import {
+  FIGMA_PRODUCT_MEDIA,
+  FIGMA_PRODUCT_COPY,
+  FIGMA_CARD_COPY,
+  FIGMA_RELATED_MEDIA,
+  FIGMA_DETAIL_GALLERY,
+  FigmaGalleryItem,
+  figmaImage,
+} from '../data/figmaMedia';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState, useEffect, useMemo } from 'react';
 import { EMOTION_CARDS, PRODUCTS, REVIEWS } from '../data/products';
@@ -53,22 +61,35 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const media = FIGMA_PRODUCT_MEDIA[product.id];
   const copy = FIGMA_PRODUCT_COPY[product.id];
 
-  const galleryItems = useMemo(() => [
-    {
-      full: media ? media.main : product.gallery[0] || product.image,
-      thumb: media ? media.thumb : product.gallery[0] || product.image,
-    },
-    {
-      full: FIGMA_DETAIL_GALLERY_SHARED[0].full,
-      thumb: FIGMA_DETAIL_GALLERY_SHARED[0].thumb,
-    },
-    {
-      full: FIGMA_DETAIL_GALLERY_SHARED[1].full,
-      thumb: FIGMA_DETAIL_GALLERY_SHARED[1].thumb,
-    },
-  ], [media, product]);
+  const galleryItems = useMemo<FigmaGalleryItem[]>(() => {
+    const figmaGallery = FIGMA_DETAIL_GALLERY[product.id];
+    if (figmaGallery && figmaGallery.length > 0) {
+      return figmaGallery;
+    }
+    if (media) {
+      return [
+        {
+          full: media.main,
+          thumb: media.thumb,
+          alt: product.name,
+        },
+        ...product.gallery.slice(1).map((img, i) => ({
+          full: img,
+          thumb: img,
+          alt: `${product.name} ${i + 2}`,
+        })),
+      ];
+    }
+    const imgs = product.gallery.length ? product.gallery : [product.image];
+    return imgs.map((img, i) => ({
+      full: img,
+      thumb: img,
+      alt: `${product.name} ${i + 1}`,
+    }));
+  }, [media, product]);
 
-  const [activeImage, setActiveImage] = useState(galleryItems[0].full);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeSlide = galleryItems[activeIndex] || galleryItems[0];
   const [buyQty, setBuyQty] = useState(1);
   const [selectedComboFlavor, setSelectedComboFlavor] = useState<typeof EMOTION_CARDS[number] | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'media'>('all');
@@ -76,7 +97,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const quantityMotion=useChangeMotion<HTMLSpanElement>(buyQty,undefined,.18);
 
   useEffect(() => {
-    setActiveImage(galleryItems[0].full);
+    setActiveIndex(0);
     setBuyQty(1);
     setSelectedComboFlavor(null);
     if (typeof window !== 'undefined') {
@@ -118,26 +139,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="lg:col-span-6">
               <div className="w-full aspect-[4/3] rounded-[16px] overflow-hidden bg-[#f0ede6] mb-3.5 shadow-sm">
                 <MotionImage
-                  src={assetUrl(activeImage)}
-                  alt={product.name}
+                  src={assetUrl(activeSlide.full)}
+                  alt={activeSlide.alt || product.name}
                   fetchPriority="high"
                   decoding="async"
                   width={1280}
                   height={960}
-                  className="w-full h-full object-cover"
+                  className={activeSlide.fullFit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
+                  style={activeSlide.fullPosition ? { objectPosition: activeSlide.fullPosition } : undefined}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-3 sm:w-3/4">
                 {galleryItems.map((item, idx) => (
                   <button
-                    key={idx}
+                    key={item.full}
                     type="button"
-                    onClick={() => setActiveImage(item.full)}
-                    aria-label={`Ảnh sản phẩm ${idx + 1}`}
-                    aria-pressed={activeImage === item.full}
-                    className={`relative aspect-[4/3] rounded-[10px] overflow-hidden border-2 transition-all ${
-                      activeImage === item.full
+                    onClick={() => setActiveIndex(idx)}
+                    aria-label={item.alt || `Ảnh sản phẩm ${idx + 1}`}
+                    aria-pressed={activeIndex === idx}
+                    className={`relative aspect-[4/3] rounded-[10px] overflow-hidden bg-[#f0ede6] border-2 transition-all ${
+                      activeIndex === idx
                         ? 'border-[#3e5641] shadow-xs'
                         : 'border-transparent opacity-75 hover:opacity-100'
                     }`}
@@ -148,8 +170,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       decoding="async"
                       width={320}
                       height={240}
-                      style={idx === 1 ? { width: '195.33%', height: '218.8%', maxWidth:'none', position:'absolute', top:'-80.78%', left:'-18.09%' } : idx === 2 ? { width:'125.68%',height:'125.68%',maxWidth:'none',position:'absolute',left:'-25.66%',top:'-6.81%' } : undefined}
-                      alt={`${product.name} ${idx + 1}`}
+                      style={{
+                        objectPosition: item.thumbPosition || 'center',
+                        transform: item.thumbScale,
+                        transformOrigin: item.thumbPosition || 'center',
+                      }}
+                      alt={item.alt || `${product.name} ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -367,7 +393,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 displayTitle={FIGMA_CARD_COPY[item.id]?.title}
                 displayDescription={FIGMA_CARD_COPY[item.id]?.description}
                 displayNote={FIGMA_CARD_COPY[item.id]?.note}
-                imageSrc={FIGMA_LISTING_MEDIA[item.id] || item.image}
+                imageSrc={FIGMA_RELATED_MEDIA[item.id] || item.image}
                 quantity={cartQuantities[item.id] || 0}
                 onUpdateQuantity={onUpdateQuantity}
                 onSelect={(id) => onNavigate('detail', id)}

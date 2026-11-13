@@ -4,7 +4,7 @@ import { useDialogLifecycle } from './useDialogLifecycle';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useEffect } from 'react';
 import { CartItem, PageRoute } from '../types';
-import { FIGMA_PRODUCT_COPY, FIGMA_ORDER_MEDIA } from '../data/figmaMedia';
+import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
 import { calculateDemoDiscount, DEMO_DISCOUNT_DISCLAIMER } from '../assistant';
 
 interface CartDrawerProps {
@@ -124,8 +124,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     />
 
                     <img
-                      src={assetUrl(FIGMA_ORDER_MEDIA[product.id]?.image || product.image)}
-                      style={{objectPosition:FIGMA_ORDER_MEDIA[product.id]?.position}}
+                      src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
+                      style={{ objectPosition: getOrderMedia(product.id)?.position }}
                       alt={product.name}
                       onClick={() => {
                         const baseId = product.id.endsWith('-le')
