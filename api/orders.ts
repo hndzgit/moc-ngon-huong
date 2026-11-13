@@ -1,701 +1,1254 @@
-import type { IncomingMessage, ServerResponse } from 'http';
-import fs from 'fs';
-import path from 'path';
-import { getFirestoreDb, verifyAuthToken, getIsProduction, getIsServerless, cleanForFirestore } from './_lib/firebaseAdmin.js';
-import { sendOrderNotifications } from './_lib/notifications.js';
+// api/orders.ts
+// Backend Order Creation, Dynamic VietQR Generation, Guest Recovery & Transfer Reporting API
+// Security & Reliability Guarantees:
+// 1. Authoritative server-side catalog lookup and price calculation (never trusts client prices)
+// 2. Sequential order code allocation (MNH000000..MNH999999) inside atomic Firestore transaction
+// 3. Validated dynamic EMVCo / NAPAS 247 VietQR payload generation (BIDV 970418 / 8960826751)
+// 4. Cryptographic guest order recovery token (SHA-256 hash stored, cleartext sent via response & email)
+// 5. Customer "Tôi đã chuyển khoản" reporting (transitions pending_payment -> customer_reported_paid ONLY)
+
+import crypto from 'crypto';
+import { getAdminDb, isProductionRuntime, verifyAuthToken } from './_lib/firebaseAdmin.js';
+import { sendOrderNotification, sendOrderRecoveryEmail } from './_lib/notifications.js';
+import {
+  buildOrderRecoveryUrl,
+  checkRecoveryRateLimit,
+  enrichAndSanitizeOrderForClient,
+  generateRecoveryToken,
+  getConfiguredVietQrBankDetails,
+  readLocalDevOrders,
+  readLocalNextSeq,
+  verifyRecoveryTokenHash,
+  withLocalStoreLock,
+  writeLocalDevOrders,
+  writeLocalNextSeq,
+} from './_lib/orderRecovery.js';
+import { buildOrderPaymentInstructions } from '../src/lib/vietqr.js';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../src/data/products.js';
-import { validateDeliveryAddress } from '../src/data/address/index.js';
-import type { OrderRecord, OrderItemSnapshot, PaymentStatus, OrderStatus } from '../src/types';
+import {
+  validateDeliveryAddress,
+  getProvinceByCode,
+  getCommuneByCode,
+} from '../src/data/address/index.js';
 
-interface VercelRequest extends IncomingMessage {
-  query?: Record<string, string | string[]>;
-  cookies?: Record<string, string>;
-  body?: any;
-}
-
-interface VercelResponse extends ServerResponse {
-  status: (statusCode: number) => VercelResponse;
-  json: (body: any) => void;
-  send: (body: any) => void;
-}
-
-// In-process concurrency lock to reduce identical concurrent calls in a single process.
-// Distributed correctness across multiple serverless instances is strictly enforced by Firestore.
-const inFlightRequests = new Map<string, Promise<{ statusCode: number; payload: any }>>();
-
-// Local development/test file store (ONLY permitted when !isProduction)
-const LOCAL_DEV_DIR = path.resolve(process.cwd(), '.data');
-const LOCAL_DEV_FILE = path.join(LOCAL_DEV_DIR, 'orders_dev.json');
-
-function computePayloadFingerprint(
-  items: any[],
-  customer: any,
-  paymentMethod: string,
-  userId?: string | null
-): string {
-  const cleanItems = (Array.isArray(items) ? items : [])
-    .map((i) => ({
-      id: String(i.productId || i.product?.id || '').trim(),
-      q: Number(i.quantity) || 1,
-    }))
-    .sort((a, b) => a.id.localeCompare(b.id));
-
-  const cleanCustomer: Record<string, any> = {
-    name: typeof customer?.fullName === 'string' ? customer.fullName.trim() : '',
-    phone: typeof customer?.phone === 'string' ? customer.phone.replace(/[\s.-]/g, '') : '',
-    email: typeof customer?.email === 'string' ? customer.email.trim().toLowerCase() : '',
-    shippingMode: customer?.shippingMode === 'pickup' ? 'pickup' : 'delivery',
-    address: typeof customer?.address === 'string' ? customer.address.trim() : '',
+const SERVER_CATALOG: Record<string, { name: string; price: number; maxStock: number }> = {};
+for (const p of [...PRODUCTS, ...LOOSE_TEA_PRODUCTS]) {
+  SERVER_CATALOG[p.id] = {
+    name: p.name,
+    price: p.price,
+    maxStock: p.stock || 50,
   };
+}
 
-  if (typeof customer?.provinceCode === 'string' && customer.provinceCode.trim()) {
-    cleanCustomer.provinceCode = customer.provinceCode.trim();
+const VALID_EMOTIONS = new Set(['AN', 'THUONG', 'CAM', 'NHO']);
+const MAX_COUNTER_SEQ = 999999;
+
+function stripControlChars(str: string, allowNewlines = false): string {
+  if (allowNewlines) {
+    return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
   }
-  if (typeof customer?.communeCode === 'string' && customer.communeCode.trim()) {
-    cleanCustomer.communeCode = customer.communeCode.trim();
+  return str.replace(/[\x00-\x1F\x7F]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function sanitizeGiftConfig(raw: any): any | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  if (
+    typeof raw.intention !== 'string' ||
+    typeof raw.emotion !== 'string' ||
+    !VALID_EMOTIONS.has(raw.emotion) ||
+    typeof raw.recipient !== 'string' ||
+    typeof raw.message !== 'string' ||
+    (raw.cardStyle !== 'botanical' && raw.cardStyle !== 'letter')
+  ) {
+    return undefined;
   }
-  if (typeof customer?.pickupStore === 'string' && customer.pickupStore.trim()) {
-    cleanCustomer.pickupStore = customer.pickupStore.trim();
+  return {
+    intention: stripControlChars(raw.intention, false).slice(0, 64),
+    emotion: raw.emotion,
+    recipient: stripControlChars(raw.recipient, false).slice(0, 80),
+    message: stripControlChars(raw.message, true).slice(0, 280),
+    cardStyle: raw.cardStyle,
+  };
+}
+
+function computeRequestFingerprint(payload: {
+  userId: string | null;
+  items: Array<{ productId: string; quantity: number; giftConfiguration?: any }>;
+  customer: {
+    fullName: string;
+    phone: string;
+    email: string;
+    shippingMode: string;
+    address: string;
+    provinceCode: string;
+    communeCode: string;
+    city: string;
+    district: string;
+    ward: string;
+    pickupStore: string;
+    note: string;
+  };
+  paymentMethod: string;
+}): string {
+  const canonical = JSON.stringify({
+    u: payload.userId || null,
+    i: payload.items.map((item) => ({
+      p: item.productId,
+      q: item.quantity,
+      g: item.giftConfiguration || null,
+    })),
+    c: {
+      n: payload.customer.fullName.toLowerCase(),
+      ph: payload.customer.phone,
+      e: payload.customer.email.toLowerCase(),
+      sm: payload.customer.shippingMode,
+      a: payload.customer.address.toLowerCase(),
+      pc: payload.customer.provinceCode,
+      cc: payload.customer.communeCode,
+      ci: payload.customer.city.toLowerCase(),
+      di: payload.customer.district.toLowerCase(),
+      wa: payload.customer.ward.toLowerCase(),
+      ps: payload.customer.pickupStore,
+      no: payload.customer.note,
+    },
+    pm: payload.paymentMethod,
+  });
+  return crypto.createHash('sha256').update(canonical).digest('hex');
+}
+
+function getEffectiveDb() {
+  if (process.env.MNH_USE_LOCAL_DEV_STORE === '1' && !isProductionRuntime()) {
+    return null;
+  }
+  return getAdminDb();
+}
+
+function getClientIp(req: any): string {
+  const xff = req.headers?.['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.trim()) {
+    return xff.split(',')[0].trim();
+  }
+  return req.socket?.remoteAddress || 'local';
+}
+
+async function parseJsonBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === 'object') {
+    return req.body;
+  }
+  if (typeof req.body === 'string' && req.body.trim()) {
+    return JSON.parse(req.body);
+  }
+  let rawBody = '';
+  await new Promise<void>((resolve, reject) => {
+    req.on('data', (chunk: any) => {
+      rawBody += chunk;
+      if (rawBody.length > 1e6) reject(new Error('PAYLOAD_TOO_LARGE'));
+    });
+    req.on('end', () => resolve());
+    req.on('error', (err: any) => reject(err));
+  });
+  return rawBody ? JSON.parse(rawBody) : {};
+}
+
+function parseQueryParams(req: any): URLSearchParams {
+  if (req.query && typeof req.query === 'object' && Object.keys(req.query).length > 0) {
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(req.query)) {
+      if (typeof v === 'string') sp.set(k, v);
+    }
+    return sp;
+  }
+  const rawUrl = req.url || '/api/orders';
+  const qIdx = rawUrl.indexOf('?');
+  return new URLSearchParams(qIdx >= 0 ? rawUrl.slice(qIdx + 1) : '');
+}
+
+function sendJson(res: any, statusCode: number, payload: any) {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.end(JSON.stringify(payload));
+}
+
+// ============================================================================
+// GET /api/orders?orderId=... (Secure Order Recovery & Authoritative Status)
+// ============================================================================
+async function handleGetOrder(req: any, res: any) {
+  const query = parseQueryParams(req);
+  const orderId = (query.get('orderId') || '').trim();
+  const orderCodeOnly = (query.get('orderCode') || '').trim();
+  const recoveryToken =
+    (req.headers?.['x-order-recovery-token'] as string | undefined)?.trim() ||
+    (query.get('token') || '').trim() ||
+    null;
+
+  // Reject attempts to look up an order by predictable orderCode alone
+  if (!orderId) {
+    if (orderCodeOnly) {
+      return sendJson(res, 403, {
+        success: false,
+        code: 'ORDER_CODE_LOOKUP_FORBIDDEN',
+        error:
+          'Vì lý do bảo mật, không thể tra cứu trực tiếp bằng mã đơn hàng công khai. Vui lòng sử dụng liên kết bảo mật trong email xác nhận hoặc đăng nhập tài khoản.',
+      });
+    }
+    return sendJson(res, 400, {
+      success: false,
+      code: 'MISSING_ORDER_ID',
+      error: 'Thiếu mã định danh đơn hàng (orderId).',
+    });
   }
 
-  return JSON.stringify({
-    userId: userId || null,
-    items: cleanItems,
-    customer: cleanCustomer,
-    paymentMethod: paymentMethod === 'bank' ? 'bank' : 'cod',
+  const rateKey = `get_order:${getClientIp(req)}:${orderId}`;
+  const rateCheck = checkRecoveryRateLimit(rateKey, 30, 60_000);
+  if (!rateCheck.allowed) {
+    return sendJson(res, 429, {
+      success: false,
+      code: 'RATE_LIMITED',
+      error: 'Quá nhiều yêu cầu tra cứu. Vui lòng thử lại sau ít giây.',
+    });
+  }
+
+  let verifiedUser: { uid: string; email?: string; isAnonymous?: boolean } | null = null;
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  if (authHeader) {
+    try {
+      verifiedUser = await verifyAuthToken(authHeader);
+    } catch {
+      verifiedUser = null;
+    }
+  }
+
+  const db = getEffectiveDb();
+  let rawOrder: any = null;
+
+  if (db) {
+    try {
+      const snap = await db.collection('orders').doc(orderId).get();
+      if (snap.exists) {
+        rawOrder = { id: snap.id, ...snap.data() };
+      }
+    } catch (err) {
+      console.error('[MNH Orders GET] Firestore read error:', err);
+      return sendJson(res, 503, {
+        success: false,
+        code: 'DATABASE_UNAVAILABLE',
+        error: 'Hệ thống cơ sở dữ liệu đang bảo trì. Vui lòng thử lại sau.',
+      });
+    }
+  } else if (!isProductionRuntime()) {
+    const localOrders = readLocalDevOrders();
+    rawOrder = localOrders.find((o) => o.id === orderId) || null;
+  } else {
+    return sendJson(res, 503, {
+      success: false,
+      code: 'DATABASE_UNAVAILABLE',
+      error: 'Hệ thống cơ sở dữ liệu đang bảo trì.',
+    });
+  }
+
+  if (!rawOrder) {
+    return sendJson(res, 404, {
+      success: false,
+      code: 'ORDER_NOT_FOUND',
+      error: 'Không tìm thấy đơn hàng hoặc phiên thanh toán không tồn tại.',
+    });
+  }
+
+  const ownsByUid =
+    Boolean(verifiedUser?.uid) &&
+    (rawOrder.userId === verifiedUser!.uid || rawOrder.customerUid === verifiedUser!.uid);
+
+  const tokenVerification = verifyRecoveryTokenHash(
+    recoveryToken,
+    rawOrder.recoveryTokenHash,
+    rawOrder.recoveryTokenExpiresAt
+  );
+
+  if (!ownsByUid && !tokenVerification.valid) {
+    const isExpired = tokenVerification.reason === 'expired';
+    return sendJson(res, 403, {
+      success: false,
+      code: isExpired ? 'RECOVERY_TOKEN_EXPIRED' : 'FORBIDDEN_ORDER_ACCESS',
+      error: isExpired
+        ? 'Liên kết khôi phục đơn hàng đã hết hạn. Vui lòng yêu cầu gửi lại liên kết mới qua email.'
+        : 'Bạn không có quyền truy cập đơn hàng này. Vui lòng đăng nhập đúng tài khoản hoặc mở liên kết từ email xác nhận đơn hàng.',
+    });
+  }
+
+  return sendJson(res, 200, {
+    success: true,
+    order: enrichAndSanitizeOrderForClient(rawOrder, tokenVerification.valid ? recoveryToken! : undefined),
   });
 }
 
-function readLocalDevOrders(): OrderRecord[] {
-  if (getIsProduction()) return [];
-  try {
-    if (!fs.existsSync(LOCAL_DEV_DIR)) {
-      fs.mkdirSync(LOCAL_DEV_DIR, { recursive: true });
-    }
-    if (fs.existsSync(LOCAL_DEV_FILE)) {
-      const data = fs.readFileSync(LOCAL_DEV_FILE, 'utf-8');
-      return JSON.parse(data) || [];
-    }
-  } catch (err) {
-    console.error('[MNH Dev Orders] Error reading local dev store:', err);
-  }
-  return [];
-}
-
-function persistLocalDevOrder(order: OrderRecord): void {
-  if (getIsProduction()) return;
-  try {
-    if (!fs.existsSync(LOCAL_DEV_DIR)) {
-      fs.mkdirSync(LOCAL_DEV_DIR, { recursive: true });
-    }
-    const orders = readLocalDevOrders();
-    orders.unshift(order);
-    fs.writeFileSync(LOCAL_DEV_FILE, JSON.stringify(orders.slice(0, 300), null, 2), 'utf-8');
-  } catch (err) {
-    console.error('[MNH Dev Orders] Error saving to local dev store:', err);
-  }
-}
-
-// In-memory idempotency map for non-production test runs without Firestore emulator
-const devIdempotencyMap = new Map<string, { order: OrderRecord; fingerprint: string }>();
-
 // ============================================================================
-// MAIN HANDLER
+// POST /api/orders (Action: report_transfer — Customer clicks "Tôi đã chuyển khoản")
 // ============================================================================
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const isProduction = getIsProduction();
-  const isServerless = getIsServerless();
+async function handleCustomerReportTransfer(req: any, res: any, body: any) {
+  const orderId = typeof body?.orderId === 'string' ? body.orderId.trim() : '';
+  const recoveryToken =
+    typeof body?.recoveryToken === 'string'
+      ? body.recoveryToken.trim()
+      : (req.headers?.['x-order-recovery-token'] as string | undefined)?.trim() || null;
 
-  // CORS & Security Headers
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-  );
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 200;
-    res.end();
-    return;
+  if (!orderId) {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'MISSING_ORDER_ID',
+      error: 'Thiếu mã đơn hàng cần xác nhận chuyển khoản.',
+    });
   }
 
-  // GET Health / Service Verification
-  if (req.method === 'GET') {
-    const db = getFirestoreDb();
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 200;
-    res.end(
-      JSON.stringify({
-        status: 'ok',
-        service: 'Mộc Ngôn Hương Order API',
-        version: '13.4.0',
-        environment: isProduction ? (isServerless ? 'vercel-production' : 'production') : 'local-dev',
-        persistence: db
-          ? 'cloud-firestore-transactional'
-          : isProduction
-          ? 'fail-closed-pending-credentials'
-          : 'local-dev-fallback',
-        firestoreReady: Boolean(db),
-      })
+  const rateKey = `report_transfer:${getClientIp(req)}:${orderId}`;
+  const rateCheck = checkRecoveryRateLimit(rateKey, 15, 60_000);
+  if (!rateCheck.allowed) {
+    return sendJson(res, 429, {
+      success: false,
+      code: 'RATE_LIMITED',
+      error: 'Thao tác quá nhanh. Vui lòng thử lại sau ít giây.',
+    });
+  }
+
+  let verifiedUser: { uid: string; email?: string; isAnonymous?: boolean } | null = null;
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  if (authHeader) {
+    try {
+      verifiedUser = await verifyAuthToken(authHeader);
+    } catch {
+      verifiedUser = null;
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const db = getEffectiveDb();
+
+  const applyReportLogic = (rawOrder: any): {
+    status: number;
+    code?: string;
+    error?: string;
+    updatedOrder?: any;
+    mutated?: boolean;
+    message?: string;
+  } => {
+    if (!rawOrder) {
+      return {
+        status: 404,
+        code: 'ORDER_NOT_FOUND',
+        error: 'Không tìm thấy đơn hàng.',
+      };
+    }
+
+    const ownsByUid =
+      Boolean(verifiedUser?.uid) &&
+      (rawOrder.userId === verifiedUser!.uid || rawOrder.customerUid === verifiedUser!.uid);
+    const tokenCheck = verifyRecoveryTokenHash(
+      recoveryToken,
+      rawOrder.recoveryTokenHash,
+      rawOrder.recoveryTokenExpiresAt
     );
-    return;
+
+    if (!ownsByUid && !tokenCheck.valid) {
+      return {
+        status: 403,
+        code: 'FORBIDDEN_ORDER_ACCESS',
+        error: 'Bạn không có quyền cập nhật thông báo chuyển khoản cho đơn hàng này.',
+      };
+    }
+
+    if (rawOrder.paymentMethod !== 'bank') {
+      return {
+        status: 400,
+        code: 'INVALID_PAYMENT_METHOD',
+        error: 'Đơn hàng thanh toán khi nhận hàng (COD) không áp dụng thông báo chuyển khoản VietQR.',
+      };
+    }
+
+    if (rawOrder.orderStatus === 'cancelled' || rawOrder.paymentStatus === 'cancelled') {
+      return {
+        status: 409,
+        code: 'ORDER_CANCELLED',
+        error: 'Đơn hàng này đã bị hủy, không thể ghi nhận thông báo chuyển khoản.',
+      };
+    }
+
+    if (rawOrder.paymentStatus === 'paid' || rawOrder.paymentStatus === 'completed') {
+      return {
+        status: 200,
+        updatedOrder: rawOrder,
+        mutated: false,
+        message: 'Đơn hàng của bạn đã được Mộc Ngôn Hương xác nhận thanh toán thành công.',
+      };
+    }
+
+    if (rawOrder.paymentStatus === 'customer_reported_paid') {
+      return {
+        status: 200,
+        updatedOrder: rawOrder,
+        mutated: false,
+        message:
+          'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.',
+      };
+    }
+
+    if (rawOrder.paymentStatus !== 'pending_payment' && rawOrder.paymentStatus !== 'pending') {
+      return {
+        status: 409,
+        code: 'INVALID_PAYMENT_STATE',
+        error: `Trạng thái thanh toán hiện tại (${rawOrder.paymentStatus}) không thể chuyển sang báo đã chuyển khoản.`,
+      };
+    }
+
+    const auditEntry = {
+      orderId: rawOrder.id,
+      orderCode: rawOrder.orderCode,
+      action: 'customer_report_transfer',
+      previousPaymentStatus: rawOrder.paymentStatus,
+      newPaymentStatus: 'customer_reported_paid',
+      actorType: 'customer' as const,
+      actorUid: verifiedUser?.uid || null,
+      timestamp: nowIso,
+    };
+
+    const existingAudit = Array.isArray(rawOrder.paymentAuditLog) ? rawOrder.paymentAuditLog : [];
+    const updatedOrder = {
+      ...rawOrder,
+      paymentStatus: 'customer_reported_paid',
+      customerReportedAt: rawOrder.customerReportedAt || nowIso,
+      customerReportedByUid: verifiedUser?.uid || 'guest_recovery_token',
+      updatedAt: nowIso,
+      paymentAuditLog: [...existingAudit, auditEntry],
+    };
+
+    return {
+      status: 200,
+      updatedOrder,
+      mutated: true,
+      message:
+        'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.',
+    };
+  };
+
+  if (db) {
+    try {
+      const orderRef = db.collection('orders').doc(orderId);
+      const outcome = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        const rawOrder = snap.exists ? { id: snap.id, ...snap.data() } : null;
+        const resLogic = applyReportLogic(rawOrder);
+        if (resLogic.mutated && resLogic.updatedOrder) {
+          tx.set(orderRef, resLogic.updatedOrder, { merge: true });
+        }
+        return resLogic;
+      });
+
+      if (outcome.status !== 200) {
+        return sendJson(res, outcome.status, {
+          success: false,
+          code: outcome.code,
+          error: outcome.error,
+        });
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        message: outcome.message,
+        order: enrichAndSanitizeOrderForClient(
+          outcome.updatedOrder,
+          recoveryToken || undefined
+        ),
+      });
+    } catch (err) {
+      console.error('[MNH Orders report_transfer] Firestore error:', err);
+      return sendJson(res, 503, {
+        success: false,
+        code: 'DATABASE_UNAVAILABLE',
+        error: 'Hệ thống cơ sở dữ liệu đang bận. Vui lòng thử lại sau ít giây.',
+      });
+    }
+  } else if (!isProductionRuntime()) {
+    const outcome = await withLocalStoreLock(async () => {
+      const localOrders = readLocalDevOrders();
+      const idx = localOrders.findIndex((o) => o.id === orderId);
+      const rawOrder = idx >= 0 ? localOrders[idx] : null;
+      const resLogic = applyReportLogic(rawOrder);
+      if (resLogic.mutated && resLogic.updatedOrder && idx >= 0) {
+        localOrders[idx] = resLogic.updatedOrder;
+        writeLocalDevOrders(localOrders);
+      }
+      return resLogic;
+    });
+
+    if (outcome.status !== 200) {
+      return sendJson(res, outcome.status, {
+        success: false,
+        code: outcome.code,
+        error: outcome.error,
+      });
+    }
+
+    return sendJson(res, 200, {
+      success: true,
+      message: outcome.message,
+      order: enrichAndSanitizeOrderForClient(
+        outcome.updatedOrder,
+        recoveryToken || undefined
+      ),
+    });
+  }
+
+  return sendJson(res, 503, {
+    success: false,
+    code: 'DATABASE_UNAVAILABLE',
+    error: 'Hệ thống cơ sở dữ liệu đang bảo trì.',
+  });
+}
+
+// ============================================================================
+// POST /api/orders (Action: request_recovery_link — Non-enumerating email link)
+// ============================================================================
+async function handleRequestRecoveryLink(req: any, res: any, body: any) {
+  const orderCode = typeof body?.orderCode === 'string' ? body.orderCode.trim().toUpperCase() : '';
+  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+
+  if (!orderCode || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'INVALID_RECOVERY_INPUT',
+      error: 'Vui lòng nhập đúng Mã đơn hàng (ví dụ: MNH000000) và địa chỉ Email đã dùng khi đặt hàng.',
+    });
+  }
+
+  const rateKey = `recovery_email:${getClientIp(req)}:${orderCode}`;
+  const rateCheck = checkRecoveryRateLimit(rateKey, 5, 60_000);
+  if (!rateCheck.allowed) {
+    return sendJson(res, 429, {
+      success: false,
+      code: 'RATE_LIMITED',
+      error: 'Bạn đã yêu cầu gửi lại liên kết quá nhiều lần. Vui lòng thử lại sau 1 phút.',
+    });
+  }
+
+  const genericMessage =
+    'Nếu mã đơn hàng và địa chỉ email trùng khớp với dữ liệu hệ thống, liên kết khôi phục đơn hàng đã được gửi tới hộp thư của bạn.';
+
+  const db = getEffectiveDb();
+  let matchedOrder: any = null;
+
+  if (db) {
+    try {
+      const snap = await db
+        .collection('orders')
+        .where('orderCode', '==', orderCode)
+        .limit(5)
+        .get();
+      snap.forEach((doc) => {
+        const data = doc.data();
+        if (String(data?.customer?.email || '').trim().toLowerCase() === email) {
+          matchedOrder = { id: doc.id, ...data };
+        }
+      });
+
+      if (matchedOrder) {
+        const fresh = generateRecoveryToken();
+        await db.collection('orders').doc(matchedOrder.id).set(
+          {
+            recoveryTokenHash: fresh.recoveryTokenHash,
+            recoveryTokenExpiresAt: fresh.recoveryTokenExpiresAt,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        await sendOrderRecoveryEmail({
+          orderId: matchedOrder.id,
+          orderCode: matchedOrder.orderCode,
+          customerName: matchedOrder.customer?.fullName || 'Quý khách',
+          customerEmail: matchedOrder.customer.email,
+          total: matchedOrder.total || 0,
+          recoveryToken: fresh.recoveryToken,
+        });
+      }
+    } catch (err) {
+      console.error('[MNH Orders request_recovery_link] Error:', err);
+    }
+  } else if (!isProductionRuntime()) {
+    await withLocalStoreLock(async () => {
+      const localOrders = readLocalDevOrders();
+      const idx = localOrders.findIndex(
+        (o) =>
+          String(o.orderCode || '').toUpperCase() === orderCode &&
+          String(o?.customer?.email || '').trim().toLowerCase() === email
+      );
+      if (idx >= 0) {
+        const fresh = generateRecoveryToken();
+        localOrders[idx] = {
+          ...localOrders[idx],
+          recoveryTokenHash: fresh.recoveryTokenHash,
+          recoveryTokenExpiresAt: fresh.recoveryTokenExpiresAt,
+          updatedAt: new Date().toISOString(),
+        };
+        writeLocalDevOrders(localOrders);
+        await sendOrderRecoveryEmail({
+          orderId: localOrders[idx].id,
+          orderCode: localOrders[idx].orderCode,
+          customerName: localOrders[idx].customer?.fullName || 'Quý khách',
+          customerEmail: localOrders[idx].customer.email,
+          total: localOrders[idx].total || 0,
+          recoveryToken: fresh.recoveryToken,
+        });
+      }
+    });
+  }
+
+  return sendJson(res, 200, {
+    success: true,
+    message: genericMessage,
+  });
+}
+
+// ============================================================================
+// MAIN HANDLER: /api/orders
+// ============================================================================
+export default async function handler(req: any, res: any) {
+  if (req.method === 'GET') {
+    return handleGetOrder(req, res);
   }
 
   if (req.method !== 'POST') {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 405;
-    res.end(
-      JSON.stringify({
-        success: false,
-        error: 'Phương thức không được hỗ trợ. Chỉ chấp nhận POST.',
-      })
-    );
-    return;
+    res.setHeader('Allow', 'GET, POST');
+    return sendJson(res, 405, {
+      success: false,
+      error: 'Phương thức không được hỗ trợ. Vui lòng sử dụng GET hoặc POST.',
+    });
   }
 
-  // 1. Check production database availability (FAIL CLOSED)
-  const db = getFirestoreDb();
-  if (isProduction && !db) {
-    console.error(
-      '[MNH Orders FAIL-CLOSED] Production database credentials are not configured. Rejecting order submission.'
-    );
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 503;
-    res.end(
-      JSON.stringify({
-        success: false,
-        code: 'DATABASE_UNAVAILABLE',
-        error:
-          'Hệ thống tiếp nhận đơn hàng đang bảo trì hoặc chưa sẵn sàng cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline Mộc Ngôn Hương (0889 742 556) để được hỗ trợ đặt hàng chu đáo nhất.',
-      })
-    );
-    return;
+  let body: any = {};
+  try {
+    body = await parseJsonBody(req);
+  } catch (err: any) {
+    const isTooLarge = err?.message === 'PAYLOAD_TOO_LARGE';
+    return sendJson(res, isTooLarge ? 413 : 400, {
+      success: false,
+      error: isTooLarge
+        ? 'Dữ liệu đơn hàng vượt quá kích thước cho phép.'
+        : 'Định dạng dữ liệu JSON không hợp lệ.',
+    });
   }
 
-  // 2. Parse request body safely
-  let body = req.body;
-  if (!body) {
-    try {
-      const chunks: Buffer[] = [];
-      for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-      }
-      const rawText = Buffer.concat(chunks).toString('utf-8');
-      if (rawText) {
-        body = JSON.parse(rawText);
-      }
-    } catch {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(JSON.stringify({ success: false, error: 'Dữ liệu JSON không hợp lệ.' }));
-      return;
-    }
-  } else if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(JSON.stringify({ success: false, error: 'Dữ liệu JSON không hợp lệ.' }));
-      return;
-    }
+  // Dispatch secondary POST actions cleanly within the same serverless function
+  if (body?.action === 'report_transfer') {
+    return handleCustomerReportTransfer(req, res, body);
+  }
+  if (body?.action === 'request_recovery_link') {
+    return handleRequestRecoveryLink(req, res, body);
   }
 
+  // ==========================================================================
+  // DEFAULT POST ACTION: CREATE NEW ORDER (COD OR VIETQR BANK TRANSFER)
+  // ==========================================================================
   const { items, customer, paymentMethod, idempotencyKey } = body || {};
 
-  // 3. Cryptographically Verify Authentication Token for Customer Identity
-  // NEVER trust client body.userId or localStorage email!
   let verifiedCustomerUid: string | null = null;
-  const authHeader = req.headers?.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  let isAnonymousSession = false;
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  if (authHeader) {
     try {
-      const verified = await verifyAuthToken(authHeader);
-      if (verified && verified.uid) {
-        verifiedCustomerUid = verified.uid;
+      const verifiedUser = await verifyAuthToken(authHeader);
+      if (verifiedUser && verifiedUser.uid) {
+        verifiedCustomerUid = verifiedUser.uid;
+        isAnonymousSession = Boolean(verifiedUser.isAnonymous);
       }
     } catch {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 401;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: 'Phiên xác thực đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.',
-        })
-      );
-      return;
-    }
-  }
-
-  // 4. Process-level concurrency lock (Optimization for in-flight requests in the same container)
-  const cleanIdempotencyKey =
-    typeof idempotencyKey === 'string' && idempotencyKey.trim().length > 0
-      ? idempotencyKey.trim().slice(0, 128)
-      : null;
-
-  if (cleanIdempotencyKey && inFlightRequests.has(cleanIdempotencyKey)) {
-    try {
-      const inFlightResult = await inFlightRequests.get(cleanIdempotencyKey)!;
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = inFlightResult.statusCode;
-      res.end(JSON.stringify(inFlightResult.payload));
-      return;
-    } catch (err: any) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 500;
-      res.end(JSON.stringify({ success: false, error: err?.message || 'Lỗi xử lý yêu cầu đồng thời.' }));
-      return;
-    }
-  }
-
-  // 5. Validate Items against authoritative catalog
-  if (!Array.isArray(items) || items.length === 0) {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 400;
-    res.end(JSON.stringify({ success: false, error: 'Giỏ hàng của bạn đang trống.' }));
-    return;
-  }
-
-  const catalog = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS];
-  const orderSnapshots: OrderItemSnapshot[] = [];
-  let calculatedSubtotal = 0;
-
-  for (const item of items) {
-    const productId = item.productId || item.product?.id;
-    const quantity = Number(item.quantity);
-
-    if (!productId || typeof productId !== 'string') {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(JSON.stringify({ success: false, error: 'Mã sản phẩm không hợp lệ.' }));
-      return;
-    }
-
-    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 99) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: `Số lượng sản phẩm "${productId}" không hợp lệ (cho phép 1-99).`,
-        })
-      );
-      return;
-    }
-
-    const matchedProduct = catalog.find((p) => p.id === productId);
-    if (!matchedProduct) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: `Sản phẩm "${productId}" không tồn tại trong danh mục chính thức của Mộc Ngôn Hương.`,
-        })
-      );
-      return;
-    }
-
-    // Authoritative pricing from server catalog - NEVER trust client prices
-    const itemTotal = matchedProduct.price * quantity;
-    calculatedSubtotal += itemTotal;
-
-    const itemSnapshot: Record<string, any> = {
-      productId: matchedProduct.id,
-      productName: matchedProduct.name,
-      price: matchedProduct.price,
-      quantity,
-      image: matchedProduct.image,
-    };
-
-    if (item.giftConfiguration && typeof item.giftConfiguration === 'object') {
-      const cleanGift: Record<string, any> = {};
-      if (item.giftConfiguration.recipient && typeof item.giftConfiguration.recipient === 'string') {
-        cleanGift.recipient = item.giftConfiguration.recipient.trim();
-      }
-      if (item.giftConfiguration.message && typeof item.giftConfiguration.message === 'string') {
-        cleanGift.message = item.giftConfiguration.message.trim();
-      }
-      if (item.giftConfiguration.giftCardTemplate && typeof item.giftConfiguration.giftCardTemplate === 'string') {
-        cleanGift.giftCardTemplate = item.giftConfiguration.giftCardTemplate.trim();
-      }
-      if (item.giftConfiguration.boxColor && typeof item.giftConfiguration.boxColor === 'string') {
-        cleanGift.boxColor = item.giftConfiguration.boxColor.trim();
-      }
-      if (Object.keys(cleanGift).length > 0) {
-        itemSnapshot.giftConfiguration = cleanGift;
-      }
-    }
-
-    orderSnapshots.push(itemSnapshot as OrderItemSnapshot);
-  }
-
-  // 6. Validate Customer Information
-  if (!customer || typeof customer !== 'object') {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 400;
-    res.end(JSON.stringify({ success: false, error: 'Thiếu thông tin người mua hàng.' }));
-    return;
-  }
-
-  const fullName = typeof customer.fullName === 'string' ? customer.fullName.trim() : '';
-  const phone = typeof customer.phone === 'string' ? customer.phone.trim() : '';
-  const email = typeof customer.email === 'string' ? customer.email.trim() : '';
-  const shippingMode = customer.shippingMode === 'pickup' ? 'pickup' : 'delivery';
-  const address = typeof customer.address === 'string' ? customer.address.trim() : '';
-  const provinceCode = typeof customer.provinceCode === 'string' ? customer.provinceCode.trim() : '';
-  const communeCode = typeof customer.communeCode === 'string' ? customer.communeCode.trim() : '';
-  const city = typeof customer.city === 'string' ? customer.city.trim() : '';
-  const district = typeof customer.district === 'string' ? customer.district.trim() : '';
-  const ward = typeof customer.ward === 'string' ? customer.ward.trim() : '';
-  const pickupStore =
-    typeof customer.pickupStore === 'string' ? customer.pickupStore.trim() : undefined;
-  const note = typeof customer.note === 'string' ? customer.note.trim().slice(0, 500) : undefined;
-
-  if (!fullName || fullName.length < 2 || fullName.length > 100) {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 400;
-    res.end(
-      JSON.stringify({ success: false, error: 'Vui lòng nhập Họ và Tên hợp lệ (2-100 ký tự).' })
-    );
-    return;
-  }
-
-  // Vietnamese phone regex check (10 digits starting with 0 or +84)
-  const phoneClean = phone.replace(/[\s.-]/g, '');
-  if (!phoneClean || !/^(0|\+84)[1-9][0-9]{8}$/.test(phoneClean)) {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 400;
-    res.end(
-      JSON.stringify({
+      return sendJson(res, 401, {
         success: false,
-        error:
-          'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 chữ số tại Việt Nam.',
-      })
-    );
-    return;
+        code: 'AUTH_TOKEN_INVALID',
+        error: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại hoặc tiếp tục đặt hàng.',
+      });
+    }
   }
 
-  // Email regex check
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 400;
-    res.end(JSON.stringify({ success: false, error: 'Địa chỉ email không hợp lệ.' }));
-    return;
+  if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
+    return sendJson(res, 400, {
+      success: false,
+      error: 'Giỏ hàng trống hoặc số lượng mặt hàng không hợp lệ.',
+    });
   }
+
+  if (!customer || typeof customer !== 'object') {
+    return sendJson(res, 400, {
+      success: false,
+      error: 'Thiếu thông tin khách hàng.',
+    });
+  }
+
+  const fullName =
+    typeof customer.fullName === 'string'
+      ? stripControlChars(customer.fullName, false).slice(0, 120)
+      : '';
+  const phoneRaw =
+    typeof customer.phone === 'string' ? stripControlChars(customer.phone, false) : '';
+  const phoneClean = phoneRaw.replace(/[\s.-]/g, '');
+  const email =
+    typeof customer.email === 'string'
+      ? stripControlChars(customer.email, false).slice(0, 160)
+      : '';
+  const shippingMode = customer.shippingMode === 'pickup' ? 'pickup' : 'delivery';
+  const address =
+    typeof customer.address === 'string'
+      ? stripControlChars(customer.address, false).slice(0, 250)
+      : '';
+  const provinceCode =
+    typeof customer.provinceCode === 'string'
+      ? stripControlChars(customer.provinceCode, false).slice(0, 10)
+      : '';
+  const communeCode =
+    typeof customer.communeCode === 'string'
+      ? stripControlChars(customer.communeCode, false).slice(0, 10)
+      : '';
+  const city =
+    typeof customer.city === 'string'
+      ? stripControlChars(customer.city, false).slice(0, 100)
+      : '';
+  const district =
+    typeof customer.district === 'string'
+      ? stripControlChars(customer.district, false).slice(0, 100)
+      : '';
+  const ward =
+    typeof customer.ward === 'string'
+      ? stripControlChars(customer.ward, false).slice(0, 100)
+      : '';
+  const pickupStore =
+    typeof customer.pickupStore === 'string'
+      ? stripControlChars(customer.pickupStore, false).slice(0, 250)
+      : '';
+  const note =
+    typeof customer.note === 'string'
+      ? stripControlChars(customer.note, true).slice(0, 500)
+      : '';
+
+  if (!fullName || fullName.length < 2) {
+    return sendJson(res, 400, {
+      success: false,
+      error: 'Vui lòng nhập Họ và Tên hợp lệ (tối thiểu 2 ký tự).',
+    });
+  }
+
+  if (!/^(0|\+84)[1-9][0-9]{8}$/.test(phoneClean)) {
+    return sendJson(res, 400, {
+      success: false,
+      error: 'Số điện thoại không đúng định dạng Việt Nam (10 chữ số, ví dụ: 0889742556).',
+    });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    return sendJson(res, 400, {
+      success: false,
+      error: 'Vui lòng nhập địa chỉ Email hợp lệ để nhận xác nhận đơn hàng.',
+    });
+  }
+
+  let verifiedProvinceName = '';
+  let verifiedCommuneName = '';
+  let verifiedFormattedAddress = '';
+  let addressSchemaVersion = '2';
 
   if (shippingMode === 'delivery') {
-    if (!address || address.length < 3 || address.length > 250) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: 'Vui lòng nhập địa chỉ nhận hàng chi tiết (3-250 ký tự: số nhà, tên đường, thôn, xóm).',
-        })
-      );
-      return;
-    }
-
     if (provinceCode || communeCode) {
-      const addressValidation = validateDeliveryAddress({ address, provinceCode, communeCode });
-      if (!addressValidation.isValid) {
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 400;
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: addressValidation.error || 'Địa chỉ nhận hàng không hợp lệ.',
-          })
-        );
-        return;
-      }
-    } else if (!city) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
+      const addrCheck = validateDeliveryAddress({ address, provinceCode, communeCode });
+      if (!addrCheck.isValid || !addrCheck.validated) {
+        return sendJson(res, 400, {
           success: false,
-          error: 'Vui lòng chọn Tỉnh / Thành phố nhận hàng.',
-        })
-      );
-      return;
+          error: addrCheck.error || 'Thông tin địa chỉ giao hàng chưa hợp lệ.',
+        });
+      }
+      verifiedProvinceName = addrCheck.validated.provinceName || '';
+      verifiedCommuneName = addrCheck.validated.communeName || '';
+      verifiedFormattedAddress = addrCheck.validated.formattedAddress || '';
+      addressSchemaVersion = addrCheck.validated.addressSchemaVersion || '2';
+    } else if (city && address && address.length >= 3) {
+      verifiedFormattedAddress = [address, ward, district, city].filter(Boolean).join(', ');
+      addressSchemaVersion = '1';
+    } else {
+      return sendJson(res, 400, {
+        success: false,
+        error: 'Vui lòng chọn Tỉnh/Thành phố, Phường/Xã/Đặc khu và nhập địa chỉ chi tiết.',
+      });
+    }
+  } else {
+    if (!pickupStore) {
+      return sendJson(res, 400, {
+        success: false,
+        error: 'Vui lòng chọn cơ sở nhận hàng tại tiệm.',
+      });
     }
   }
 
-  // 7. Payment Method & Authoritative Calculation
-  const validPaymentMethod = paymentMethod === 'bank' ? 'bank' : 'cod';
-  const shippingFee = 0; // Introductory complimentary shipping policy
+  if (paymentMethod !== 'cod' && paymentMethod !== 'bank') {
+    return sendJson(res, 400, {
+      success: false,
+      error: 'Phương thức thanh toán không hợp lệ.',
+    });
+  }
+
+  let calculatedSubtotal = 0;
+  const verifiedItems: Array<{
+    productId: string;
+    productName: string;
+    price: number;
+    quantity: number;
+    giftConfiguration?: any;
+  }> = [];
+
+  for (const item of items) {
+    if (!item || typeof item !== 'object') {
+      return sendJson(res, 400, {
+        success: false,
+        error: 'Dữ liệu sản phẩm trong giỏ hàng không hợp lệ.',
+      });
+    }
+
+    const productId = typeof item.productId === 'string' ? item.productId.trim() : '';
+    const quantity = Number(item.quantity);
+    const catalogEntry = SERVER_CATALOG[productId];
+
+    if (!catalogEntry) {
+      return sendJson(res, 400, {
+        success: false,
+        error: `Sản phẩm không tồn tại trong danh mục chính thức (mã: ${productId || 'trống'}).`,
+      });
+    }
+
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > catalogEntry.maxStock) {
+      return sendJson(res, 400, {
+        success: false,
+        error: `Số lượng sản phẩm "${catalogEntry.name}" không hợp lệ (tối đa ${catalogEntry.maxStock} sản phẩm).`,
+      });
+    }
+
+    const sanitizedGift = sanitizeGiftConfig(item.giftConfiguration);
+    calculatedSubtotal += catalogEntry.price * quantity;
+    verifiedItems.push({
+      productId,
+      productName: catalogEntry.name,
+      price: catalogEntry.price,
+      quantity,
+      ...(sanitizedGift ? { giftConfiguration: sanitizedGift } : {}),
+    });
+  }
+
+  const shippingFee = 0;
   const discount = 0;
   const finalTotal = calculatedSubtotal + shippingFee - discount;
 
-  // 8. Canonical Request Fingerprint
-  const currentFingerprint = computePayloadFingerprint(
-    items,
-    customer,
-    validPaymentMethod,
-    verifiedCustomerUid
-  );
+  const cleanIdempotencyKey =
+    typeof idempotencyKey === 'string' && /^[a-zA-Z0-9_-]{8,96}$/.test(idempotencyKey.trim())
+      ? idempotencyKey.trim()
+      : undefined;
 
-  // 9. Generate Order Record
-  const now = new Date();
-  const timestampStr = now.toISOString();
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  const timeSuffix = now.getTime().toString().slice(-6);
-  const orderCode = `MNH-${timeSuffix}-${randomSuffix}`;
-  const orderId = `order_${now.getTime()}_${Math.random().toString(36).substring(2, 9)}`;
+  const requestFingerprint = computeRequestFingerprint({
+    userId: verifiedCustomerUid,
+    items: verifiedItems,
+    customer: {
+      fullName,
+      phone: phoneClean,
+      email,
+      shippingMode,
+      address,
+      provinceCode,
+      communeCode,
+      city,
+      district,
+      ward,
+      pickupStore,
+      note,
+    },
+    paymentMethod,
+  });
 
-  const paymentStatus: PaymentStatus = 'pending';
-  const orderStatus: OrderStatus = 'preparing';
+  const now = Date.now();
+  const timestampStr = new Date(now).toISOString();
+  const initialRecovery = generateRecoveryToken();
 
-  const customerRecord: Record<string, any> = {
-    fullName,
-    phone: phoneClean,
-    email,
-    shippingMode,
-  };
+  const initialPaymentStatus = paymentMethod === 'bank' ? 'pending_payment' : 'pending';
+  const initialOrderStatus = paymentMethod === 'bank' ? 'pending_confirmation' : 'preparing';
 
-  if (shippingMode === 'delivery') {
-    if (provinceCode && communeCode) {
-      const addressValidation = validateDeliveryAddress({ address, provinceCode, communeCode });
-      if (addressValidation.isValid && addressValidation.validated) {
-        customerRecord.address = addressValidation.validated.address;
-        customerRecord.provinceCode = addressValidation.validated.provinceCode;
-        customerRecord.provinceName = addressValidation.validated.provinceName;
-        customerRecord.communeCode = addressValidation.validated.communeCode;
-        customerRecord.communeName = addressValidation.validated.communeName;
-        customerRecord.formattedAddress = addressValidation.validated.formattedAddress;
-        customerRecord.addressSchemaVersion = '2';
-        // Backward compatibility for legacy downstream systems inspecting city/ward
-        customerRecord.city = addressValidation.validated.provinceName;
-        customerRecord.ward = addressValidation.validated.communeName;
-      } else {
-        customerRecord.address = address;
-      }
-    } else {
-      if (address) customerRecord.address = address;
-      if (city) customerRecord.city = city;
-      if (district) customerRecord.district = district;
-      if (ward) customerRecord.ward = ward;
-      customerRecord.formattedAddress = [address, ward, district, city].filter(Boolean).join(', ');
-      customerRecord.addressSchemaVersion = '1';
-    }
-  } else {
-    customerRecord.pickupStore = pickupStore || '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội';
-    customerRecord.formattedAddress = customerRecord.pickupStore;
-  }
-
-  if (note) {
-    customerRecord.note = note;
-  }
-
-  const rawOrderRecord: Record<string, any> = {
-    id: orderId,
-    orderCode,
-    userId: verifiedCustomerUid || null,
-    customerUid: verifiedCustomerUid || null,
-    customer: customerRecord,
-    items: orderSnapshots,
-    subtotal: calculatedSubtotal,
-    shippingFee,
-    discount,
-    total: finalTotal,
-    paymentMethod: validPaymentMethod,
-    paymentStatus,
-    orderStatus,
-    createdAt: timestampStr,
-    notificationSent: true,
-    schemaVersion: '13.4',
-  };
-
-  if (cleanIdempotencyKey) {
-    rawOrderRecord.idempotencyKey = cleanIdempotencyKey;
-  }
-
-  // Deep recursive sanitization to guarantee NO undefined values reach Firestore
-  const orderRecord: OrderRecord = cleanForFirestore(rawOrderRecord);
-
-  // Execution wrapper for database-backed atomic creation & idempotency
-  const executeOrderCreation = async (): Promise<{ statusCode: number; payload: any }> => {
-    // A. When Firestore is available (Production & configured Staging/Emulator):
-    if (db) {
-      if (!cleanIdempotencyKey) {
-        // Direct order without idempotency key
-        await db.collection('orders').doc(orderRecord.id).set(orderRecord);
-        // Await transactional email notifications in serverless lifecycle before completing response
-        try {
-          await sendOrderNotifications(orderRecord);
-        } catch (emailErr) {
-          console.error('[MNH Notification] Email dispatch error:', emailErr);
-        }
-        return {
-          statusCode: 201,
-          payload: {
-            success: true,
-            message: 'Đặt hàng thành công. Mộc Ngôn Hương đã tiếp nhận đơn hàng của bạn.',
-            order: orderRecord,
-            duplicate: false,
-          },
-        };
-      }
-
-      const idempotencyRef = db.collection('order_idempotency').doc(cleanIdempotencyKey);
-      const orderRef = db.collection('orders').doc(orderRecord.id);
-
-      // Firestore transaction guarantees cross-instance atomicity and race protection
-      const txResult = await db.runTransaction(async (transaction) => {
-        const idempDoc = await transaction.get(idempotencyRef);
-
-        if (idempDoc.exists) {
-          const existingData = idempDoc.data()!;
-          if (existingData.fingerprint === currentFingerprint) {
-            // Legitimate idempotent retry: Read verified order doc
-            const existingOrderRef = db.collection('orders').doc(existingData.orderId);
-            const existingOrderDoc = await transaction.get(existingOrderRef);
-            const resolvedOrder = existingOrderDoc.exists
-              ? (existingOrderDoc.data() as OrderRecord)
-              : (existingData.orderSnapshot as OrderRecord);
-
-            return {
-              statusCode: 200,
-              payload: {
-                success: true,
-                duplicate: true,
-                order: resolvedOrder,
-                message: 'Đơn hàng đã được ghi nhận trước đó trên hệ thống.',
-              },
-            };
-          } else {
-            // Security conflict: Idempotency key reused for different payload
-            return {
-              statusCode: 409,
-              payload: {
-                success: false,
-                duplicate: false,
-                error:
-                  'Xung đột mã yêu cầu (Idempotency Key Conflict): Khóa này đã được sử dụng cho một đơn hàng khác với nội dung khác.',
-              },
-            };
-          }
-        }
-
-        // New order: Atomically write order AND idempotency lock in the same transaction
-        transaction.set(orderRef, orderRecord);
-        transaction.set(
-          idempotencyRef,
-          cleanForFirestore({
-            orderId: orderRecord.id,
-            orderCode: orderRecord.orderCode,
-            fingerprint: currentFingerprint,
-            userId: orderRecord.userId || null,
-            customerUid: orderRecord.customerUid || null,
-            createdAt: orderRecord.createdAt,
-            total: orderRecord.total,
-            orderSnapshot: orderRecord,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            schemaVersion: '13.4',
+  const buildOrderRecordWithCode = (orderCode: string) => {
+    const bankCfg = getConfiguredVietQrBankDetails();
+    const paymentInstructions =
+      paymentMethod === 'bank'
+        ? buildOrderPaymentInstructions({
+            orderCode,
+            amount: finalTotal,
+            bankBin: bankCfg.bankBin,
+            accountNo: bankCfg.accountNo,
+            accountName: bankCfg.accountName,
           })
-        );
+        : null;
 
-        return {
-          statusCode: 201,
-          payload: {
-            success: true,
-            duplicate: false,
-            message: 'Đặt hàng thành công. Mộc Ngôn Hương đã tiếp nhận đơn hàng của bạn.',
-            order: orderRecord,
-          },
-        };
-      });
-
-      // If a brand new order was committed (HTTP 201), await email notifications in serverless lifecycle
-      if (txResult.statusCode === 201) {
-        try {
-          await sendOrderNotifications(orderRecord);
-        } catch (emailErr) {
-          console.error('[MNH Notification] Background email dispatch error:', emailErr);
+    // Strip qrSvgDataUrl from Firestore document to keep document compact; enrichAndSanitizeOrderForClient reconstructs it
+    const persistedInstructions = paymentInstructions
+      ? {
+          method: paymentInstructions.method,
+          bankBin: paymentInstructions.bankBin,
+          bankShortName: paymentInstructions.bankShortName,
+          bankFullName: paymentInstructions.bankFullName,
+          accountNo: paymentInstructions.accountNo,
+          accountName: paymentInstructions.accountName,
+          amount: paymentInstructions.amount,
+          currency: paymentInstructions.currency,
+          transferContent: paymentInstructions.transferContent,
+          qrPayload: paymentInstructions.qrPayload,
         }
-      }
-
-      return txResult;
-    }
-
-    // B. Local non-production development/test fallback (ONLY reached when !isProduction)
-    if (cleanIdempotencyKey && devIdempotencyMap.has(cleanIdempotencyKey)) {
-      const cached = devIdempotencyMap.get(cleanIdempotencyKey)!;
-      if (cached.fingerprint === currentFingerprint) {
-        return {
-          statusCode: 200,
-          payload: {
-            success: true,
-            duplicate: true,
-            order: cached.order,
-            message: 'Đơn hàng đã được ghi nhận trước đó trên hệ thống.',
-          },
-        };
-      } else {
-        return {
-          statusCode: 409,
-          payload: {
-            success: false,
-            duplicate: false,
-            error:
-              'Xung đột mã yêu cầu (Idempotency Key Conflict): Khóa này đã được sử dụng cho một đơn hàng khác với nội dung khác.',
-          },
-        };
-      }
-    }
-
-    persistLocalDevOrder(orderRecord);
-    if (cleanIdempotencyKey) {
-      devIdempotencyMap.set(cleanIdempotencyKey, {
-        order: orderRecord,
-        fingerprint: currentFingerprint,
-      });
-    }
-
-    // Trigger dev notification
-    sendOrderNotifications(orderRecord).catch((err) =>
-      console.error('[MNH Dev Notification Error]:', err)
-    );
+      : null;
 
     return {
-      statusCode: 201,
-      payload: {
-        success: true,
-        duplicate: false,
-        message: 'Đặt hàng thành công (Local Dev Mode). Mộc Ngôn Hương đã tiếp nhận đơn hàng.',
-        order: orderRecord,
+      id: `ord_${now}_${crypto.randomBytes(4).toString('hex')}`,
+      orderCode,
+      userId: verifiedCustomerUid,
+      customerUid: verifiedCustomerUid,
+      isGuestOrder: !verifiedCustomerUid || isAnonymousSession,
+      recoveryTokenHash: initialRecovery.recoveryTokenHash,
+      recoveryTokenExpiresAt: initialRecovery.recoveryTokenExpiresAt,
+      notificationSent: false,
+      notificationDelivery: {
+        orderCreated: {
+          sent: false,
+          sentAt: null,
+          messageId: null,
+          idempotencyKey: '',
+          error: null,
+        },
+        paymentConfirmed: {
+          sent: false,
+          sentAt: null,
+          messageId: null,
+          idempotencyKey: '',
+          error: null,
+        },
       },
+      customer: {
+        fullName,
+        phone: phoneClean,
+        email,
+        shippingMode,
+        ...(shippingMode === 'delivery'
+          ? {
+              address,
+              ...(provinceCode
+                ? {
+                    provinceCode,
+                    provinceName: verifiedProvinceName,
+                    communeCode,
+                    communeName: verifiedCommuneName,
+                  }
+                : {}),
+              ...(city ? { city, district, ward } : {}),
+              formattedAddress: verifiedFormattedAddress,
+              addressSchemaVersion,
+            }
+          : { pickupStore }),
+        ...(note ? { note } : {}),
+      },
+      items: verifiedItems,
+      subtotal: calculatedSubtotal,
+      shippingFee,
+      discount,
+      total: finalTotal,
+      paymentMethod,
+      paymentStatus: initialPaymentStatus,
+      paymentInstructions: persistedInstructions,
+      customerReportedAt: null,
+      paymentConfirmedAt: null,
+      paymentConfirmedBy: null,
+      bankTransactionRef: null,
+      paymentAuditLog: [
+        {
+          orderId: '',
+          orderCode,
+          action: 'order_created',
+          previousPaymentStatus: 'none',
+          newPaymentStatus: initialPaymentStatus,
+          actorType: 'customer' as const,
+          actorUid: verifiedCustomerUid,
+          timestamp: timestampStr,
+        },
+      ],
+      orderStatus: initialOrderStatus,
+      status: initialOrderStatus,
+      createdAt: timestampStr,
+      statusUpdatedAt: timestampStr,
+      updatedAt: timestampStr,
+      ...(cleanIdempotencyKey ? { idempotencyKey: cleanIdempotencyKey } : {}),
+      schemaVersion: '16.0',
     };
   };
 
-  const currentPromise = executeOrderCreation();
+  const db = getEffectiveDb();
+  const isProd = isProductionRuntime();
 
-  if (cleanIdempotencyKey) {
-    inFlightRequests.set(cleanIdempotencyKey, currentPromise);
+  type PersistStatus = 'created' | 'duplicate' | 'conflict_key' | 'exhausted' | 'failed';
+  let outcomeStatus: PersistStatus = 'failed';
+  let finalOrderRecord: any = null;
+  let activeRecoveryToken = initialRecovery.recoveryToken;
+
+  if (db) {
+    try {
+      const counterRef = db.collection('order_counters').doc('default');
+      const idempotencyRef = cleanIdempotencyKey
+        ? db.collection('order_idempotency').doc(cleanIdempotencyKey)
+        : null;
+
+      await db.runTransaction(async (transaction) => {
+        // 1. Read idempotency key first (all reads before writes in Firestore transactions)
+        if (idempotencyRef) {
+          const idempDoc = await transaction.get(idempotencyRef);
+          if (idempDoc.exists) {
+            const idempData = idempDoc.data() || {};
+            const storedFingerprint = idempData.fingerprint;
+            const existingOrderId = idempData.orderId;
+
+            if (storedFingerprint && storedFingerprint !== requestFingerprint) {
+              outcomeStatus = 'conflict_key';
+              return;
+            }
+
+            if (existingOrderId) {
+              const existingOrderRef = db.collection('orders').doc(existingOrderId);
+              const existingOrderDoc = await transaction.get(existingOrderRef);
+              if (existingOrderDoc.exists) {
+                const existingData = existingOrderDoc.data() || {};
+                // Rotate recovery token on idempotent retry so timeout-recovered clients get a working token
+                const rotated = generateRecoveryToken();
+                activeRecoveryToken = rotated.recoveryToken;
+                finalOrderRecord = {
+                  ...existingData,
+                  id: existingOrderDoc.id,
+                  recoveryTokenHash: rotated.recoveryTokenHash,
+                  recoveryTokenExpiresAt: rotated.recoveryTokenExpiresAt,
+                };
+                transaction.set(
+                  existingOrderRef,
+                  {
+                    recoveryTokenHash: rotated.recoveryTokenHash,
+                    recoveryTokenExpiresAt: rotated.recoveryTokenExpiresAt,
+                    updatedAt: timestampStr,
+                  },
+                  { merge: true }
+                );
+                outcomeStatus = 'duplicate';
+                return;
+              }
+            }
+          }
+        }
+
+        // 2. Read sequential order counter
+        const counterDoc = await transaction.get(counterRef);
+        const currentSeq =
+          counterDoc.exists && typeof counterDoc.data()?.nextSeq === 'number'
+            ? counterDoc.data()!.nextSeq
+            : 0;
+
+        if (!Number.isSafeInteger(currentSeq) || currentSeq < 0 || currentSeq > MAX_COUNTER_SEQ) {
+          outcomeStatus = 'exhausted';
+          return;
+        }
+
+        const allocatedOrderCode = `MNH${String(currentSeq).padStart(6, '0')}`;
+        const codeIndexRef = db.collection('order_codes').doc(allocatedOrderCode);
+        const codeIndexDoc = await transaction.get(codeIndexRef);
+        if (codeIndexDoc.exists) {
+          throw new Error(`ORDER_CODE_COLLISION:${allocatedOrderCode}`);
+        }
+
+        const newOrderRecord = buildOrderRecordWithCode(allocatedOrderCode);
+        newOrderRecord.paymentAuditLog[0].orderId = newOrderRecord.id;
+        const orderRef = db.collection('orders').doc(newOrderRecord.id);
+
+        // 3. Perform atomic writes
+        transaction.set(
+          counterRef,
+          {
+            nextSeq: currentSeq + 1,
+            lastOrderCode: allocatedOrderCode,
+            updatedAt: timestampStr,
+          },
+          { merge: true }
+        );
+        transaction.set(codeIndexRef, {
+          orderId: newOrderRecord.id,
+          orderCode: allocatedOrderCode,
+          createdAt: timestampStr,
+        });
+        transaction.set(orderRef, newOrderRecord);
+
+        if (idempotencyRef) {
+          transaction.set(idempotencyRef, {
+            key: cleanIdempotencyKey,
+            fingerprint: requestFingerprint,
+            orderId: newOrderRecord.id,
+            orderCode: allocatedOrderCode,
+            createdAt: timestampStr,
+          });
+        }
+
+        finalOrderRecord = newOrderRecord;
+        outcomeStatus = 'created';
+      });
+    } catch (err: any) {
+      console.error('[MNH Orders API] Firestore transaction error:', err);
+      outcomeStatus = 'failed';
+    }
+  } else if (!isProd) {
+    // Non-production atomic local fallback store
+    try {
+      await withLocalStoreLock(async () => {
+        const localOrders = readLocalDevOrders();
+
+        if (cleanIdempotencyKey) {
+          const matchIdx = localOrders.findIndex((o) => o.idempotencyKey === cleanIdempotencyKey);
+          if (matchIdx >= 0) {
+            const match = localOrders[matchIdx];
+            if (match._fingerprint && match._fingerprint !== requestFingerprint) {
+              outcomeStatus = 'conflict_key';
+              return;
+            }
+            const rotated = generateRecoveryToken();
+            activeRecoveryToken = rotated.recoveryToken;
+            localOrders[matchIdx] = {
+              ...match,
+              recoveryTokenHash: rotated.recoveryTokenHash,
+              recoveryTokenExpiresAt: rotated.recoveryTokenExpiresAt,
+              updatedAt: timestampStr,
+            };
+            writeLocalDevOrders(localOrders);
+            finalOrderRecord = { ...localOrders[matchIdx] };
+            delete finalOrderRecord._fingerprint;
+            outcomeStatus = 'duplicate';
+            return;
+          }
+        }
+
+        const nextSeq = readLocalNextSeq(localOrders);
+        if (!Number.isSafeInteger(nextSeq) || nextSeq < 0 || nextSeq > MAX_COUNTER_SEQ) {
+          outcomeStatus = 'exhausted';
+          return;
+        }
+
+        const allocatedOrderCode = `MNH${String(nextSeq).padStart(6, '0')}`;
+        const newOrderRecord = buildOrderRecordWithCode(allocatedOrderCode);
+        newOrderRecord.paymentAuditLog[0].orderId = newOrderRecord.id;
+
+        writeLocalNextSeq(nextSeq + 1);
+        localOrders.unshift({ ...newOrderRecord, _fingerprint: requestFingerprint });
+        writeLocalDevOrders(localOrders.slice(0, 500));
+
+        finalOrderRecord = newOrderRecord;
+        outcomeStatus = 'created';
+      });
+    } catch (err) {
+      console.error('[MNH Orders API] Local fallback error:', err);
+      outcomeStatus = 'failed';
+    }
+  } else {
+    outcomeStatus = 'failed';
   }
 
-  try {
-    const outcome = await currentPromise;
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = outcome.statusCode;
-    res.end(JSON.stringify(outcome.payload));
-  } catch (err: any) {
-    console.error('[MNH Orders Handler Error]:', err);
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 500;
-    res.end(
-      JSON.stringify({
-        success: false,
-        error:
-          'Hệ thống gặp sự cố trong quá trình lưu trữ đơn hàng. Quý khách vui lòng thử lại hoặc liên hệ hotline Mộc Ngôn Hương (0889 742 556) để được hỗ trợ chu đáo nhất.',
-      })
-    );
-  } finally {
-    if (cleanIdempotencyKey) {
-      inFlightRequests.delete(cleanIdempotencyKey);
+  if (outcomeStatus === 'conflict_key') {
+    return sendJson(res, 409, {
+      success: false,
+      code: 'IDEMPOTENCY_KEY_CONFLICT',
+      error:
+        'Mã yêu cầu đặt hàng (Idempotency Key) này đã được sử dụng cho một đơn hàng có nội dung khác. Vui lòng làm mới giỏ hàng và đặt lại.',
+    });
+  }
+
+  if (outcomeStatus === 'exhausted') {
+    return sendJson(res, 503, {
+      success: false,
+      code: 'ORDER_CODE_EXHAUSTED',
+      error:
+        'Không gian mã đơn hàng 6 chữ số (MNH000000–MNH999999) đã đầy. Quý khách vui lòng liên hệ hotline 0889 742 556 để được hỗ trợ ngay.',
+    });
+  }
+
+  if (outcomeStatus === 'failed' || !finalOrderRecord) {
+    return sendJson(res, 503, {
+      success: false,
+      code: 'ORDER_PERSISTENCE_UNAVAILABLE',
+      error:
+        'Hệ thống lưu trữ đơn hàng hiện đang bảo trì hoặc tạm thời gián đoạn. Đơn hàng chưa được tạo và giỏ hàng của bạn vẫn được giữ nguyên an toàn. Quý khách vui lòng thử lại sau ít phút hoặc liên hệ hotline 0889 742 556.',
+    });
+  }
+
+  // Send Email A (Order Created) if newly created OR if a previous attempt failed to send
+  const alreadySentOrderCreated = Boolean(
+    finalOrderRecord.notificationDelivery?.orderCreated?.sent || finalOrderRecord.notificationSent
+  );
+
+  if (!alreadySentOrderCreated) {
+    try {
+      const notifResult = await sendOrderNotification({
+        ...finalOrderRecord,
+        recoveryToken: activeRecoveryToken,
+      });
+      const sentSuccess = Boolean(notifResult.customerEmailSent || notifResult.adminEmailSent);
+      const deliveryRecord = {
+        sent: sentSuccess,
+        sentAt: notifResult.sentAt || (sentSuccess ? new Date().toISOString() : null),
+        messageId: notifResult.messageId || null,
+        idempotencyKey: notifResult.idempotencyKey || `order-created-customer-${finalOrderRecord.id}`,
+        lastAttemptAt: new Date().toISOString(),
+        error: notifResult.error || null,
+      };
+
+      finalOrderRecord.notificationSent = sentSuccess;
+      finalOrderRecord.notificationDelivery = {
+        ...(finalOrderRecord.notificationDelivery || {}),
+        orderCreated: deliveryRecord,
+      };
+
+      if (db) {
+        await db
+          .collection('orders')
+          .doc(finalOrderRecord.id)
+          .set(
+            {
+              notificationSent: sentSuccess,
+              notificationDelivery: finalOrderRecord.notificationDelivery,
+            },
+            { merge: true }
+          )
+          .catch(() => {});
+      } else if (!isProd) {
+        await withLocalStoreLock(async () => {
+          const localOrders = readLocalDevOrders();
+          const idx = localOrders.findIndex((o) => o.id === finalOrderRecord.id);
+          if (idx >= 0) {
+            localOrders[idx].notificationSent = sentSuccess;
+            localOrders[idx].notificationDelivery = finalOrderRecord.notificationDelivery;
+            writeLocalDevOrders(localOrders);
+          }
+        });
+      }
+    } catch (notifErr: any) {
+      console.warn('[MNH Orders API] Non-fatal notification error:', notifErr?.message || notifErr);
     }
   }
+
+  const httpStatus = outcomeStatus === 'created' ? 201 : 200;
+  return sendJson(res, httpStatus, {
+    success: true,
+    duplicate: outcomeStatus === 'duplicate',
+    persisted: true,
+    notificationSent: Boolean(finalOrderRecord.notificationSent),
+    recoveryToken: activeRecoveryToken,
+    recoveryUrl: buildOrderRecoveryUrl(finalOrderRecord.id, activeRecoveryToken),
+    message:
+      outcomeStatus === 'created'
+        ? 'Đặt hàng thành công. Đơn hàng của bạn đã được lưu trữ an toàn trên hệ thống.'
+        : 'Đơn hàng của bạn đã được hệ thống ghi nhận trước đó (tránh tạo trùng đơn).',
+    order: enrichAndSanitizeOrderForClient(finalOrderRecord, activeRecoveryToken),
+  });
 }

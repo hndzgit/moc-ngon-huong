@@ -10,6 +10,7 @@ export const getIsServerless = (): boolean =>
 
 export const getIsProduction = (): boolean =>
   process.env.NODE_ENV === 'production' || getIsServerless();
+export const isProductionRuntime = getIsProduction;
 
 export const isServerless = getIsServerless();
 export const isProduction = getIsProduction();
@@ -145,6 +146,7 @@ export function getFirestoreDb(): Firestore | null {
   }
   return null;
 }
+export const getAdminDb = getFirestoreDb;
 
 export function getAdminAuth(): Auth | null {
   if (cachedAuth) return cachedAuth;
@@ -163,7 +165,7 @@ export function getAdminAuth(): Auth | null {
  */
 export async function verifyAuthToken(
   authHeader: string | undefined
-): Promise<{ uid: string; email?: string } | null> {
+): Promise<{ uid: string; email?: string; isAnonymous?: boolean } | null> {
   if (!authHeader || typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
     return null;
   }
@@ -171,31 +173,59 @@ export async function verifyAuthToken(
   const token = authHeader.split('Bearer ')[1]?.trim();
   if (!token) return null;
 
+  // Non-production test/development mock token support (checked before Admin SDK so local tests can use mock tokens even if service account exists)
+  if (!isProduction) {
+    if (token.startsWith('test_token_uid_')) {
+      const uid = token.replace('test_token_uid_', '').trim();
+      return { uid, email: `${uid}@test.local`, isAnonymous: false };
+    }
+    if (token.startsWith('test_anon_uid_')) {
+      const uid = token.replace('test_anon_uid_', '').trim();
+      return { uid, email: undefined, isAnonymous: true };
+    }
+    if (token.startsWith('mock-token-')) {
+      const uid = token.replace('mock-token-', 'mock_').replace(/-/g, '_').trim();
+      return { uid, email: `${uid}@test.local`, isAnonymous: false };
+    }
+    if (token.startsWith('invalid') || token.includes('invalid') || token.includes('forged')) {
+      throw new Error('AUTH_TOKEN_INVALID');
+    }
+  }
+
   const auth = getAdminAuth();
   if (auth) {
     try {
       const decoded = await auth.verifyIdToken(token);
-      return { uid: decoded.uid, email: decoded.email };
+      const signInProvider = (decoded as any)?.firebase?.sign_in_provider;
+      return {
+        uid: decoded.uid,
+        email: decoded.email,
+        isAnonymous: signInProvider === 'anonymous',
+      };
     } catch {
       console.warn('[MNH Admin Auth] Token verification failed.');
       throw new Error('AUTH_TOKEN_INVALID');
     }
   }
 
-  // Non-production test/development mock token support
   if (!isProduction) {
-    if (token.startsWith('test_token_uid_')) {
-      const uid = token.replace('test_token_uid_', '').trim();
-      return { uid, email: `${uid}@test.local` };
+    // In local dev without Firebase Admin service account credentials, accept real Firebase client JWTs for moc-ngon-huong
+    const parts = token.split('.');
+    if (parts.length === 3 && token.startsWith('eyJ')) {
+      try {
+        const payloadJson = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+        const uid = payloadJson.user_id || payloadJson.sub;
+        if (uid && payloadJson.aud === 'moc-ngon-huong') {
+          return {
+            uid,
+            email: payloadJson.email,
+            isAnonymous: payloadJson.firebase?.sign_in_provider === 'anonymous',
+          };
+        }
+      } catch {
+        // Fall through to AUTH_TOKEN_INVALID
+      }
     }
-    if (token.startsWith('mock-token-')) {
-      const uid = token.replace('mock-token-', 'mock_').replace(/-/g, '_').trim();
-      return { uid, email: `${uid}@test.local` };
-    }
-    if (token.startsWith('invalid') || token.includes('invalid') || token.includes('forged')) {
-      throw new Error('AUTH_TOKEN_INVALID');
-    }
-    // Any other unrecognized token without Firebase Admin credentials in dev mode
     throw new Error('AUTH_TOKEN_INVALID');
   }
 

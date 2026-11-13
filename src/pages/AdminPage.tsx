@@ -53,19 +53,24 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
   // Modals & Actions
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<OrderRecord | null>(null);
+  const [orderToConfirmPayment, setOrderToConfirmPayment] = useState<OrderRecord | null>(null);
+  const [transactionRefInput, setTransactionRefInput] = useState<string>('');
   const detailDialog = useRef<HTMLDivElement>(null);
   const cancelDialog = useRef<HTMLDivElement>(null);
+  const confirmPaymentDialog = useRef<HTMLDivElement>(null);
   const isAuthorizedSession = Boolean(
     user && verifiedUid === user.uid && adminAccessState === 'authorized'
   );
   useDialogLifecycle(Boolean(selectedOrder && isAuthorizedSession), () => setSelectedOrder(null), detailDialog);
   useDialogLifecycle(Boolean(orderToCancel && isAuthorizedSession), () => setOrderToCancel(null), cancelDialog);
+  useDialogLifecycle(Boolean(orderToConfirmPayment && isAuthorizedSession), () => setOrderToConfirmPayment(null), confirmPaymentDialog);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -73,6 +78,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setOrders([]);
     setSelectedOrder(null);
     setOrderToCancel(null);
+    setOrderToConfirmPayment(null);
+    setTransactionRefInput('');
     setOrdersError(null);
   }, []);
 
@@ -97,7 +104,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const formatMoney = (n: number) => `${(n || 0).toLocaleString('vi-VN')}đ`;
 
   // Format date/time
-  const formatDateTime = (isoStr?: string) => {
+  const formatDateTime = (isoStr?: string | null) => {
     if (!isoStr) return '—';
     try {
       const d = new Date(isoStr);
@@ -348,9 +355,127 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         setSelectedOrder(updated);
       }
 
-      showToast(`Đơn hàng ${updated.orderCode} cập nhật thanh toán: ${newPaymentStatus === 'completed' ? 'Đã thanh toán' : 'Chờ thanh toán'}`);
+      showToast(
+        `Đơn hàng ${updated.orderCode} cập nhật thanh toán: ${
+          newPaymentStatus === 'paid' || newPaymentStatus === 'completed'
+            ? 'Đã thanh toán'
+            : newPaymentStatus === 'payment_review'
+            ? 'Kiểm tra thanh toán'
+            : 'Chờ thanh toán'
+        }`
+      );
     } catch (err: any) {
       alert(`Lỗi: ${err.message || 'Không thể cập nhật trạng thái thanh toán.'}`);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Handle verified admin payment confirmation ("Xác nhận đã thanh toán")
+  const handleConfirmPayment = async (order: OrderRecord, txRef?: string) => {
+    setActionLoadingId(order.id);
+    try {
+      const token = await getIdToken();
+      if (!token) {
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
+        return;
+      }
+
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          action: 'confirm_payment',
+          paymentStatus: 'paid',
+          transactionRef: txRef?.trim() || undefined,
+        }),
+      });
+
+      if (res.status === 401) {
+        clearProtectedOrderState();
+        setVerifiedUid(null);
+        setAdminAccessState('unauthenticated');
+        return;
+      }
+
+      if (res.status === 403) {
+        clearProtectedOrderState();
+        setVerifiedUid(user?.uid || null);
+        setAdminAccessState('denied');
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Xác nhận thanh toán thất bại.');
+      }
+
+      const updated = data.order as OrderRecord;
+      setOrders((prev) =>
+        prev.map((o) => (o.id === updated.id || o.orderCode === updated.orderCode ? updated : o))
+      );
+
+      if (selectedOrder && (selectedOrder.id === updated.id || selectedOrder.orderCode === updated.orderCode)) {
+        setSelectedOrder(updated);
+      }
+
+      const emailNotice = data.emailResult?.sent
+        ? ' • Đã gửi email xác nhận thanh toán'
+        : '';
+      showToast(`Đã xác nhận thanh toán đơn ${updated.orderCode}${emailNotice}`);
+    } catch (err: any) {
+      alert(`Lỗi: ${err.message || 'Không thể xác nhận thanh toán.'}`);
+    } finally {
+      setActionLoadingId(null);
+      setOrderToConfirmPayment(null);
+      setTransactionRefInput('');
+    }
+  };
+
+  // Handle retry of Email B (Payment Confirmation Email)
+  const handleRetryPaymentEmail = async (order: OrderRecord) => {
+    setActionLoadingId(order.id);
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          action: 'retry_payment_email',
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gửi lại email xác nhận thanh toán thất bại.');
+      }
+
+      const updated = data.order as OrderRecord;
+      setOrders((prev) =>
+        prev.map((o) => (o.id === updated.id || o.orderCode === updated.orderCode ? updated : o))
+      );
+      if (selectedOrder && (selectedOrder.id === updated.id || selectedOrder.orderCode === updated.orderCode)) {
+        setSelectedOrder(updated);
+      }
+      showToast(
+        data.emailResult?.sent
+          ? `Đã gửi email xác nhận thanh toán cho đơn ${updated.orderCode}`
+          : `Chưa gửi được email (${data.emailResult?.error || 'kiểm tra cấu hình Resend'})`
+      );
+    } catch (err: any) {
+      alert(`Lỗi: ${err.message || 'Không thể gửi lại email.'}`);
     } finally {
       setActionLoadingId(null);
     }
@@ -360,6 +485,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
       const orderSt = o.orderStatus || (o as any).status;
+      const paySt = o.paymentStatus || 'pending_payment';
 
       // Status tab filter
       if (statusFilter !== 'all') {
@@ -370,6 +496,14 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         } else if (orderSt !== statusFilter) {
           return false;
         }
+      }
+
+      // Payment filter
+      if (paymentFilter !== 'all') {
+        if (paymentFilter === 'customer_reported_paid' && paySt !== 'customer_reported_paid') return false;
+        if (paymentFilter === 'pending_payment' && paySt !== 'pending_payment' && paySt !== 'pending') return false;
+        if (paymentFilter === 'paid' && paySt !== 'paid' && paySt !== 'completed') return false;
+        if (paymentFilter === 'payment_review' && paySt !== 'payment_review') return false;
       }
 
       // Search term filter
@@ -386,7 +520,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
       return true;
     });
-  }, [orders, statusFilter, searchTerm]);
+  }, [orders, statusFilter, paymentFilter, searchTerm]);
 
   // Paginated orders
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE) || 1;
@@ -397,7 +531,18 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
   // Status Counts
   const counts = useMemo(() => {
-    const c = { all: orders.length, preparing: 0, shipping: 0, ready_for_pickup: 0, completed: 0, cancelled: 0 };
+    const c = {
+      all: orders.length,
+      preparing: 0,
+      shipping: 0,
+      ready_for_pickup: 0,
+      completed: 0,
+      cancelled: 0,
+      customer_reported_paid: 0,
+      pending_payment: 0,
+      paid: 0,
+      payment_review: 0,
+    };
     orders.forEach((o) => {
       const st = o.orderStatus || (o as any).status;
       if (st === 'preparing' || st === 'pending_confirmation' || st === 'confirmed') c.preparing++;
@@ -405,6 +550,12 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       else if (st === 'ready_for_pickup') c.ready_for_pickup++;
       else if (st === 'completed') c.completed++;
       else if (st === 'cancelled') c.cancelled++;
+
+      const paySt = o.paymentStatus || 'pending_payment';
+      if (paySt === 'customer_reported_paid') c.customer_reported_paid++;
+      else if (paySt === 'pending_payment' || paySt === 'pending') c.pending_payment++;
+      else if (paySt === 'paid' || paySt === 'completed') c.paid++;
+      else if (paySt === 'payment_review') c.payment_review++;
     });
     return c;
   }, [orders]);
@@ -464,14 +615,36 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
   // Payment Status Visuals
   const getPaymentBadge = (order: OrderRecord) => {
-    if (order.paymentStatus === 'completed') {
+    const paySt = order.paymentStatus || 'pending_payment';
+    if (paySt === 'paid' || paySt === 'completed') {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
           <Check className="w-3 h-3 mr-1" /> Đã thanh toán
         </span>
       );
     }
-    if (order.paymentStatus === 'refunded') {
+    if (paySt === 'customer_reported_paid') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+          Khách báo đã CK
+        </span>
+      );
+    }
+    if (paySt === 'payment_review') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-800 border border-purple-200">
+          Kiểm tra TT
+        </span>
+      );
+    }
+    if (paySt === 'cancelled') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+          Đã hủy TT
+        </span>
+      );
+    }
+    if (paySt === 'refunded') {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-300">
           Đã hoàn tiền
@@ -483,6 +656,14 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         {order.paymentMethod === 'cod' ? 'Thu hộ khi nhận (COD)' : 'Chờ chuyển khoản'}
       </span>
     );
+  };
+
+  const canConfirmVietQrPayment = (order: OrderRecord) => {
+    const paySt = order.paymentStatus || 'pending_payment';
+    const orderSt = order.orderStatus || (order as any).status;
+    if (paySt === 'paid' || paySt === 'completed' || paySt === 'refunded') return false;
+    if (orderSt === 'cancelled' && paySt !== 'payment_review') return false;
+    return order.paymentMethod === 'bank' || paySt === 'customer_reported_paid' || paySt === 'payment_review';
   };
 
   // ==========================================================================
@@ -761,6 +942,41 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
               </button>
             ))}
           </div>
+
+          {/* Payment Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs border-t border-stone-100 pt-2.5">
+            <span className="text-[11px] font-semibold text-stone-500 mr-1 whitespace-nowrap">Thanh toán:</span>
+            {[
+              { id: 'all', label: 'Tất cả TT', count: counts.all },
+              { id: 'customer_reported_paid', label: 'Khách báo đã CK', count: counts.customer_reported_paid },
+              { id: 'pending_payment', label: 'Chờ thanh toán', count: counts.pending_payment },
+              { id: 'paid', label: 'Đã thanh toán', count: counts.paid },
+              { id: 'payment_review', label: 'Kiểm tra TT', count: counts.payment_review },
+            ].map((ptab) => (
+              <button
+                key={ptab.id}
+                type="button"
+                onClick={() => {
+                  setPaymentFilter(ptab.id);
+                  setCurrentPageNum(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1 ${
+                  paymentFilter === ptab.id
+                    ? 'bg-[#c89f5d] text-stone-900 font-semibold shadow-xs'
+                    : 'bg-stone-50 text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                <span>{ptab.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                    paymentFilter === ptab.id ? 'bg-[#3e5641] text-[#f7f4d5] font-bold' : 'bg-stone-200 text-stone-700'
+                  }`}
+                >
+                  {ptab.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Error Notification */}
@@ -885,12 +1101,41 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
                         {/* Payment Status */}
                         <td className="py-3.5 px-4">
-                          {getPaymentBadge(order)}
+                          <div className="space-y-1">
+                            {getPaymentBadge(order)}
+                            {order.paymentMethod === 'bank' && (
+                              <div className="text-[11px] text-stone-500 font-mono">
+                                ND CK: <strong className="text-[#3e5641]">{order.paymentInstructions?.transferContent || order.orderCode}</strong>
+                              </div>
+                            )}
+                            {order.customerReportedAt && order.paymentStatus !== 'paid' && order.paymentStatus !== 'completed' && (
+                              <div className="text-[10px] text-sky-700 font-medium">
+                                Báo lúc: {formatDateTime(order.customerReportedAt)}
+                              </div>
+                            )}
+                          </div>
                         </td>
 
                         {/* One-Click Action Buttons */}
                         <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
+                            {/* VietQR Payment Verification Button */}
+                            {canConfirmVietQrPayment(order) && (
+                              <button
+                                type="button"
+                                disabled={isActionLoading}
+                                data-testid={`admin-confirm-payment-btn-${order.orderCode}`}
+                                onClick={() => {
+                                  setTransactionRefInput(order.bankTransactionRef || '');
+                                  setOrderToConfirmPayment(order);
+                                }}
+                                className="px-2.5 py-1 text-xs rounded-lg bg-[#3e5641] hover:bg-[#324635] text-[#f7f4d5] font-medium transition-colors shadow-xs flex items-center gap-1"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#c89f5d]" />
+                                Xác nhận đã thanh toán
+                              </button>
+                            )}
+
                             {/* Delivery Progression */}
                             {!isPickup && (
                               <>
@@ -1043,6 +1288,10 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         <span className="text-stone-500">Hình thức:</span>
                         <span>{isPickup ? 'Nhận tại tiệm' : 'Giao hàng tận nơi'}</span>
                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-stone-500">Thanh toán:</span>
+                        <div>{getPaymentBadge(order)}</div>
+                      </div>
                       <div className="flex justify-between items-center pt-1 border-t border-stone-200/60 font-medium">
                         <span className="text-stone-700">Tổng thanh toán:</span>
                         <span className="text-sm font-bold text-stone-900">{formatMoney(order.total)}</span>
@@ -1051,7 +1300,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
                     {/* Mobile Action Buttons */}
                     <div
-                      className="flex items-center justify-between gap-2 pt-1"
+                      className="flex flex-wrap items-center justify-between gap-2 pt-1"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -1062,7 +1311,23 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         <Eye className="w-3.5 h-3.5" /> Chi tiết đơn ({order.items?.length || 0})
                       </button>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {canConfirmVietQrPayment(order) && (
+                          <button
+                            type="button"
+                            disabled={isActionLoading}
+                            data-testid={`admin-mobile-confirm-payment-btn-${order.orderCode}`}
+                            onClick={() => {
+                              setTransactionRefInput(order.bankTransactionRef || '');
+                              setOrderToConfirmPayment(order);
+                            }}
+                            className="px-3 py-1.5 text-xs rounded-xl bg-[#3e5641] text-[#f7f4d5] font-medium shadow-xs flex items-center gap-1"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#c89f5d]" />
+                            Xác nhận đã thanh toán
+                          </button>
+                        )}
+
                         {/* Delivery Actions */}
                         {!isPickup && (
                           <>
@@ -1446,8 +1711,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
               </div>
             </div>
 
-            {/* Financial Summary & Payment */}
-            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2 text-xs">
+            {/* Financial Summary & VietQR Verification */}
+            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3 text-xs">
               <div className="flex justify-between text-stone-600">
                 <span>Tạm tính:</span>
                 <span>{formatMoney(selectedOrder.subtotal || selectedOrder.total)}</span>
@@ -1469,36 +1734,137 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                 <span>{formatMoney(selectedOrder.total)}</span>
               </div>
 
-              {/* Payment Status Action */}
-              <div className="pt-3 border-t border-stone-200/60 flex items-center justify-between">
-                <div>
-                  <span className="text-stone-500 mr-2">Phương thức:</span>
-                  <strong>
-                    {selectedOrder.paymentMethod === 'cod'
-                      ? 'Thanh toán tiền mặt (COD)'
-                      : 'Chuyển khoản ngân hàng'}
-                  </strong>
+              {/* VietQR Verification & Payment Details */}
+              <div className="pt-3 border-t border-stone-200/80 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-stone-500 mr-2">Phương thức:</span>
+                    <strong>
+                      {selectedOrder.paymentMethod === 'cod'
+                        ? 'Thanh toán tiền mặt (COD)'
+                        : 'Chuyển khoản ngân hàng (VietQR BIDV)'}
+                    </strong>
+                  </div>
+                  <div>{getPaymentBadge(selectedOrder)}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {selectedOrder.paymentStatus !== 'completed' ? (
+
+                {selectedOrder.paymentMethod === 'bank' && (
+                  <div className="bg-white rounded-xl p-3 border border-stone-200/80 space-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Nội dung chuyển khoản yêu cầu:</span>
+                      <span className="font-mono font-bold text-[#3e5641]">
+                        {selectedOrder.paymentInstructions?.transferContent || selectedOrder.orderCode}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Số tiền cần đối soát:</span>
+                      <span className="font-bold text-stone-900">{formatMoney(selectedOrder.total)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Thời gian khách báo đã CK:</span>
+                      <span className="font-medium text-stone-800">
+                        {selectedOrder.customerReportedAt ? formatDateTime(selectedOrder.customerReportedAt) : 'Chưa báo'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Thời gian Admin xác nhận:</span>
+                      <span className="font-medium text-emerald-700">
+                        {selectedOrder.paymentConfirmedAt ? formatDateTime(selectedOrder.paymentConfirmedAt) : 'Chưa xác nhận'}
+                      </span>
+                    </div>
+                    {(selectedOrder.paymentConfirmedByEmail || selectedOrder.paymentConfirmedBy) && (
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">Admin xác nhận:</span>
+                        <span className="font-mono text-stone-700">
+                          {selectedOrder.paymentConfirmedByEmail || selectedOrder.paymentConfirmedBy}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.bankTransactionRef && (
+                      <div className="flex justify-between">
+                        <span className="text-stone-500">Mã giao dịch ngân hàng:</span>
+                        <span className="font-mono font-semibold text-stone-800">
+                          {selectedOrder.bankTransactionRef}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.notificationDelivery?.paymentConfirmed && (
+                      <div className="flex items-center justify-between pt-1 border-t border-stone-100">
+                        <span className="text-stone-500">Email xác nhận thanh toán (Email B):</span>
+                        <span className={selectedOrder.notificationDelivery.paymentConfirmed.sent ? 'text-emerald-700 font-semibold' : 'text-amber-700'}>
+                          {selectedOrder.notificationDelivery.paymentConfirmed.sent
+                            ? `Đã gửi (${formatDateTime(selectedOrder.notificationDelivery.paymentConfirmed.sentAt)})`
+                            : 'Chưa gửi / Tạm hoãn'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                  {canConfirmVietQrPayment(selectedOrder) && (
                     <button
                       type="button"
                       disabled={actionLoadingId === selectedOrder.id}
-                      onClick={() => handleTogglePaymentStatus(selectedOrder.id, 'completed')}
-                      className="px-2.5 py-1 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors"
+                      data-testid={`admin-modal-confirm-payment-btn-${selectedOrder.orderCode}`}
+                      onClick={() => {
+                        setTransactionRefInput(selectedOrder.bankTransactionRef || '');
+                        setOrderToConfirmPayment(selectedOrder);
+                      }}
+                      className="px-3.5 py-2 text-xs rounded-xl bg-[#3e5641] hover:bg-[#324635] text-[#f7f4d5] font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
                     >
-                      Đánh dấu ĐÃ THANH TOÁN
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={actionLoadingId === selectedOrder.id}
-                      onClick={() => handleTogglePaymentStatus(selectedOrder.id, 'pending')}
-                      className="px-2 py-0.5 text-[11px] rounded border border-stone-300 text-stone-500 hover:bg-stone-100"
-                    >
-                      Chuyển về Chờ thanh toán
+                      <CheckCircle2 className="w-4 h-4 text-[#c89f5d]" />
+                      Xác nhận đã thanh toán
                     </button>
                   )}
+
+                  {selectedOrder.orderStatus === 'cancelled' &&
+                    selectedOrder.paymentStatus !== 'paid' &&
+                    selectedOrder.paymentStatus !== 'completed' &&
+                    selectedOrder.paymentStatus !== 'payment_review' && (
+                      <button
+                        type="button"
+                        disabled={actionLoadingId === selectedOrder.id}
+                        onClick={() => handleTogglePaymentStatus(selectedOrder.id, 'payment_review')}
+                        className="px-3 py-1.5 text-xs rounded-xl border border-purple-300 bg-purple-50 text-purple-800 hover:bg-purple-100 font-medium transition-colors"
+                      >
+                        Chuyển sang Kiểm tra TT (đơn đã hủy nhận tiền muộn)
+                      </button>
+                    )}
+
+                  {(selectedOrder.paymentStatus === 'paid' || selectedOrder.paymentStatus === 'completed') && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={actionLoadingId === selectedOrder.id}
+                        onClick={() => handleRetryPaymentEmail(selectedOrder)}
+                        className="px-2.5 py-1 text-[11px] rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-medium"
+                      >
+                        Gửi lại email xác nhận TT
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actionLoadingId === selectedOrder.id}
+                        onClick={() => handleTogglePaymentStatus(selectedOrder.id, 'pending_payment')}
+                        className="px-2 py-1 text-[11px] rounded-lg border border-stone-300 text-stone-500 hover:bg-stone-100"
+                      >
+                        Chuyển về Chờ thanh toán
+                      </button>
+                    </>
+                  )}
+
+                  {selectedOrder.paymentMethod === 'cod' &&
+                    selectedOrder.paymentStatus !== 'paid' &&
+                    selectedOrder.paymentStatus !== 'completed' && (
+                      <button
+                        type="button"
+                        disabled={actionLoadingId === selectedOrder.id}
+                        onClick={() => handleTogglePaymentStatus(selectedOrder.id, 'paid')}
+                        className="px-3 py-1.5 text-xs rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors"
+                      >
+                        Đánh dấu ĐÃ THU TIỀN COD
+                      </button>
+                    )}
                 </div>
               </div>
             </div>
@@ -1509,6 +1875,106 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
               {selectedOrder.statusUpdatedAt && (
                 <div>Cập nhật trạng thái lần cuối: {formatDateTime(selectedOrder.statusUpdatedAt)}</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================================
+          VIETQR PAYMENT CONFIRMATION MODAL ("Xác nhận đã thanh toán")
+      ====================================================================== */}
+      {orderToConfirmPayment && (
+        <div
+          ref={confirmPaymentDialog}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setOrderToConfirmPayment(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Xác nhận đã thanh toán VietQR"
+            className="bg-white rounded-3xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-6 shadow-xl border border-stone-200 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 bg-[#3e5641]/10 text-[#3e5641] rounded-full flex items-center justify-center mx-auto border border-[#3e5641]/20">
+              <ShieldCheck className="w-6 h-6 text-[#3e5641]" />
+            </div>
+
+            <div className="text-center">
+              <span className="text-[11px] font-serif uppercase tracking-[0.2em] text-[#c89f5d] font-bold">
+                ĐỐI SOÁT GIAO DỊCH VIETQR
+              </span>
+              <h3 className="text-lg font-philosopher font-bold text-[#3e5641] mt-1">
+                Xác nhận đã thanh toán đơn {orderToConfirmPayment.orderCode}
+              </h3>
+              <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                Vui lòng đối chiếu sao kê ngân hàng BIDV trước khi xác nhận. Sau khi xác nhận, hệ thống sẽ chuyển trạng thái thanh toán sang <strong>Đã thanh toán</strong> và tự động gửi email xác nhận cho khách hàng.
+              </p>
+            </div>
+
+            {/* 5-Point Verification Checklist */}
+            <div className="bg-[#faf8f3] rounded-2xl p-4 border border-stone-200/80 space-y-2 text-xs">
+              <div className="font-semibold text-stone-700 uppercase tracking-wider text-[11px] mb-1">
+                Danh mục kiểm tra đối soát 5 điểm:
+              </div>
+              <div className="flex justify-between py-1 border-b border-stone-200/60">
+                <span className="text-stone-500">1. Mã đơn hàng:</span>
+                <strong className="font-mono text-[#3e5641]">{orderToConfirmPayment.orderCode}</strong>
+              </div>
+              <div className="flex justify-between py-1 border-b border-stone-200/60">
+                <span className="text-stone-500">2. Nội dung chuyển khoản khớp:</span>
+                <strong className="font-mono text-[#3e5641]">
+                  {orderToConfirmPayment.paymentInstructions?.transferContent || orderToConfirmPayment.orderCode}
+                </strong>
+              </div>
+              <div className="flex justify-between py-1 border-b border-stone-200/60">
+                <span className="text-stone-500">3. Số tiền nhận được khớp:</span>
+                <strong className="text-stone-900 text-sm">{formatMoney(orderToConfirmPayment.total)}</strong>
+              </div>
+              <div className="flex justify-between py-1 border-b border-stone-200/60">
+                <span className="text-stone-500">4. Trạng thái hiện tại:</span>
+                <span>{getPaymentBadge(orderToConfirmPayment)}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-stone-500">5. Khách hàng & Email nhận thông báo:</span>
+                <span className="font-medium text-stone-800 text-right">
+                  {orderToConfirmPayment.customer?.fullName}
+                  {orderToConfirmPayment.customer?.email ? ` (${orderToConfirmPayment.customer.email})` : ''}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">
+                Mã tham chiếu giao dịch ngân hàng (Tùy chọn)
+              </label>
+              <input
+                type="text"
+                value={transactionRefInput}
+                onChange={(e) => setTransactionRefInput(e.target.value)}
+                placeholder="VD: FT2611398271 / BIDV-247..."
+                className="w-full px-3.5 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#3e5641] text-xs font-mono"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setOrderToConfirmPayment(null)}
+                className="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-50 text-xs font-medium transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={actionLoadingId === orderToConfirmPayment.id}
+                data-testid="confirm-payment-modal-submit"
+                onClick={() => handleConfirmPayment(orderToConfirmPayment, transactionRefInput)}
+                className="flex-1 py-2.5 rounded-xl bg-[#3e5641] hover:bg-[#324635] text-[#f7f4d5] text-xs font-semibold transition-colors shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4 text-[#c89f5d]" />
+                {actionLoadingId === orderToConfirmPayment.id ? 'Đang xác nhận...' : 'Xác nhận đã thanh toán'}
+              </button>
             </div>
           </div>
         </div>

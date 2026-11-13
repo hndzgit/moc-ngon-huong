@@ -21,6 +21,16 @@ export default defineConfig({
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ success: false, error: err?.message || 'Internal Server Error' }));
             }
+          } else if (req.url && req.url.startsWith('/api/admin/orders')) {
+            try {
+              const { default: handler } = await server.ssrLoadModule('/api/admin/orders.ts');
+              await handler(req, res);
+            } catch (err: any) {
+              console.error('[API Middleware Error /api/admin/orders]:', err);
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: false, error: err?.message || 'Internal Server Error' }));
+            }
           } else if (req.url && req.url.startsWith('/api/orders')) {
             try {
               const { default: handler } = await server.ssrLoadModule('/api/orders.ts');

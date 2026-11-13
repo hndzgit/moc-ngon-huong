@@ -58,7 +58,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onClearCart,
   onNavigate,
 }) => {
-  const { user, profile, updateProfileData } = useAuth();
+  const { user, profile, updateProfileData, getIdToken, ensureGuestAuthToken } = useAuth();
 
   const [shippingMode, setShippingMode] = useState<'delivery' | 'pickup'>('delivery');
   const [gender, setGender] = useState<'anh' | 'chi'>('anh');
@@ -90,11 +90,113 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   );
   const [orderItems, setOrderItems] = useState<CartItem[]>([]);
   const [serverOrder, setServerOrder] = useState<OrderRecord | null>(null);
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
+  const [recoveringSession, setRecoveringSession] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoveryOrderCodeInput, setRecoveryOrderCodeInput] = useState('');
+  const [recoveryEmailInput, setRecoveryEmailInput] = useState('');
+  const [sendingRecoveryEmail, setSendingRecoveryEmail] = useState(false);
+  const [recoveryEmailSentMsg, setRecoveryEmailSentMsg] = useState<string | null>(null);
 
   // Client-side idempotency key - retained across retries of the SAME submission
   const generateNewIdempotencyKey = () =>
     `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   const idempotencyKeyRef = useRef<string>(generateNewIdempotencyKey());
+
+  // Crash-safe order & VietQR payment session recovery (from URL #/thanh-toan?orderId=...&token=... or active localStorage session)
+  useEffect(() => {
+    let cancelled = false;
+
+    const attemptOrderRecovery = async () => {
+      const hashQuery = window.location.hash.includes('?')
+        ? window.location.hash.split('?')[1]
+        : '';
+      const params = new URLSearchParams(hashQuery);
+      let targetOrderId = (params.get('orderId') || '').trim();
+      let targetToken = (params.get('token') || '').trim();
+
+      // If no explicit URL orderId, only auto-recover from localStorage when cart is empty (page reload after order creation)
+      if (!targetOrderId && items.length === 0 && !serverOrder) {
+        try {
+          const savedSession = localStorage.getItem('mnh_active_payment_session_v1');
+          if (savedSession) {
+            const parsed = JSON.parse(savedSession);
+            if (parsed?.orderId) {
+              targetOrderId = String(parsed.orderId);
+              targetToken = String(parsed.recoveryToken || '');
+            }
+          }
+        } catch {}
+      }
+
+      if (!targetOrderId) return;
+      if (serverOrder && serverOrder.id === targetOrderId) return;
+
+      setRecoveringSession(true);
+      setRecoveryError(null);
+
+      try {
+        let idToken = await getIdToken();
+        if (!idToken && !targetToken) {
+          const guestAuth = await ensureGuestAuthToken();
+          idToken = guestAuth.idToken;
+        }
+
+        // Also check saved session token if URL only had orderId
+        if (!targetToken) {
+          try {
+            const savedSession = JSON.parse(
+              localStorage.getItem('mnh_active_payment_session_v1') || '{}'
+            );
+            if (savedSession?.orderId === targetOrderId && savedSession?.recoveryToken) {
+              targetToken = String(savedSession.recoveryToken);
+            }
+          } catch {}
+        }
+
+        const url = `/api/orders?orderId=${encodeURIComponent(targetOrderId)}${
+          targetToken ? `&token=${encodeURIComponent(targetToken)}` : ''
+        }`;
+        const res = await fetch(url, {
+          headers: {
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+            ...(targetToken ? { 'x-order-recovery-token': targetToken } : {}),
+          },
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+
+        if (res.ok && data?.success && data?.order) {
+          const recoveredOrder: OrderRecord = data.order;
+          setServerOrder(recoveredOrder);
+          setRecoveryToken(targetToken || recoveredOrder.recoveryToken || null);
+          setCheckoutStatus('confirmed');
+          setOrderComplete(true);
+        } else {
+          setRecoveryError(
+            data?.error ||
+              'Không thể khôi phục phiên đơn hàng này. Liên kết có thể không hợp lệ hoặc đã hết hạn.'
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setRecoveryError('Không thể kết nối tới máy chủ để khôi phục đơn hàng. Vui lòng thử lại.');
+        }
+      } finally {
+        if (!cancelled) {
+          setRecoveringSession(false);
+        }
+      }
+    };
+
+    attemptOrderRecovery();
+    window.addEventListener('hashchange', attemptOrderRecovery);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('hashchange', attemptOrderRecovery);
+    };
+  }, [getIdToken, ensureGuestAuthToken]);
 
   // Auto-populate customer fields if user is authenticated or has saved profile
   useEffect(() => {
@@ -310,6 +412,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         } catch {
           // Continue gracefully as guest-authorized
         }
+      } else {
+        try {
+          const guestAuth = await ensureGuestAuthToken();
+          if (guestAuth.idToken) {
+            authHeader = `Bearer ${guestAuth.idToken}`;
+          }
+        } catch {
+          // Continue gracefully if anonymous auth is unavailable
+        }
       }
 
       const response = await fetch('/api/orders', {
@@ -338,10 +449,30 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         data?.order?.orderCode
       ) {
         const confirmedOrder: OrderRecord = data.order;
+        const activeToken = confirmedOrder.recoveryToken || null;
         setServerOrder(confirmedOrder);
+        setRecoveryToken(activeToken);
         setOrderItems(items.map((item) => ({ ...item })));
 
-        // Save to local order history for the Profile view
+        // Persist active payment session for crash/reload recovery
+        try {
+          localStorage.setItem(
+            'mnh_active_payment_session_v1',
+            JSON.stringify({
+              orderId: confirmedOrder.id,
+              orderCode: confirmedOrder.orderCode,
+              recoveryToken: activeToken,
+              email: confirmedOrder.customer.email,
+              createdAt: confirmedOrder.createdAt,
+            })
+          );
+          const recoveryHash = `#/thanh-toan?orderId=${encodeURIComponent(confirmedOrder.id)}${
+            activeToken ? `&token=${encodeURIComponent(activeToken)}` : ''
+          }`;
+          window.history.replaceState(null, '', recoveryHash);
+        } catch {}
+
+        // Save to local order history for the Profile view & Guest-to-Account linking
         try {
           const historyKey = user?.uid ? `mnh_user_orders_${user.uid}` : 'mnh_guest_orders_v1';
           const existing = JSON.parse(localStorage.getItem(historyKey) || '[]');
@@ -452,11 +583,55 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setCheckoutStatus('idle');
   };
 
-  // Figma 77:3506 Order Confirmation view
+  const handleRequestRecoveryEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryOrderCodeInput.trim() || !recoveryEmailInput.trim() || sendingRecoveryEmail) return;
+    setSendingRecoveryEmail(true);
+    setRecoveryEmailSentMsg(null);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'request_recovery_link',
+          orderCode: recoveryOrderCodeInput.trim().toUpperCase(),
+          email: recoveryEmailInput.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setRecoveryEmailSentMsg(
+        data?.message ||
+          'Nếu mã đơn hàng và địa chỉ email trùng khớp, liên kết khôi phục đã được gửi tới hộp thư của bạn.'
+      );
+    } catch {
+      setRecoveryEmailSentMsg('Không thể gửi yêu cầu lúc này. Vui lòng thử lại sau ít phút.');
+    } finally {
+      setSendingRecoveryEmail(false);
+    }
+  };
+
+  if (recoveringSession) {
+    return (
+      <div className="min-h-[65vh] flex flex-col items-center justify-center bg-[#FAF8F3] px-4 py-16 text-center">
+        <div className="w-11 h-11 border-4 border-[#3E5641]/20 border-t-[#3E5641] rounded-full animate-spin mb-4" />
+        <p className="font-philosopher text-[20px] font-bold text-[#3E5641]">
+          Đang khôi phục phiên đơn hàng &amp; mã thanh toán VietQR...
+        </p>
+        <p className="text-[13.5px] text-[#666666] mt-1">
+          Đơn hàng của bạn được bảo toàn an toàn, không tạo trùng đơn mới.
+        </p>
+      </div>
+    );
+  }
+
+  // Figma 77:3506 Order Confirmation & VietQR Payment view
   if (orderComplete && serverOrder) {
     return (
       <OrderConfirmation
         items={orderItems}
+        order={serverOrder}
+        recoveryToken={recoveryToken}
+        orderId={serverOrder.id}
         fullName={serverOrder.customer.fullName}
         phone={serverOrder.customer.phone}
         email={serverOrder.customer.email}
@@ -470,10 +645,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         payment={
           serverOrder.paymentMethod === 'cod'
             ? 'Thanh toán tiền mặt khi nhận hàng (COD)'
-            : 'Chuyển khoản ngân hàng'
+            : 'Chuyển khoản ngân hàng (VietQR)'
         }
         paymentMethod={serverOrder.paymentMethod}
         paymentStatus={serverOrder.paymentStatus}
+        paymentInstructions={serverOrder.paymentInstructions}
         orderCode={serverOrder.orderCode}
         orderDate={serverOrder.createdAt}
         orderStatus={
@@ -494,6 +670,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         discount={serverOrder.discount}
         total={serverOrder.total}
         note={serverOrder.customer.note}
+        onOrderUpdated={(updated) => setServerOrder(updated)}
+        onStartNewCheckout={() => {
+          try {
+            localStorage.removeItem('mnh_active_payment_session_v1');
+            window.history.replaceState(null, '', '#/thanh-toan');
+          } catch {}
+          setOrderComplete(false);
+          setServerOrder(null);
+          setRecoveryToken(null);
+          setCheckoutStatus('idle');
+        }}
         onNavigate={onNavigate}
       />
     );
@@ -536,6 +723,72 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Recovery Error & Guest Recovery Link Request Banner (when an invalid/expired recovery link was opened) */}
+        {recoveryError && (
+          <div
+            role="alert"
+            data-testid="order-recovery-error-banner"
+            className="mb-8 p-6 rounded-[20px] bg-white border-2 border-[#C89F5D]/50 shadow-sm max-w-[760px] mx-auto space-y-4"
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div>
+                <h2 className="font-philosopher font-bold text-[19px] text-[#203323]">
+                  Không thể mở liên kết phiên đơn hàng
+                </h2>
+                <p className="text-[13.5px] text-[#555555] mt-1 leading-relaxed">{recoveryError}</p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={handleRequestRecoveryEmail}
+              className="pt-3 border-t border-[#EAE5DB] grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
+            >
+              <div className="sm:col-span-4">
+                <label className="block text-[12px] font-semibold text-[#444444] mb-1">
+                  Mã đơn hàng (VD: MNH000000)
+                </label>
+                <input
+                  type="text"
+                  value={recoveryOrderCodeInput}
+                  onChange={(e) => setRecoveryOrderCodeInput(e.target.value)}
+                  placeholder="MNH000000"
+                  className="checkout-input font-mono uppercase"
+                  required
+                />
+              </div>
+              <div className="sm:col-span-5">
+                <label className="block text-[12px] font-semibold text-[#444444] mb-1">
+                  Email đã dùng khi đặt hàng
+                </label>
+                <input
+                  type="email"
+                  value={recoveryEmailInput}
+                  onChange={(e) => setRecoveryEmailInput(e.target.value)}
+                  placeholder="email@example.com"
+                  className="checkout-input"
+                  required
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <button
+                  type="submit"
+                  disabled={sendingRecoveryEmail}
+                  className="w-full h-[46px] rounded-full bg-[#3E5641] text-[#FAF8F3] text-[13px] font-semibold hover:bg-[#203323] transition-colors cursor-pointer"
+                >
+                  {sendingRecoveryEmail ? 'Đang gửi...' : 'Gửi liên kết mới'}
+                </button>
+              </div>
+            </form>
+
+            {recoveryEmailSentMsg && (
+              <p className="text-[13px] text-[#3E5641] font-medium bg-[#FAF8F3] p-3 rounded-xl border border-[#E5DFD5]">
+                {recoveryEmailSentMsg}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Gift Card Attachments (if configured in cart) */}
         {items
@@ -897,9 +1150,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Option 2: Bank Transfer */}
+                  {/* Option 2: Bank Transfer (VietQR) */}
                   <div
                     onClick={() => setPaymentMethod('bank')}
+                    data-testid="payment-method-bank"
                     className={`checkout-select-card ${paymentMethod === 'bank' ? 'active' : ''}`}
                     role="button"
                     tabIndex={0}
@@ -908,14 +1162,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   >
                     <div className="checkout-radio-indicator" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <CreditCard className="w-4 h-4 text-[#C89F5D]" />
                         <span className="font-semibold text-[14.5px] text-[#222222]">
-                          Chuyển khoản ngân hàng
+                          Chuyển khoản ngân hàng (VietQR)
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#C89F5D]/15 text-[#8E6746] text-[11px] font-bold">
+                          BIDV • NAPAS 247
                         </span>
                       </div>
                       <p className="text-[12.5px] text-[#666666] mt-1 leading-[18px]">
-                        Thông tin chuyển khoản sẽ được chuyên viên Mộc Ngôn Hương hướng dẫn sau khi đặt hàng.
+                        Tự động tạo mã VietQR động kèm số tiền chính xác và nội dung mã đơn hàng ngay sau khi đặt hàng.
                       </p>
                     </div>
                   </div>

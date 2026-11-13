@@ -19,7 +19,58 @@ export type OrderStatus =
   | 'completed'
   | 'cancelled';
 
-export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+export type PaymentStatus =
+  | 'pending_payment'
+  | 'pending'
+  | 'customer_reported_paid'
+  | 'paid'
+  | 'completed'
+  | 'payment_review'
+  | 'cancelled'
+  | 'failed'
+  | 'refunded';
+
+export interface OrderPaymentInstructions {
+  method: 'vietqr';
+  bankBin: string;
+  bankShortName: string;
+  bankFullName: string;
+  accountNo: string;
+  accountName: string;
+  amount: number;
+  currency: 'VND';
+  transferContent: string;
+  qrPayload: string;
+  qrSvgDataUrl?: string;
+}
+
+export interface PaymentAuditLogEntry {
+  orderId: string;
+  orderCode?: string;
+  action: string;
+  previousPaymentStatus: string;
+  newPaymentStatus: string;
+  actorType: 'customer' | 'admin' | 'system';
+  actorUid?: string | null;
+  actorEmail?: string | null;
+  timestamp: string;
+  transactionRef?: string | null;
+  note?: string | null;
+}
+
+export interface NotificationDeliveryEntry {
+  sent: boolean;
+  sentAt?: string | null;
+  messageId?: string | null;
+  idempotencyKey?: string;
+  lastAttemptAt?: string;
+  error?: string | null;
+}
+
+export interface OrderNotificationDelivery {
+  orderCreated?: NotificationDeliveryEntry;
+  paymentConfirmed?: NotificationDeliveryEntry;
+}
 
 export interface OrderItemSnapshot {
   productId: string;
@@ -35,7 +86,10 @@ export interface OrderRecord {
   orderCode: string;
   userId?: string | null;
   customerUid?: string | null;
+  isGuestOrder?: boolean;
+  linkedAt?: string | null;
   notificationSent?: boolean;
+  notificationDelivery?: OrderNotificationDelivery;
   customer: {
     fullName: string;
     phone: string;
@@ -61,6 +115,14 @@ export interface OrderRecord {
   total: number;
   paymentMethod: 'cod' | 'bank';
   paymentStatus: PaymentStatus;
+  paymentInstructions?: OrderPaymentInstructions | null;
+  customerReportedAt?: string | null;
+  customerReportedByUid?: string | null;
+  paymentConfirmedAt?: string | null;
+  paymentConfirmedBy?: string | null;
+  paymentConfirmedByEmail?: string | null;
+  bankTransactionRef?: string | null;
+  paymentAuditLog?: PaymentAuditLogEntry[];
   orderStatus: OrderStatus;
   status?: OrderStatus;
   createdAt: string;
@@ -69,6 +131,8 @@ export interface OrderRecord {
   updatedBy?: string;
   idempotencyKey?: string;
   schemaVersion?: string;
+  /** Transient cleartext token returned only on creation/recovery; never stored in Firestore */
+  recoveryToken?: string;
 }
 
 export interface IncludedFlavorItem {

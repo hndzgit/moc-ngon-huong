@@ -111,6 +111,37 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         setOrdersLoading(false);
         return;
       }
+
+      // Safely link any guest orders placed in the same browser with the same email and a valid recoveryToken
+      if (activeUser.email) {
+        try {
+          const guestOrders: OrderRecord[] = JSON.parse(
+            localStorage.getItem('mnh_guest_orders_v1') || '[]'
+          );
+          const matchingGuests = guestOrders.filter(
+            (go) =>
+              go?.id &&
+              go?.recoveryToken &&
+              String(go?.customer?.email || '').trim().toLowerCase() ===
+                String(activeUser.email || '').trim().toLowerCase()
+          );
+          for (const go of matchingGuests) {
+            await fetch('/api/me/orders', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                action: 'link_guest_order',
+                orderId: go.id,
+                recoveryToken: go.recoveryToken,
+              }),
+            }).catch(() => {});
+          }
+        } catch {}
+      }
+
       const response = await fetch('/api/me/orders?limit=50', {
         headers: {
           Authorization: `Bearer ${idToken}`,
@@ -458,11 +489,29 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  const getPaymentStatusBadge = (status: PaymentStatus, method: 'cod' | 'bank') => {
-    if (status === 'completed') {
+  const getPaymentStatusBadge = (status: PaymentStatus | string, method: 'cod' | 'bank') => {
+    if (status === 'paid' || status === 'completed') {
       return {
         label: 'Đã thanh toán',
         color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      };
+    }
+    if (status === 'customer_reported_paid') {
+      return {
+        label: 'Đã báo chuyển khoản • Chờ xác nhận',
+        color: 'bg-blue-50 text-blue-800 border-blue-200',
+      };
+    }
+    if (status === 'payment_review') {
+      return {
+        label: 'Đang kiểm tra giao dịch',
+        color: 'bg-purple-50 text-purple-800 border-purple-200',
+      };
+    }
+    if (status === 'cancelled') {
+      return {
+        label: 'Đã hủy thanh toán',
+        color: 'bg-rose-50 text-rose-700 border-rose-200',
       };
     }
     if (status === 'failed') {
@@ -484,9 +533,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       };
     }
     return {
-      label: 'Chờ chuyển khoản',
+      label: 'Chờ thanh toán chuyển khoản',
       color: 'bg-amber-50 text-amber-800 border-amber-200',
     };
+  };
+
+  const handleContinueVietQrPayment = (order: OrderRecord) => {
+    setSelectedOrder(null);
+    const tokenParam = order.recoveryToken
+      ? `&token=${encodeURIComponent(order.recoveryToken)}`
+      : '';
+    window.location.hash = `#/thanh-toan?orderId=${encodeURIComponent(order.id)}${tokenParam}`;
   };
 
   // Order filtering and pagination
@@ -873,7 +930,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                 </strong>
                               </div>
 
-                              <div className="flex items-center justify-between sm:justify-end gap-5">
+                              <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-5">
                                 <div className="text-right">
                                   <span className="text-[12px] text-[#888888] block">Tổng thanh toán</span>
                                   <span className="font-bold text-[#3e5641] text-[18px] sm:text-[20px]">
@@ -881,13 +938,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                   </span>
                                 </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedOrder(order)}
-                                  className="px-5 py-2.5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[13.5px] hover:bg-[#203323] transition-colors shadow-xs"
-                                >
-                                  Xem chi tiết
-                                </button>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {order.paymentMethod === 'bank' &&
+                                    order.orderStatus !== 'cancelled' &&
+                                    (order.paymentStatus === 'pending_payment' ||
+                                      order.paymentStatus === 'pending' ||
+                                      order.paymentStatus === 'customer_reported_paid') && (
+                                      <button
+                                        type="button"
+                                        data-testid={`continue-payment-${order.orderCode}`}
+                                        onClick={() => handleContinueVietQrPayment(order)}
+                                        className="px-4 py-2.5 rounded-full bg-[#c89f5d] text-[#203323] font-bold text-[13px] hover:bg-[#b58c4b] transition-colors shadow-xs cursor-pointer"
+                                      >
+                                        {order.paymentStatus === 'customer_reported_paid'
+                                          ? 'Xem mã VietQR'
+                                          : 'Tiếp tục thanh toán'}
+                                      </button>
+                                    )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedOrder(order)}
+                                    className="px-5 py-2.5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[13.5px] hover:bg-[#203323] transition-colors shadow-xs cursor-pointer"
+                                  >
+                                    Xem chi tiết
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1681,23 +1757,74 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               {/* Bank Transfer Instructions (If Applicable) */}
-              {selectedOrder.paymentMethod === 'bank' && selectedOrder.paymentStatus === 'pending' && (
-                <div className="mb-6 p-5 rounded-[18px] bg-[#f8f5ee] border border-[#e5dfd5] text-[13.5px] space-y-2">
-                  <h4 className="font-philosopher font-bold text-[17px] text-[#3e5641]">
-                    Thông tin chuyển khoản ngân hàng
-                  </h4>
-                  <p className="text-[#666666] text-[13px] leading-[20px]">
-                    Đơn hàng của Quý khách đang ở trạng thái chờ thanh toán chuyển khoản. Chuyên viên chăm sóc khách hàng Mộc Ngôn Hương sẽ trực tiếp liên hệ qua điện thoại (<strong>0889 742 556</strong>) để xác nhận đơn và cung cấp số tài khoản ngân hàng chính thức của công ty.
-                  </p>
-                  <div className="bg-white p-3.5 rounded-[12px] border border-[#e8e2d5] space-y-1.5 text-[13px]">
-                    <p><span className="text-[#888]">Số tiền thanh toán:</span> <strong className="text-[#3e5641]">{selectedOrder.total?.toLocaleString('vi-VN')} đ</strong></p>
-                    <p><span className="text-[#888]">Cú pháp chuyển khoản:</span> <strong className="font-mono text-[#8e6746]">MNH {selectedOrder.orderCode} {selectedOrder.customer?.phone}</strong></p>
-                    <p className="text-[12px] text-[#888] italic pt-1">
-                      * Quý khách vui lòng chỉ thực hiện chuyển tiền theo thông tin tài khoản doanh nghiệp được chuyên viên Mộc Ngôn Hương xác nhận chính thức.
-                    </p>
+              {selectedOrder.paymentMethod === 'bank' &&
+                selectedOrder.paymentStatus !== 'paid' &&
+                selectedOrder.paymentStatus !== 'completed' &&
+                selectedOrder.orderStatus !== 'cancelled' && (
+                  <div className="mb-6 p-5 rounded-[18px] bg-[#f8f5ee] border border-[#e5dfd5] text-[13.5px] space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="font-philosopher font-bold text-[18px] text-[#3e5641]">
+                        Thanh toán chuyển khoản VietQR (BIDV • NAPAS 247)
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => handleContinueVietQrPayment(selectedOrder)}
+                        className="px-4 py-2 rounded-full bg-[#3e5641] text-[#f7f4d5] text-[12.5px] font-semibold hover:bg-[#203323] transition-colors cursor-pointer"
+                      >
+                        Mở trang thanh toán VietQR →
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-white p-4 rounded-[14px] border border-[#e8e2d5]">
+                      {selectedOrder.paymentInstructions?.qrSvgDataUrl && (
+                        <div className="sm:col-span-4 flex justify-center">
+                          <img
+                            src={selectedOrder.paymentInstructions.qrSvgDataUrl}
+                            alt={`VietQR ${selectedOrder.orderCode}`}
+                            className="w-[150px] h-[150px] object-contain rounded-lg border border-gray-100 p-1"
+                          />
+                        </div>
+                      )}
+                      <div
+                        className={`${
+                          selectedOrder.paymentInstructions?.qrSvgDataUrl
+                            ? 'sm:col-span-8'
+                            : 'sm:col-span-12'
+                        } space-y-1.5 text-[13px]`}
+                      >
+                        <p>
+                          <span className="text-[#888]">Ngân hàng:</span>{' '}
+                          <strong className="text-[#222]">
+                            BIDV — Ngân hàng TMCP Đầu tư &amp; Phát triển Việt Nam (970418)
+                          </strong>
+                        </p>
+                        <p>
+                          <span className="text-[#888]">Chủ tài khoản:</span>{' '}
+                          <strong className="text-[#222]">
+                            {selectedOrder.paymentInstructions?.accountName || 'NGUYEN THI VAN ANH'}
+                          </strong>
+                        </p>
+                        <p>
+                          <span className="text-[#888]">Số tài khoản:</span>{' '}
+                          <strong className="font-mono text-[#3e5641] text-[14.5px]">
+                            {selectedOrder.paymentInstructions?.accountNo || '8960826751'}
+                          </strong>
+                        </p>
+                        <p>
+                          <span className="text-[#888]">Số tiền thanh toán:</span>{' '}
+                          <strong className="text-[#3e5641] text-[14.5px]">
+                            {selectedOrder.total?.toLocaleString('vi-VN')} đ
+                          </strong>
+                        </p>
+                        <p>
+                          <span className="text-[#888]">Nội dung chuyển khoản:</span>{' '}
+                          <strong className="font-mono text-[#8e6746] text-[14.5px]">
+                            {selectedOrder.orderCode}
+                          </strong>
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Financial Breakdown */}
               <div className="bg-white rounded-[18px] p-5 border border-[#e5dfd5] text-[14px] space-y-2.5 mb-6 shadow-2xs">

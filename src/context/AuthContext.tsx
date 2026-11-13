@@ -14,6 +14,7 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  signInAnonymously,
   User,
 } from '../services/firebase';
 
@@ -35,6 +36,7 @@ export interface CustomerProfile {
 
 interface AuthContextType {
   user: User | null;
+  guestUser: User | null;
   loading: boolean;
   isAuthAvailable: boolean;
   isEmailVerified: boolean;
@@ -52,6 +54,7 @@ interface AuthContextType {
   applyVerifyCode: (code: string) => Promise<void>;
   updateProfileData: (data: Partial<CustomerProfile>) => Promise<void>;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
+  ensureGuestAuthToken: () => Promise<{ uid: string | null; idToken: string | null; isAnonymous: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,6 +63,7 @@ const PROFILE_STORAGE_PREFIX = 'mnh_profile_';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [guestUser, setGuestUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   // Refresh context consumers after Firebase mutates User metadata in place.
   const [authRevision, setAuthRevision] = useState(0);
@@ -69,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load local profile metadata when user changes
   const loadProfile = (currentUser: User | null) => {
-    if (!currentUser) {
+    if (!currentUser || currentUser.isAnonymous) {
       setProfile(null);
       return;
     }
@@ -98,8 +102,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      loadProfile(firebaseUser);
+      if (firebaseUser && firebaseUser.isAnonymous) {
+        setUser(null);
+        setGuestUser(firebaseUser);
+        setProfile(null);
+      } else {
+        setUser(firebaseUser);
+        setGuestUser(null);
+        loadProfile(firebaseUser);
+      }
       setLoading(false);
     });
 
@@ -277,9 +288,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const ensureGuestAuthToken = async (): Promise<{
+    uid: string | null;
+    idToken: string | null;
+    isAnonymous: boolean;
+  }> => {
+    if (!auth) {
+      return { uid: null, idToken: null, isAnonymous: true };
+    }
+    try {
+      if (auth.currentUser) {
+        const idToken = await auth.currentUser.getIdToken();
+        return {
+          uid: auth.currentUser.uid,
+          idToken,
+          isAnonymous: Boolean(auth.currentUser.isAnonymous),
+        };
+      }
+      const cred = await signInAnonymously(auth);
+      setGuestUser(cred.user);
+      const idToken = await cred.user.getIdToken();
+      return {
+        uid: cred.user.uid,
+        idToken,
+        isAnonymous: true,
+      };
+    } catch {
+      return { uid: null, idToken: null, isAnonymous: true };
+    }
+  };
+
   const value = useMemo(
     () => ({
       user,
+      guestUser,
       loading,
       isAuthAvailable,
       isEmailVerified: Boolean(user?.emailVerified),
@@ -297,8 +339,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       applyVerifyCode,
       updateProfileData,
       getIdToken,
+      ensureGuestAuthToken,
     }),
-    [user, loading, isAuthAvailable, profile, authRevision]
+    [user, guestUser, loading, isAuthAvailable, profile, authRevision]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,250 +1,402 @@
-import type { IncomingMessage, ServerResponse } from 'http';
-import fs from 'fs';
-import path from 'path';
-import { getFirestoreDb, verifyAuthToken, getIsProduction } from '../_lib/firebaseAdmin.js';
-import type { OrderRecord } from '../../src/types';
+// api/me/orders.ts
+// Authenticated Customer Order History & Guest-to-Account Order Linking API
+// Security Guarantees:
+// 1. Cryptographically verifies Firebase ID token via Firebase Admin SDK
+// 2. Queries ONLY orders where userId === verifiedUser.uid (or customerUid === verifiedUser.uid)
+// 3. Supports safe Guest-to-Account linking (POST action: 'link_guest_order') with recoveryToken verification
 
-interface VercelRequest extends IncomingMessage {
-  query?: Record<string, string | string[]>;
-  cookies?: Record<string, string>;
-  body?: any;
-}
+import { getAdminDb, isProductionRuntime, verifyAuthToken } from '../_lib/firebaseAdmin.js';
+import {
+  enrichAndSanitizeOrderForClient,
+  readLocalDevOrders,
+  verifyRecoveryTokenHash,
+  withLocalStoreLock,
+  writeLocalDevOrders,
+} from '../_lib/orderRecovery.js';
 
-interface VercelResponse extends ServerResponse {
-  status: (statusCode: number) => VercelResponse;
-  json: (body: any) => void;
-  send: (body: any) => void;
-}
-
-const LOCAL_DEV_DIR = path.resolve(process.cwd(), '.data');
-const LOCAL_DEV_FILE = path.join(LOCAL_DEV_DIR, 'orders_dev.json');
-
-function readLocalDevOrders(): OrderRecord[] {
-  if (getIsProduction()) return [];
-  try {
-    if (fs.existsSync(LOCAL_DEV_FILE)) {
-      const data = fs.readFileSync(LOCAL_DEV_FILE, 'utf-8');
-      return JSON.parse(data) || [];
-    }
-  } catch (err) {
-    console.error('[MNH Me Orders] Error reading local dev store:', err);
+function getEffectiveDb() {
+  if (process.env.MNH_USE_LOCAL_DEV_STORE === '1' && !isProductionRuntime()) {
+    return null;
   }
-  return [];
+  return getAdminDb();
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const isProduction = getIsProduction();
-  // CORS & Security Headers
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-  );
+async function parseJsonBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === 'object') return req.body;
+  if (typeof req.body === 'string' && req.body.trim()) return JSON.parse(req.body);
+  let raw = '';
+  await new Promise<void>((resolve, reject) => {
+    req.on('data', (chunk: any) => {
+      raw += chunk;
+      if (raw.length > 5e5) reject(new Error('PAYLOAD_TOO_LARGE'));
+    });
+    req.on('end', () => resolve());
+    req.on('error', (err: any) => reject(err));
+  });
+  return raw ? JSON.parse(raw) : {};
+}
 
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 200;
-    res.end();
-    return;
-  }
+export default async function handler(req: any, res: any) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-  if (req.method !== 'GET') {
-    res.setHeader('Content-Type', 'application/json');
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    res.setHeader('Allow', 'GET, POST');
     res.statusCode = 405;
-    res.end(JSON.stringify({ success: false, error: 'Chỉ chấp nhận phương thức GET.' }));
-    return;
+    return res.end(
+      JSON.stringify({
+        success: false,
+        error: 'Phương thức không được hỗ trợ. Vui lòng sử dụng GET hoặc POST.',
+      })
+    );
   }
 
-  // 1. Verify Authentication Token & Extract Authoritative UID
-  let verifiedAuth: { uid: string; email?: string } | null = null;
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  if (!authHeader || typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
+    res.statusCode = 401;
+    return res.end(
+      JSON.stringify({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        error: 'Vui lòng đăng nhập để xem lịch sử đơn hàng của bạn.',
+      })
+    );
+  }
+
+  let verifiedUser: { uid: string; email?: string; isAnonymous?: boolean } | null = null;
   try {
-    const authHeader = req.headers?.authorization;
-    verifiedAuth = await verifyAuthToken(authHeader);
+    verifiedUser = await verifyAuthToken(authHeader);
   } catch {
-    res.setHeader('Content-Type', 'application/json');
     res.statusCode = 401;
-    res.end(
+    return res.end(
       JSON.stringify({
         success: false,
-        error: 'Phiên xác thực không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.',
+        code: 'AUTH_TOKEN_INVALID',
+        error: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.',
       })
     );
-    return;
   }
 
-  if (!verifiedAuth || !verifiedAuth.uid) {
-    res.setHeader('Content-Type', 'application/json');
+  if (!verifiedUser || !verifiedUser.uid) {
     res.statusCode = 401;
-    res.end(
+    return res.end(
       JSON.stringify({
         success: false,
-        error: 'Yêu cầu đăng nhập để truy cập lịch sử đơn hàng của bạn.',
+        code: 'AUTH_REQUIRED',
+        error: 'Không thể xác thực tài khoản khách hàng.',
       })
     );
-    return;
   }
 
-  const customerUid = verifiedAuth.uid;
+  const customerUid = verifiedUser.uid;
+  const db = getEffectiveDb();
+  const isProd = isProductionRuntime();
 
-  // Parse query params (handles both Node IncomingMessage and VercelRequest)
-  const urlObj = new URL(req.url || '', 'http://localhost');
-  const targetOrderId = (req.query?.orderId as string) || urlObj.searchParams.get('orderId');
-  const limitParam = parseInt(
-    (req.query?.limit as string) || urlObj.searchParams.get('limit') || '30',
-    10
-  );
-  const safeLimit = Math.min(Math.max(1, isNaN(limitParam) ? 30 : limitParam), 50);
+  // ==========================================================================
+  // POST /api/me/orders (Action: link_guest_order — Guest-to-Account Linking)
+  // ==========================================================================
+  if (req.method === 'POST') {
+    if (verifiedUser.isAnonymous) {
+      res.statusCode = 403;
+      return res.end(
+        JSON.stringify({
+          success: false,
+          code: 'REGISTERED_ACCOUNT_REQUIRED',
+          error: 'Vui lòng đăng nhập vào tài khoản thành viên chính thức để liên kết đơn hàng.',
+        })
+      );
+    }
 
-  const db = getFirestoreDb();
+    let body: any = {};
+    try {
+      body = await parseJsonBody(req);
+    } catch {
+      res.statusCode = 400;
+      return res.end(JSON.stringify({ success: false, error: 'Dữ liệu JSON không hợp lệ.' }));
+    }
 
-  // 2. Production Fail-Closed Check
-  if (isProduction && !db) {
-    res.setHeader('Content-Type', 'application/json');
+    if (body?.action !== 'link_guest_order') {
+      res.statusCode = 400;
+      return res.end(
+        JSON.stringify({ success: false, error: 'Hành động không hợp lệ.' })
+      );
+    }
+
+    const orderId = typeof body?.orderId === 'string' ? body.orderId.trim() : '';
+    const recoveryToken = typeof body?.recoveryToken === 'string' ? body.recoveryToken.trim() : '';
+
+    if (!orderId || !recoveryToken) {
+      res.statusCode = 400;
+      return res.end(
+        JSON.stringify({
+          success: false,
+          code: 'MISSING_LINK_PARAMS',
+          error: 'Thiếu mã đơn hàng hoặc mã xác thực khôi phục (recoveryToken) để liên kết đơn hàng.',
+        })
+      );
+    }
+
+    const nowIso = new Date().toISOString();
+    const evaluateLink = (rawOrder: any): {
+      status: number;
+      code?: string;
+      error?: string;
+      updatedOrder?: any;
+      mutated?: boolean;
+    } => {
+      if (!rawOrder) {
+        return { status: 404, code: 'ORDER_NOT_FOUND', error: 'Không tìm thấy đơn hàng.' };
+      }
+
+      // Already linked to this same user -> idempotent 200
+      if (rawOrder.userId === customerUid && !rawOrder.isGuestOrder) {
+        return { status: 200, updatedOrder: rawOrder, mutated: false };
+      }
+
+      // Prevent hijacking an order that already belongs to another registered member
+      if (rawOrder.userId && rawOrder.userId !== customerUid && rawOrder.isGuestOrder === false) {
+        return {
+          status: 403,
+          code: 'ORDER_ALREADY_CLAIMED',
+          error: 'Đơn hàng này đã được liên kết với một tài khoản thành viên khác.',
+        };
+      }
+
+      const tokenCheck = verifyRecoveryTokenHash(
+        recoveryToken,
+        rawOrder.recoveryTokenHash,
+        rawOrder.recoveryTokenExpiresAt
+      );
+      if (!tokenCheck.valid) {
+        return {
+          status: 403,
+          code: 'INVALID_RECOVERY_TOKEN',
+          error: 'Mã xác thực đơn hàng không hợp lệ hoặc đã hết hạn.',
+        };
+      }
+
+      const existingAudit = Array.isArray(rawOrder.paymentAuditLog) ? rawOrder.paymentAuditLog : [];
+      const updatedOrder = {
+        ...rawOrder,
+        userId: customerUid,
+        customerUid,
+        isGuestOrder: false,
+        linkedAt: nowIso,
+        updatedAt: nowIso,
+        paymentAuditLog: [
+          ...existingAudit,
+          {
+            orderId: rawOrder.id,
+            orderCode: rawOrder.orderCode,
+            action: 'guest_order_linked',
+            previousPaymentStatus: rawOrder.paymentStatus,
+            newPaymentStatus: rawOrder.paymentStatus,
+            actorType: 'customer' as const,
+            actorUid: customerUid,
+            actorEmail: verifiedUser?.email || null,
+            timestamp: nowIso,
+          },
+        ],
+      };
+
+      return { status: 200, updatedOrder, mutated: true };
+    };
+
+    if (db) {
+      try {
+        const orderRef = db.collection('orders').doc(orderId);
+        const outcome = await db.runTransaction(async (tx) => {
+          const snap = await tx.get(orderRef);
+          const rawOrder = snap.exists ? { id: snap.id, ...snap.data() } : null;
+          const resLogic = evaluateLink(rawOrder);
+          if (resLogic.mutated && resLogic.updatedOrder) {
+            tx.set(orderRef, resLogic.updatedOrder, { merge: true });
+          }
+          return resLogic;
+        });
+
+        if (outcome.status !== 200) {
+          res.statusCode = outcome.status;
+          return res.end(
+            JSON.stringify({ success: false, code: outcome.code, error: outcome.error })
+          );
+        }
+
+        res.statusCode = 200;
+        return res.end(
+          JSON.stringify({
+            success: true,
+            message: `Đã liên kết đơn hàng ${outcome.updatedOrder.orderCode} vào tài khoản của bạn.`,
+            order: enrichAndSanitizeOrderForClient(outcome.updatedOrder, recoveryToken),
+          })
+        );
+      } catch (err) {
+        console.error('[MNH Customer Orders POST link] Error:', err);
+        res.statusCode = 503;
+        return res.end(
+          JSON.stringify({
+            success: false,
+            code: 'DATABASE_UNAVAILABLE',
+            error: 'Hệ thống cơ sở dữ liệu đang bảo trì.',
+          })
+        );
+      }
+    } else if (!isProd) {
+      const outcome = await withLocalStoreLock(async () => {
+        const localOrders = readLocalDevOrders();
+        const idx = localOrders.findIndex((o) => o.id === orderId);
+        const rawOrder = idx >= 0 ? localOrders[idx] : null;
+        const resLogic = evaluateLink(rawOrder);
+        if (resLogic.mutated && resLogic.updatedOrder && idx >= 0) {
+          localOrders[idx] = resLogic.updatedOrder;
+          writeLocalDevOrders(localOrders);
+        }
+        return resLogic;
+      });
+
+      if (outcome.status !== 200) {
+        res.statusCode = outcome.status;
+        return res.end(
+          JSON.stringify({ success: false, code: outcome.code, error: outcome.error })
+        );
+      }
+
+      res.statusCode = 200;
+      return res.end(
+        JSON.stringify({
+          success: true,
+          message: `Đã liên kết đơn hàng ${outcome.updatedOrder.orderCode} vào tài khoản của bạn.`,
+          order: enrichAndSanitizeOrderForClient(outcome.updatedOrder, recoveryToken),
+        })
+      );
+    }
+
     res.statusCode = 503;
-    res.end(
+    return res.end(
       JSON.stringify({
         success: false,
         code: 'DATABASE_UNAVAILABLE',
-        error: 'Cơ sở dữ liệu đang bảo trì. Vui lòng thử lại sau ít phút.',
+        error: 'Hệ thống cơ sở dữ liệu đang bảo trì.',
       })
     );
-    return;
   }
 
-  try {
-    // A. Cloud Firestore Mode (Production & Emulator)
-    if (db) {
-      if (targetOrderId) {
-        // Single order detail lookup
-        const orderDoc = await db.collection('orders').doc(targetOrderId).get();
-        if (!orderDoc.exists) {
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 404;
-          res.end(JSON.stringify({ success: false, error: 'Không tìm thấy đơn hàng yêu cầu.' }));
-          return;
+  // ==========================================================================
+  // GET /api/me/orders (Customer Order History)
+  // ==========================================================================
+  const urlObj = new URL(req.url || '/api/me/orders', 'http://localhost');
+  const limitParam = Number(urlObj.searchParams.get('limit') || 30);
+  const safeLimit = Math.min(Math.max(1, Number.isNaN(limitParam) ? 30 : limitParam), 100);
+  const statusFilter = urlObj.searchParams.get('status') || '';
+
+  if (db) {
+    try {
+      const [byUserIdSnap, byCustomerUidSnap] = await Promise.all([
+        db.collection('orders').where('userId', '==', customerUid).limit(100).get(),
+        db.collection('orders').where('customerUid', '==', customerUid).limit(100).get(),
+      ]);
+
+      const mergedMap = new Map<string, any>();
+      byUserIdSnap.forEach((doc) => {
+        mergedMap.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+      byCustomerUidSnap.forEach((doc) => {
+        if (!mergedMap.has(doc.id)) {
+          mergedMap.set(doc.id, { id: doc.id, ...doc.data() });
         }
-
-        const orderData = orderDoc.data() as OrderRecord;
-        // Strict ownership verification: Customer A can NEVER see Customer B's orders
-        if (orderData.userId !== customerUid && orderData.customerUid !== customerUid) {
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 403;
-          res.end(
-            JSON.stringify({
-              success: false,
-              error: 'Bạn không có quyền truy cập thông tin đơn hàng này.',
-            })
-          );
-          return;
-        }
-
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 200;
-        res.end(JSON.stringify({ success: true, order: orderData }));
-        return;
-      }
-
-      // Order history list for authenticated user
-      // Query by userId (and fallback customerUid if needed)
-      const snapshot = await db
-        .collection('orders')
-        .where('userId', '==', customerUid)
-        .limit(safeLimit)
-        .get();
-
-      const orders: OrderRecord[] = [];
-      const seenIds = new Set<string>();
-      snapshot.forEach((doc) => {
-        const data = doc.data() as OrderRecord;
-        orders.push(data);
-        seenIds.add(data.id || doc.id);
       });
 
-      // Also check customerUid in case orders only have customerUid populated
-      if (orders.length < safeLimit) {
-        const snapshot2 = await db
-          .collection('orders')
-          .where('customerUid', '==', customerUid)
-          .limit(safeLimit)
-          .get();
-        snapshot2.forEach((doc) => {
-          const data = doc.data() as OrderRecord;
-          if (!seenIds.has(data.id || doc.id)) {
-            orders.push(data);
-            seenIds.add(data.id || doc.id);
-          }
-        });
+      let orders = Array.from(mergedMap.values()).map((o) =>
+        enrichAndSanitizeOrderForClient(o)
+      );
+
+      if (statusFilter && statusFilter !== 'ALL') {
+        orders = orders.filter(
+          (o) => o.orderStatus === statusFilter || o.status === statusFilter
+        );
       }
 
-      // Sort newest to oldest
-      orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      orders.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
 
-      res.setHeader('Content-Type', 'application/json');
+      orders = orders.slice(0, safeLimit);
+
       res.statusCode = 200;
-      res.end(
+      return res.end(
         JSON.stringify({
           success: true,
+          count: orders.length,
           orders,
-          total: orders.length,
-          customerUid,
         })
       );
-      return;
+    } catch (err: any) {
+      console.error('[MNH Customer Orders API] Firestore query failed:', err);
+      res.statusCode = 503;
+      return res.end(
+        JSON.stringify({
+          success: false,
+          code: 'DATABASE_UNAVAILABLE',
+          error:
+            'Hệ thống cơ sở dữ liệu đơn hàng đang bảo trì hoặc tạm thời gián đoạn. Vui lòng thử lại sau ít phút.',
+        })
+      );
     }
+  }
 
-    // B. Local Development / Test Fallback Mode (Strictly when !isProduction)
-    const localOrders = readLocalDevOrders();
-
-    if (targetOrderId) {
-      const matched = localOrders.find((o) => o.id === targetOrderId || o.orderCode === targetOrderId);
-      if (!matched) {
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 404;
-        res.end(JSON.stringify({ success: false, error: 'Không tìm thấy đơn hàng yêu cầu.' }));
-        return;
-      }
-      if (matched.userId !== customerUid && matched.customerUid !== customerUid) {
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 403;
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: 'Bạn không có quyền truy cập thông tin đơn hàng này.',
-          })
-        );
-        return;
-      }
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 200;
-      res.end(JSON.stringify({ success: true, order: matched }));
-      return;
-    }
-
-    // Filter user's own orders only
-    const userOrders = localOrders.filter(
-      (o) => o.userId === customerUid || o.customerUid === customerUid
-    );
-    userOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 200;
-    res.end(
-      JSON.stringify({
-        success: true,
-        orders: userOrders.slice(0, safeLimit),
-        total: userOrders.length,
-        customerUid,
-      })
-    );
-  } catch (err: any) {
-    console.error('[MNH Me Orders Handler Error]:', err);
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 500;
-    res.end(
+  if (isProd) {
+    console.error('[MNH Customer Orders API] CRITICAL: Firestore Admin DB not configured in production!');
+    res.statusCode = 503;
+    return res.end(
       JSON.stringify({
         success: false,
-        error: 'Lỗi truy xuất cơ sở dữ liệu đơn hàng.',
+        code: 'DATABASE_UNAVAILABLE',
+        error: 'Hệ thống cơ sở dữ liệu đơn hàng đang bảo trì. Quý khách vui lòng thử lại sau ít phút.',
+      })
+    );
+  }
+
+  // Non-production local dev fallback
+  try {
+    let orders = readLocalDevOrders()
+      .filter((o: any) => o.userId === customerUid || o.customerUid === customerUid)
+      .map((o: any) => {
+        const clean = { ...o };
+        delete clean._fingerprint;
+        return enrichAndSanitizeOrderForClient(clean);
+      });
+
+    if (statusFilter && statusFilter !== 'ALL') {
+      orders = orders.filter(
+        (o) => o.orderStatus === statusFilter || o.status === statusFilter
+      );
+    }
+
+    orders.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    orders = orders.slice(0, safeLimit);
+
+    res.statusCode = 200;
+    return res.end(
+      JSON.stringify({
+        success: true,
+        count: orders.length,
+        orders,
+      })
+    );
+  } catch (err) {
+    console.error('[MNH Customer Orders API] Local fallback error:', err);
+    res.statusCode = 500;
+    return res.end(
+      JSON.stringify({
+        success: false,
+        error: 'Không thể đọc lịch sử đơn hàng cục bộ.',
       })
     );
   }

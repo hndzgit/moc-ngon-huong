@@ -18,6 +18,7 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  signInAnonymously,
   User
 } from 'firebase/auth';
 
@@ -54,6 +55,7 @@ export {
   reload,
   setPersistence,
   browserLocalPersistence,
-  browserSessionPersistence
+  browserSessionPersistence,
+  signInAnonymously
 };
 export type { User };

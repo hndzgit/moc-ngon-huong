@@ -63,7 +63,7 @@ async function run() {
   assert.strictEqual(res1.statusCode, 201, `Expected 201, got ${res1.statusCode}: ${JSON.stringify(out1)}`);
   assert.strictEqual(out1.success, true);
   assert.strictEqual(out1.duplicate, false);
-  assert(out1.order.orderCode.startsWith('MNH-'));
+  assert(/^MNH(\d{6}|-)/.test(out1.order.orderCode));
   assert.strictEqual(out1.order.customer.provinceCode, '01');
   assert.strictEqual(out1.order.customer.provinceName, 'Thành phố Hà Nội');
   assert.strictEqual(out1.order.customer.communeCode, '00004');

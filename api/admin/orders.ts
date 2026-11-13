@@ -1,85 +1,41 @@
-import type { IncomingMessage, ServerResponse } from 'http';
-import fs from 'fs';
-import path from 'path';
+// api/admin/orders.ts
+// Secure Server-Side Admin Order Management & Manual VietQR Payment Verification API
+// Security & Reliability Guarantees:
+// 1. Cryptographically verifies Firebase ID token via Firebase Admin SDK
+// 2. Enforces strict server-side ADMIN_UIDS allowlist (Fail-closed 403)
+// 3. Concurrency-safe manual payment confirmation ("Xác nhận đã thanh toán") with audit log
+// 4. Triggers Resend Email B (Payment Confirmed) idempotently only after admin confirmation
+
+import { getAdminDb, isProductionRuntime, verifyAdminAuth } from '../_lib/firebaseAdmin.js';
+import { sendPaymentConfirmedNotification } from '../_lib/notifications.js';
 import {
-  getFirestoreDb,
-  getIsProduction,
-  verifyAdminAuth,
-  cleanForFirestore,
-} from '../_lib/firebaseAdmin.js';
-import type { OrderRecord, OrderStatus, PaymentStatus } from '../../src/types';
+  enrichAndSanitizeOrderForClient,
+  readLocalDevOrders,
+  withLocalStoreLock,
+  writeLocalDevOrders,
+} from '../_lib/orderRecovery.js';
 
-interface VercelRequest extends IncomingMessage {
-  query?: Record<string, string | string[]>;
-  cookies?: Record<string, string>;
-  body?: any;
-}
+export type OrderStatus =
+  | 'pending_confirmation'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready_for_pickup'
+  | 'shipping'
+  | 'completed'
+  | 'cancelled';
 
-interface VercelResponse extends ServerResponse {
-  status: (statusCode: number) => VercelResponse;
-  json: (body: any) => void;
-  send: (body: any) => void;
-}
+export type PaymentStatus =
+  | 'pending_payment'
+  | 'pending'
+  | 'customer_reported_paid'
+  | 'paid'
+  | 'completed'
+  | 'payment_review'
+  | 'cancelled'
+  | 'failed'
+  | 'refunded';
 
-const LOCAL_DEV_DIR = path.resolve(process.cwd(), '.data');
-const LOCAL_DEV_FILE = path.join(LOCAL_DEV_DIR, 'orders_dev.json');
-
-function readLocalDevOrders(): OrderRecord[] {
-  if (getIsProduction()) return [];
-  try {
-    if (fs.existsSync(LOCAL_DEV_FILE)) {
-      const data = fs.readFileSync(LOCAL_DEV_FILE, 'utf-8');
-      return JSON.parse(data) || [];
-    }
-  } catch (err) {
-    console.error('[MNH Admin Orders] Error reading local dev store:', err);
-  }
-  return [];
-}
-
-function writeLocalDevOrders(orders: OrderRecord[]): void {
-  if (getIsProduction()) return;
-  try {
-    if (!fs.existsSync(LOCAL_DEV_DIR)) {
-      fs.mkdirSync(LOCAL_DEV_DIR, { recursive: true });
-    }
-    fs.writeFileSync(LOCAL_DEV_FILE, JSON.stringify(orders, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('[MNH Admin Orders] Error writing local dev store:', err);
-  }
-}
-
-async function parseRequestBody(req: VercelRequest): Promise<any> {
-  if (req.body && typeof req.body === 'object') {
-    return req.body;
-  }
-  if (typeof req.body === 'string') {
-    try {
-      return JSON.parse(req.body);
-    } catch {
-      return {};
-    }
-  }
-
-  return new Promise((resolve) => {
-    let raw = '';
-    req.on('data', (chunk) => {
-      raw += chunk;
-    });
-    req.on('end', () => {
-      try {
-        resolve(raw ? JSON.parse(raw) : {});
-      } catch {
-        resolve({});
-      }
-    });
-    req.on('error', () => {
-      resolve({});
-    });
-  });
-}
-
-const VALID_ORDER_STATUSES: OrderStatus[] = [
+const VALID_ORDER_STATUSES = new Set<OrderStatus>([
   'pending_confirmation',
   'confirmed',
   'preparing',
@@ -87,363 +43,568 @@ const VALID_ORDER_STATUSES: OrderStatus[] = [
   'shipping',
   'completed',
   'cancelled',
-];
+]);
 
-const VALID_PAYMENT_STATUSES: PaymentStatus[] = ['pending', 'completed', 'failed', 'refunded'];
+const VALID_PAYMENT_STATUSES = new Set<PaymentStatus>([
+  'pending_payment',
+  'pending',
+  'customer_reported_paid',
+  'paid',
+  'completed',
+  'payment_review',
+  'cancelled',
+  'failed',
+  'refunded',
+]);
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const isProduction = getIsProduction();
-
-  // CORS & Security Headers
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,PATCH,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-  );
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 200;
-    res.end();
-    return;
+function getEffectiveDb() {
+  if (process.env.MNH_USE_LOCAL_DEV_STORE === '1' && !isProductionRuntime()) {
+    return null;
   }
+  return getAdminDb();
+}
 
-  // 1. Strict Method Validation
-  if (req.method !== 'GET' && req.method !== 'PATCH') {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 405;
-    res.end(
-      JSON.stringify({
-        success: false,
-        error: 'Phương thức không được hỗ trợ. Chỉ chấp nhận GET và PATCH.',
-      })
-    );
-    return;
+async function parseJsonBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === 'object') {
+    return req.body;
   }
-
-  // 2. Strict Server-Side Admin Authorization (Firebase ID Token + ADMIN_UIDS allowlist)
-  const authHeader = req.headers?.authorization;
-  const authOutcome = await verifyAdminAuth(authHeader);
-
-  if (!authOutcome.authorized || !authOutcome.admin) {
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = authOutcome.statusCode || 401;
-    res.end(
-      JSON.stringify({
-        success: false,
-        code: authOutcome.errorCode || 'UNAUTHENTICATED',
-        error: authOutcome.errorMessage || 'Không có quyền truy cập khu vực quản trị.',
-      })
-    );
-    return;
+  if (typeof req.body === 'string' && req.body.trim()) {
+    return JSON.parse(req.body);
   }
+  return new Promise((resolve, reject) => {
+    let raw = '';
+    req.on('data', (chunk: any) => {
+      raw += chunk;
+      if (raw.length > 500_000) {
+        reject(new Error('Body too large'));
+      }
+    });
+    req.on('end', () => {
+      if (!raw.trim()) return resolve({});
+      try {
+        resolve(JSON.parse(raw));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
-  const adminUid = authOutcome.admin.uid;
-  const db = getFirestoreDb();
+function sendJson(res: any, statusCode: number, data: Record<string, any>) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  if (typeof res.status === 'function') {
+    return res.status(statusCode).json(data);
+  }
+  res.statusCode = statusCode;
+  return res.end(JSON.stringify(data));
+}
 
-  // 3. GET /api/admin/orders — List Orders
-  if (req.method === 'GET') {
-    if (isProduction && !db) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 503;
-      res.end(
-        JSON.stringify({
-          success: false,
-          code: 'DATABASE_UNAVAILABLE',
-          error: 'Cơ sở dữ liệu đang bảo trì. Vui lòng thử lại sau.',
+// ============================================================================
+// GET /api/admin/orders
+// ============================================================================
+async function handleGetOrders(req: any, res: any, adminUid: string) {
+  const db = getEffectiveDb();
+  const isProd = isProductionRuntime();
+
+  const query = req.query || {};
+  const statusFilter = typeof query.status === 'string' ? query.status.trim() : '';
+  const paymentFilter = typeof query.paymentStatus === 'string' ? query.paymentStatus.trim() : '';
+  const search = typeof query.search === 'string' ? query.search.trim().toLowerCase() : '';
+  const limitRaw = parseInt(String(query.limit || '100'), 10);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 300) : 100;
+
+  let orders: any[] = [];
+
+  if (db) {
+    try {
+      const snapshot = await db
+        .collection('orders')
+        .orderBy('createdAt', 'desc')
+        .limit(limit)
+        .get();
+
+      orders = snapshot.docs.map((doc) =>
+        enrichAndSanitizeOrderForClient({
+          id: doc.id,
+          ...doc.data(),
         })
       );
-      return;
-    }
-
-    const urlObj = new URL(req.url || '', 'http://localhost');
-    const searchTerm = (
-      (req.query?.search as string) ||
-      urlObj.searchParams.get('search') ||
-      ''
-    )
-      .trim()
-      .toLowerCase();
-    const statusFilter = (
-      (req.query?.status as string) ||
-      urlObj.searchParams.get('status') ||
-      ''
-    ).trim();
-    const limitParam = parseInt(
-      (req.query?.limit as string) || urlObj.searchParams.get('limit') || '50',
-      10
-    );
-    const safeLimit = Math.min(Math.max(1, isNaN(limitParam) ? 50 : limitParam), 100);
-
-    let allOrders: OrderRecord[] = [];
-
-    if (db) {
+    } catch (err: any) {
+      console.error('[MNH Admin Orders GET] Firestore query error:', err?.message || err);
       try {
-        let snapshot;
-        try {
-          snapshot = await db
-            .collection('orders')
-            .orderBy('createdAt', 'desc')
-            .limit(100)
-            .get();
-        } catch {
-          // If compound index or orderBy fails, fallback to unordered limit
-          snapshot = await db.collection('orders').limit(100).get();
-        }
-
-        snapshot.forEach((doc) => {
-          const data = doc.data() as OrderRecord;
-          allOrders.push(data);
-        });
-
-        // Ensure sorted newest first
-        allOrders.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        );
-      } catch (err: any) {
-        console.error('[MNH Admin Orders] Firestore read error:', err);
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 500;
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: 'Không thể truy vấn danh sách đơn hàng từ cơ sở dữ liệu.',
+        const fallbackSnap = await db.collection('orders').limit(limit).get();
+        orders = fallbackSnap.docs.map((doc) =>
+          enrichAndSanitizeOrderForClient({
+            id: doc.id,
+            ...doc.data(),
           })
         );
-        return;
+        orders.sort((a, b) => {
+          const tA = new Date(a.createdAt || 0).getTime();
+          const tB = new Date(b.createdAt || 0).getTime();
+          return tB - tA;
+        });
+      } catch {
+        return sendJson(res, 503, {
+          success: false,
+          code: 'FIRESTORE_READ_ERROR',
+          error: 'Không thể truy xuất danh sách đơn hàng từ Firestore.',
+        });
       }
-    } else {
-      // Local dev fallback
-      allOrders = readLocalDevOrders();
-      allOrders.sort(
-        (a, b) =>
-          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-      );
     }
-
-    // Apply status filter
-    if (statusFilter && statusFilter !== 'all') {
-      allOrders = allOrders.filter((o) => {
-        const orderSt = o.orderStatus || (o as any).status;
-        if (statusFilter === 'preparing') {
-          return orderSt === 'preparing' || orderSt === 'pending_confirmation' || orderSt === 'confirmed';
-        }
-        return orderSt === statusFilter;
+  } else {
+    if (isProd) {
+      return sendJson(res, 503, {
+        success: false,
+        code: 'DB_NOT_CONFIGURED',
+        error: 'Cơ sở dữ liệu Firestore chưa sẵn sàng trên môi trường Production.',
       });
     }
-
-    // Apply search filter (orderCode, customer name, phone, email)
-    if (searchTerm) {
-      allOrders = allOrders.filter((o) => {
-        const codeMatch = (o.orderCode || '').toLowerCase().includes(searchTerm);
-        const nameMatch = (o.customer?.fullName || '').toLowerCase().includes(searchTerm);
-        const phoneMatch = (o.customer?.phone || '').includes(searchTerm);
-        const emailMatch = (o.customer?.email || '').toLowerCase().includes(searchTerm);
-        return codeMatch || nameMatch || phoneMatch || emailMatch;
-      });
-    }
-
-    const boundedOrders = allOrders.slice(0, safeLimit);
-
-    res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 200;
-    res.end(
-      JSON.stringify({
-        success: true,
-        count: boundedOrders.length,
-        total: allOrders.length,
-        orders: boundedOrders,
+    orders = readLocalDevOrders()
+      .map((o) => {
+        const clean = { ...o };
+        delete clean._fingerprint;
+        return enrichAndSanitizeOrderForClient(clean);
       })
-    );
-    return;
+      .sort((a, b) => {
+        const tA = new Date(a.createdAt || 0).getTime();
+        const tB = new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
   }
 
-  // 4. PATCH /api/admin/orders — Update Order Status
-  if (req.method === 'PATCH') {
-    if (isProduction && !db) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 503;
-      res.end(
-        JSON.stringify({
-          success: false,
-          code: 'DATABASE_UNAVAILABLE',
-          error: 'Cơ sở dữ liệu đang bảo trì. Vui lòng thử lại sau.',
-        })
+  if (statusFilter && statusFilter !== 'all') {
+    orders = orders.filter((o) => (o.orderStatus || o.status) === statusFilter);
+  }
+
+  if (paymentFilter && paymentFilter !== 'all') {
+    orders = orders.filter((o) => o.paymentStatus === paymentFilter);
+  }
+
+  if (search) {
+    orders = orders.filter((o) => {
+      const code = String(o.orderCode || '').toLowerCase();
+      const name = String(o.customer?.fullName || '').toLowerCase();
+      const phone = String(o.customer?.phone || '').toLowerCase();
+      const email = String(o.customer?.email || '').toLowerCase();
+      return (
+        code.includes(search) ||
+        name.includes(search) ||
+        phone.includes(search) ||
+        email.includes(search)
       );
-      return;
+    });
+  }
+
+  return sendJson(res, 200, {
+    success: true,
+    adminUid,
+    total: orders.length,
+    orders: orders.slice(0, limit),
+  });
+}
+
+// ============================================================================
+// PATCH /api/admin/orders
+// ============================================================================
+async function handlePatchOrder(
+  req: any,
+  res: any,
+  adminUid: string,
+  adminEmail?: string
+) {
+  let body: any;
+  try {
+    body = await parseJsonBody(req);
+  } catch {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'INVALID_JSON',
+      error: 'Dữ liệu gửi lên không đúng định dạng JSON.',
+    });
+  }
+
+  const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
+  const action = typeof body.action === 'string' ? body.action.trim() : '';
+  const newStatus = typeof body.status === 'string' ? (body.status.trim() as OrderStatus) : undefined;
+  let newPaymentStatus =
+    typeof body.paymentStatus === 'string'
+      ? (body.paymentStatus.trim() as PaymentStatus)
+      : undefined;
+  const cleanTxRef =
+    typeof body.transactionRef === 'string'
+      ? body.transactionRef.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 120)
+      : typeof body.bankTransactionRef === 'string'
+      ? body.bankTransactionRef.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 120)
+      : undefined;
+
+  if (action === 'confirm_payment' && !newPaymentStatus) {
+    newPaymentStatus = 'paid';
+  }
+
+  if (!orderId) {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'MISSING_ORDER_ID',
+      error: 'Thiếu mã bản ghi đơn hàng (orderId).',
+    });
+  }
+
+  if (!newStatus && !newPaymentStatus && action !== 'retry_payment_email') {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'MISSING_UPDATE_FIELDS',
+      error: 'Cần cung cấp trạng thái đơn hàng hoặc trạng thái thanh toán cần cập nhật.',
+    });
+  }
+
+  if (newStatus && !VALID_ORDER_STATUSES.has(newStatus)) {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'INVALID_ORDER_STATUS',
+      error: `Trạng thái đơn hàng "${newStatus}" không hợp lệ.`,
+    });
+  }
+
+  if (newPaymentStatus && !VALID_PAYMENT_STATUSES.has(newPaymentStatus)) {
+    return sendJson(res, 400, {
+      success: false,
+      code: 'INVALID_PAYMENT_STATUS',
+      error: `Trạng thái thanh toán "${newPaymentStatus}" không hợp lệ.`,
+    });
+  }
+
+  const db = getEffectiveDb();
+  const isProd = isProductionRuntime();
+  const nowIso = new Date().toISOString();
+
+  const applyAdminPatch = (existingOrder: any): {
+    httpStatus: number;
+    code?: string;
+    error?: string;
+    updatedOrder?: any;
+    mutated?: boolean;
+    shouldSendPaymentEmail?: boolean;
+    alreadyConfirmed?: boolean;
+  } => {
+    if (!existingOrder) {
+      return {
+        httpStatus: 404,
+        code: 'ORDER_NOT_FOUND',
+        error: `Không tìm thấy đơn hàng có mã "${orderId}".`,
+      };
     }
 
-    const body = await parseRequestBody(req);
-    const { orderId, status, paymentStatus } = body || {};
+    const currentOrderStatus: OrderStatus =
+      existingOrder.orderStatus || existingOrder.status || 'pending_confirmation';
+    const currentPaymentStatus: PaymentStatus = existingOrder.paymentStatus || 'pending';
 
-    if (!orderId || typeof orderId !== 'string') {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: 'Thiếu mã định danh đơn hàng (orderId).',
-        })
-      );
-      return;
+    // Handle explicit retry of payment confirmation email on an already-paid order
+    if (action === 'retry_payment_email') {
+      if (currentPaymentStatus !== 'paid' && currentPaymentStatus !== 'completed') {
+        return {
+          httpStatus: 409,
+          code: 'PAYMENT_NOT_CONFIRMED',
+          error: 'Chỉ có thể gửi email xác nhận thanh toán cho đơn hàng đã được duyệt thanh toán.',
+        };
+      }
+      return {
+        httpStatus: 200,
+        updatedOrder: existingOrder,
+        mutated: false,
+        shouldSendPaymentEmail: !existingOrder.notificationDelivery?.paymentConfirmed?.sent,
+        alreadyConfirmed: true,
+      };
     }
 
-    if (!status && !paymentStatus) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: 'Cần cung cấp ít nhất một giá trị trạng thái cần cập nhật (status hoặc paymentStatus).',
-        })
-      );
-      return;
+    const isConfirmingPayment =
+      action === 'confirm_payment' ||
+      newPaymentStatus === 'paid' ||
+      newPaymentStatus === 'completed';
+
+    if (isConfirmingPayment) {
+      // Prevent confirming payment directly on a cancelled order unless placed into payment_review first
+      if (
+        (currentOrderStatus === 'cancelled' || currentPaymentStatus === 'cancelled') &&
+        currentPaymentStatus !== 'payment_review'
+      ) {
+        return {
+          httpStatus: 409,
+          code: 'ORDER_CANCELLED_PAYMENT_BLOCKED',
+          error:
+            'Đơn hàng đã bị hủy. Nếu khách chuyển khoản muộn, vui lòng chuyển trạng thái thanh toán sang "Kiểm tra thanh toán" (payment_review) trước khi xác nhận đã thanh toán.',
+        };
+      }
+
+      // Idempotent handling if already confirmed paid
+      if (
+        (currentPaymentStatus === 'paid' || currentPaymentStatus === 'completed') &&
+        (!newStatus || newStatus === currentOrderStatus)
+      ) {
+        return {
+          httpStatus: 200,
+          updatedOrder: existingOrder,
+          mutated: false,
+          shouldSendPaymentEmail: !existingOrder.notificationDelivery?.paymentConfirmed?.sent,
+          alreadyConfirmed: true,
+        };
+      }
     }
 
-    if (status && !VALID_ORDER_STATUSES.includes(status)) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: `Trạng thái đơn hàng không hợp lệ: "${status}". Các giá trị hợp lệ: ${VALID_ORDER_STATUSES.join(', ')}.`,
-        })
-      );
-      return;
-    }
-
-    if (paymentStatus && !VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 400;
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: `Trạng thái thanh toán không hợp lệ: "${paymentStatus}". Các giá trị hợp lệ: ${VALID_PAYMENT_STATUSES.join(', ')}.`,
-        })
-      );
-      return;
-    }
-
-    const nowIso = new Date().toISOString();
-    const updatePayload: Record<string, any> = {
+    const updates: Record<string, any> = {
       updatedAt: nowIso,
       updatedBy: adminUid,
     };
 
-    if (status) {
-      updatePayload.orderStatus = status;
-      updatePayload.status = status;
-      updatePayload.statusUpdatedAt = nowIso;
+    const existingAudit = Array.isArray(existingOrder.paymentAuditLog)
+      ? [...existingOrder.paymentAuditLog]
+      : [];
+
+    if (newStatus) {
+      updates.orderStatus = newStatus;
+      updates.status = newStatus;
+      updates.statusUpdatedAt = nowIso;
+
+      // If cancelling an unpaid order and no explicit paymentStatus passed, mark paymentStatus appropriately
+      if (newStatus === 'cancelled' && !newPaymentStatus) {
+        if (currentPaymentStatus === 'pending_payment' || currentPaymentStatus === 'pending') {
+          updates.paymentStatus = 'cancelled';
+          existingAudit.push({
+            orderId: existingOrder.id,
+            orderCode: existingOrder.orderCode,
+            action: 'admin_cancel_order',
+            previousPaymentStatus: currentPaymentStatus,
+            newPaymentStatus: 'cancelled',
+            actorType: 'admin',
+            actorUid: adminUid,
+            actorEmail: adminEmail || null,
+            timestamp: nowIso,
+          });
+        } else if (currentPaymentStatus === 'customer_reported_paid') {
+          updates.paymentStatus = 'payment_review';
+          existingAudit.push({
+            orderId: existingOrder.id,
+            orderCode: existingOrder.orderCode,
+            action: 'admin_cancel_order_with_reported_transfer',
+            previousPaymentStatus: currentPaymentStatus,
+            newPaymentStatus: 'payment_review',
+            actorType: 'admin',
+            actorUid: adminUid,
+            actorEmail: adminEmail || null,
+            timestamp: nowIso,
+          });
+        }
+      }
     }
 
-    if (paymentStatus) {
-      updatePayload.paymentStatus = paymentStatus;
-      updatePayload.paymentUpdatedAt = nowIso;
+    let shouldSendPaymentEmail = false;
+
+    if (newPaymentStatus) {
+      const normalizedTarget: PaymentStatus =
+        isConfirmingPayment && existingOrder.paymentMethod === 'bank'
+          ? 'paid'
+          : newPaymentStatus;
+
+      updates.paymentStatus = normalizedTarget;
+
+      if (normalizedTarget === 'paid' || normalizedTarget === 'completed') {
+        updates.paymentConfirmedAt = existingOrder.paymentConfirmedAt || nowIso;
+        updates.paymentConfirmedBy = existingOrder.paymentConfirmedBy || adminUid;
+        updates.paymentConfirmedByEmail =
+          existingOrder.paymentConfirmedByEmail || adminEmail || null;
+        if (cleanTxRef !== undefined) {
+          updates.bankTransactionRef = cleanTxRef || null;
+        }
+        // Advance orderStatus from pending_confirmation to confirmed automatically when payment is confirmed
+        if (!newStatus && currentOrderStatus === 'pending_confirmation') {
+          updates.orderStatus = 'confirmed';
+          updates.status = 'confirmed';
+          updates.statusUpdatedAt = nowIso;
+        }
+        shouldSendPaymentEmail = !existingOrder.notificationDelivery?.paymentConfirmed?.sent;
+      }
+
+      if (currentPaymentStatus !== normalizedTarget || cleanTxRef) {
+        existingAudit.push({
+          orderId: existingOrder.id,
+          orderCode: existingOrder.orderCode,
+          action: isConfirmingPayment ? 'admin_confirm_payment' : 'admin_update_payment_status',
+          previousPaymentStatus: currentPaymentStatus,
+          newPaymentStatus: normalizedTarget,
+          actorType: 'admin',
+          actorUid: adminUid,
+          actorEmail: adminEmail || null,
+          timestamp: nowIso,
+          transactionRef: cleanTxRef || null,
+        });
+      }
     }
 
-    const cleanedUpdate = cleanForFirestore(updatePayload);
+    updates.paymentAuditLog = existingAudit;
 
-    if (db) {
-      try {
-        let docRef = db.collection('orders').doc(orderId);
-        let docSnap = await docRef.get();
+    const updatedOrder = {
+      ...existingOrder,
+      ...updates,
+    };
 
-        // If not found by doc ID, search by orderCode
-        if (!docSnap.exists) {
-          const codeQuery = await db
-            .collection('orders')
-            .where('orderCode', '==', orderId)
-            .limit(1)
-            .get();
-          if (!codeQuery.empty) {
-            docRef = codeQuery.docs[0].ref;
-            docSnap = codeQuery.docs[0];
-          }
+    return {
+      httpStatus: 200,
+      updatedOrder,
+      mutated: true,
+      shouldSendPaymentEmail,
+      alreadyConfirmed: false,
+    };
+  };
+
+  let patchOutcome: ReturnType<typeof applyAdminPatch>;
+
+  if (db) {
+    try {
+      const docRef = db.collection('orders').doc(orderId);
+      patchOutcome = await db.runTransaction(async (tx) => {
+        const docSnap = await tx.get(docRef);
+        const raw = docSnap.exists ? { id: docSnap.id, ...docSnap.data() } : null;
+        const result = applyAdminPatch(raw);
+        if (result.mutated && result.updatedOrder) {
+          tx.set(docRef, result.updatedOrder, { merge: true });
         }
+        return result;
+      });
+    } catch (err: any) {
+      console.error('[MNH Admin Orders PATCH] Firestore update error:', err?.message || err);
+      return sendJson(res, 503, {
+        success: false,
+        code: 'FIRESTORE_WRITE_ERROR',
+        error: 'Không thể cập nhật trạng thái đơn hàng trên Firestore.',
+      });
+    }
+  } else {
+    if (isProd) {
+      return sendJson(res, 503, {
+        success: false,
+        code: 'DB_NOT_CONFIGURED',
+        error: 'Cơ sở dữ liệu Firestore chưa sẵn sàng trên môi trường Production.',
+      });
+    }
 
-        if (!docSnap.exists) {
-          res.setHeader('Content-Type', 'application/json');
-          res.statusCode = 404;
-          res.end(
-            JSON.stringify({
-              success: false,
-              error: `Không tìm thấy đơn hàng với mã "${orderId}".`,
-            })
-          );
-          return;
-        }
-
-        // Atomic update in Firestore
-        await docRef.update(cleanedUpdate);
-
-        // Fetch refreshed record
-        const updatedSnap = await docRef.get();
-        const updatedOrder = updatedSnap.data() as OrderRecord;
-
-        console.log(
-          `[MNH Admin Orders] Order ${updatedOrder.orderCode || orderId} status updated to "${status || updatedOrder.orderStatus}".`
-        );
-
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 200;
-        res.end(
-          JSON.stringify({
-            success: true,
-            message: 'Cập nhật trạng thái đơn hàng thành công.',
-            order: updatedOrder,
-          })
-        );
-        return;
-      } catch (err: any) {
-        console.error('[MNH Admin Orders] Firestore update error:', err);
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 500;
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: 'Không thể cập nhật trạng thái đơn hàng trong cơ sở dữ liệu.',
-          })
-        );
-        return;
+    patchOutcome = await withLocalStoreLock(async () => {
+      const localOrders = readLocalDevOrders();
+      const idx = localOrders.findIndex((o) => o.id === orderId || o.orderCode === orderId);
+      const raw = idx >= 0 ? localOrders[idx] : null;
+      const result = applyAdminPatch(raw);
+      if (result.mutated && result.updatedOrder && idx >= 0) {
+        localOrders[idx] = result.updatedOrder;
+        writeLocalDevOrders(localOrders);
       }
-    } else {
-      // Local dev fallback
-      const devOrders = readLocalDevOrders();
-      const idx = devOrders.findIndex(
-        (o) => o.id === orderId || o.orderCode === orderId
-      );
+      return result;
+    });
+  }
 
-      if (idx === -1) {
-        res.setHeader('Content-Type', 'application/json');
-        res.statusCode = 404;
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: `Không tìm thấy đơn hàng với mã "${orderId}".`,
-          })
-        );
-        return;
-      }
+  if (patchOutcome.httpStatus !== 200 || !patchOutcome.updatedOrder) {
+    return sendJson(res, patchOutcome.httpStatus, {
+      success: false,
+      code: patchOutcome.code,
+      error: patchOutcome.error,
+    });
+  }
 
-      devOrders[idx] = {
-        ...devOrders[idx],
-        ...cleanedUpdate,
+  const finalOrder = patchOutcome.updatedOrder;
+  let emailSent = Boolean(finalOrder.notificationDelivery?.paymentConfirmed?.sent);
+  let emailError: string | null = null;
+
+  // Send Email B (Payment Confirmed) ONLY after admin confirmation and if not already sent
+  if (patchOutcome.shouldSendPaymentEmail) {
+    try {
+      const emailRes = await sendPaymentConfirmedNotification(finalOrder);
+      emailSent = Boolean(emailRes.customerEmailSent);
+      emailError = emailRes.error || null;
+
+      const paymentConfirmedDelivery = {
+        sent: emailSent,
+        sentAt: emailRes.sentAt || (emailSent ? new Date().toISOString() : null),
+        messageId: emailRes.messageId || null,
+        idempotencyKey: emailRes.idempotencyKey || `payment-confirmed-${finalOrder.id}`,
+        lastAttemptAt: new Date().toISOString(),
+        error: emailError,
       };
 
-      writeLocalDevOrders(devOrders);
+      finalOrder.notificationDelivery = {
+        ...(finalOrder.notificationDelivery || {}),
+        paymentConfirmed: paymentConfirmedDelivery,
+      };
 
-      res.setHeader('Content-Type', 'application/json');
-      res.statusCode = 200;
-      res.end(
-        JSON.stringify({
-          success: true,
-          message: 'Cập nhật trạng thái đơn hàng thành công (local-dev).',
-          order: devOrders[idx],
-        })
-      );
-      return;
+      if (db) {
+        await db
+          .collection('orders')
+          .doc(finalOrder.id)
+          .set({ notificationDelivery: finalOrder.notificationDelivery }, { merge: true })
+          .catch(() => {});
+      } else if (!isProd) {
+        await withLocalStoreLock(async () => {
+          const localOrders = readLocalDevOrders();
+          const idx = localOrders.findIndex((o) => o.id === finalOrder.id);
+          if (idx >= 0) {
+            localOrders[idx].notificationDelivery = finalOrder.notificationDelivery;
+            writeLocalDevOrders(localOrders);
+          }
+        });
+      }
+    } catch (err: any) {
+      emailError = err?.message || 'Lỗi gửi email xác nhận thanh toán';
+      console.warn('[MNH Admin Orders PATCH] Non-fatal Email B error:', emailError);
     }
+  }
+
+  return sendJson(res, 200, {
+    success: true,
+    alreadyConfirmed: Boolean(patchOutcome.alreadyConfirmed),
+    emailSent,
+    emailResult: { sent: emailSent, error: emailError },
+    ...(emailError ? { emailError } : {}),
+    order: enrichAndSanitizeOrderForClient(finalOrder),
+  });
+}
+
+// ============================================================================
+// MAIN ROUTER HANDLER
+// ============================================================================
+export default async function handler(req: any, res: any) {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (req.method !== 'GET' && req.method !== 'PATCH') {
+    res.setHeader('Allow', 'GET, PATCH, OPTIONS');
+    return sendJson(res, 405, {
+      success: false,
+      code: 'METHOD_NOT_ALLOWED',
+      error: `Phương thức ${req.method} không được phép trên đường dẫn này.`,
+    });
+  }
+
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  const authOutcome = await verifyAdminAuth(authHeader);
+
+  if (!authOutcome.authorized || !authOutcome.admin) {
+    return sendJson(res, authOutcome.statusCode || 403, {
+      success: false,
+      code: authOutcome.errorCode || 'FORBIDDEN',
+      error: authOutcome.errorMessage || 'Không có quyền truy cập khu vực quản trị.',
+    });
+  }
+
+  const adminUid = authOutcome.admin.uid;
+  const adminEmail = authOutcome.admin.email;
+
+  if (req.method === 'GET') {
+    return handleGetOrders(req, res, adminUid);
+  }
+
+  if (req.method === 'PATCH') {
+    return handlePatchOrder(req, res, adminUid, adminEmail);
   }
 }
