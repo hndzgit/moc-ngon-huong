@@ -15,7 +15,6 @@ import {
   clearContextStorage,
 } from './conversationState';
 import { composeResponse } from './responseEngine';
-import { calculateDemoDiscount } from './discountEngine';
 
 export * from './types';
 export * from './vietnameseUtils';
@@ -25,7 +24,6 @@ export * from './intentClassifier';
 export * from './conversationState';
 export * from './recommendationEngine';
 export * from './greetingCardEngine';
-export * from './discountEngine';
 export * from './responseEngine';
 
 export interface ProcessMessageResult {
@@ -75,12 +73,7 @@ export function processUserMessage(
     nextContext.selectedProductId = reply.products[0].id;
   }
 
-  // Step 5: Always attach illustrative demo discount info
-  const cartQty = cartSummary?.totalQuantity || 0;
-  const cartSubtotal = cartSummary?.subtotal || 0;
-  reply.discountDemoInfo = calculateDemoDiscount(cartQty, cartSubtotal);
-
-  // Step 6: Record in history (capped at last 20 messages for memory efficiency)
+  // Step 5: Record in history (capped at last 20 messages for memory efficiency)
   const updatedHistory = [
     ...(nextContext.history || []),
     { role: 'user' as const, text: trimmed },

@@ -250,7 +250,7 @@ try {
   await page.keyboard.press('Escape');
   console.log('  ✓ Local knowledge-based Chatbot responds with synchronized Figma tea names & real prices');
 
-  // Cart & Demo Quantity Discount verification
+  // Cart & Honest Total Verification (zero fake/simulated discount)
   await page.evaluate(() => localStorage.setItem('mnh_cart_items_v1', '[]'));
   await page.reload({ waitUntil: 'networkidle' });
   await page.locator('.home-emotion').getByRole('button', { name: 'Thêm Vào Giỏ Hàng', exact: true }).click();
@@ -258,14 +258,15 @@ try {
   await cartDialog.waitFor({ state: 'visible' });
   await cartDialog.getByRole('button', { name: 'Tăng số lượng', exact: true }).first().click();
   const cartText = await cartDialog.innerText();
-  assert.match(cartText, /Ưu đãi mô phỏng — chưa áp dụng vào thanh toán/);
+  assert.doesNotMatch(cartText, /mô phỏng|Chưa đạt mốc/i);
   assert.match(cartText, /578,000đ/);
   await cartDialog.getByRole('button', { name: /Thanh Toán/i }).click();
   await page.locator('.checkout-page').waitFor({ state: 'visible' });
   const checkoutText = await page.locator('.checkout-page').innerText();
+  assert.doesNotMatch(checkoutText, /mô phỏng|Chưa đạt mốc/i);
   assert.match(checkoutText, /Hoàn Tất Đơn Hàng/);
   assert.match(checkoutText, /578\.000\s*đ/);
-  console.log('  ✓ Cart demo discount disclaimer preserved & real checkout total unaffected (578.000 đ)');
+  console.log('  ✓ Simulated discount removed cleanly; real cart & checkout totals stay consistent (578.000 đ)');
 
   // 7. Verify Phase 8: Multi-Viewport & WebKit Mobile Responsiveness (320px to 1920px)
   console.log('\n--- 7. Verifying Phase 8: 8 Viewports across Chromium & WebKit ---');

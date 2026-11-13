@@ -80,7 +80,7 @@ export default function GiftJourneyPage({draft,step,onChange,onStep,onNavigate,o
                 <button type="button" className="atelier-text-link journey-mobile-preview-link" onClick={()=>{preview.current?.focus({preventScroll:true});preview.current?.scrollIntoView({behavior:scrollBehavior(),block:'start'});}}>Xem lời nhắn trên thiệp</button>
                 <button type="button" className="atelier-text-link" onClick={()=>edit({message:INTENTIONS.find(i=>i.id===draft.intention)?.sentence||''})}>Dùng lời nhắn gợi ý</button>
                 <fieldset><legend>Bố cục xem trước</legend><div className="journey-card-options">{(['botanical','letter'] as const).map(style=><label key={style}><input type="radio" name="card-style" value={style} checked={draft.cardStyle===style} onChange={()=>edit({cardStyle:style})}/>{style==='botanical'?'Nét hoa':'Lá thư'}</label>)}</div></fieldset>
-                <p className="journey-note" id="gift-privacy">Hai bố cục là minh họa số, chưa phải mẫu thiệp in đã bán. Khả năng cá nhân hóa và chi phí cần cửa hàng xác nhận. Tên và lời nhắn chỉ giữ trong phiên mở trang; tải lại sẽ xóa bản nháp.</p>
+                <p className="journey-note" id="gift-privacy">Hai bố cục là minh họa số, chưa phải mẫu thiệp in đã bán. Khả năng cá nhân hóa và chi phí cần cửa hàng xác nhận. Bản nháp chưa thêm vào giỏ chỉ giữ trong phiên mở trang.</p>
               </div>
             </>}
             {step===5&&<>

@@ -52,13 +52,13 @@ try{for(const width of [1920,390])for(const reducedMotion of ['no-preference','r
   await page.locator('.search-card .product-card h3').click();await page.locator('.product-detail-page').waitFor();
   await page.locator('.search-overlay').waitFor({state:'detached'});assert.notEqual(await page.evaluate(()=>document.body.style.overflow),'hidden');
  });
- await check('Gallery last click wins; review filter and quantity remain functional',async()=>{
+ await check('Gallery last click wins; honest reviews section and quantity remain functional',async()=>{
   const thumbs=page.getByRole('button',{name:/Ảnh sản phẩm/});
   for(const i of [1,2,1,0,2])await thumbs.nth(i).click();
   const expected=await thumbs.nth(2).locator('img').getAttribute('src');
   await page.waitForFunction(src=>document.querySelector('.product-detail-page section img')?.getAttribute('src')===src,expected);
   assert.equal(await thumbs.nth(2).getAttribute('aria-pressed'),'true');
-  const filter=page.getByRole('button',{name:'Có hình ảnh / video',exact:true});await filter.click();assert.equal(await page.locator('.review-list > div').count(),1);await filter.click();assert.equal(await page.locator('.review-list > div').count(),2);
+  await page.getByText('Chưa có đánh giá trực tuyến cho sản phẩm này').waitFor();
   await page.locator('main').getByRole('button',{name:'Tăng số lượng',exact:true}).first().click();
  });
  await page.goto(base+'?figma-qa=1#/');await settle();

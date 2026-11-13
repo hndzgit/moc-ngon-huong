@@ -6,7 +6,6 @@ import { GiftCardPreview } from '../components/GiftCardPreview';
 import { CartItem, PageRoute, OrderRecord } from '../types';
 import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
 import { useAuth } from '../context/AuthContext';
-import { calculateDemoDiscount, DEMO_DISCOUNT_DISCLAIMER } from '../assistant';
 import {
   getProvinces,
   getProvinceByCode,
@@ -228,8 +227,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
-  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const discountInfo = calculateDemoDiscount(totalQuantity, subtotal);
 
   const handlePlaceOrder = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -1110,31 +1107,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <div className="flex justify-between text-[#666666]">
                     <span>Ưu đãi đóng hộp quà</span>
                     <span className="font-medium text-[#3E5641]">Tặng kèm</span>
-                  </div>
-
-                  {/* Quantity Discount Demo Informational Section (Phase 9) */}
-                  <div className="rounded-[8px] bg-[#FAF8F3] border border-[#EAE5DB] p-3 text-[12px] space-y-1 mt-2">
-                    <div className="flex items-center justify-between text-[#3E5641] font-medium">
-                      <span>Ưu đãi số lượng (mô phỏng)</span>
-                      <span>{discountInfo.activePercentage > 0 ? `Tương đương -${discountInfo.activePercentage}%` : 'Chưa đạt mốc'}</span>
-                    </div>
-                    {discountInfo.activePercentage > 0 && (
-                      <div className="text-[#666666]">
-                        Tiết kiệm ước tính: ~{discountInfo.estimatedSavings.toLocaleString('vi-VN')} đ
-                      </div>
-                    )}
-                    {discountInfo.nextTier ? (
-                      <div className="text-[#8E6746]">
-                        Mua thêm {discountInfo.itemsToNextTier} món để đạt mốc giảm {discountInfo.nextTier.percentage}%.
-                      </div>
-                    ) : (
-                      <div className="text-[#3E5641]">
-                        Đã đạt mốc ưu đãi tối đa (12%).
-                      </div>
-                    )}
-                    <p className="text-[10.5px] text-[#8E6746] italic pt-1 border-t border-[#EAE5DB]/60 text-center">
-                      {DEMO_DISCOUNT_DISCLAIMER}
-                    </p>
                   </div>
 
                   {/* Total Row */}

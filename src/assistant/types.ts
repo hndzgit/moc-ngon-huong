@@ -93,31 +93,12 @@ export interface CardSuggestionItem {
   charCount: number;
 }
 
-export interface QuantityDiscountTier {
-  minQty: number;
-  maxQty?: number;
-  percentage: number;
-  label: string;
-}
-
-export interface DemoDiscountInfo {
-  totalQuantity: number;
-  subtotal: number;
-  activePercentage: number;
-  activeTier: QuantityDiscountTier;
-  nextTier: QuantityDiscountTier | null;
-  estimatedSavings: number;
-  itemsToNextTier: number;
-  disclaimer: string;
-}
-
 export interface AssistantReply {
   text: string;
   products?: Product[];
   productRecommendationReason?: string;
   cardSuggestions?: CardSuggestionItem[];
   suggestedQuickReplies?: string[];
-  discountDemoInfo?: DemoDiscountInfo;
   action?: {
     type: 'NAVIGATE' | 'OPEN_CART' | 'OPEN_GIFT_JOURNEY';
     payload?: any;

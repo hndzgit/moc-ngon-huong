@@ -11,7 +11,6 @@ import { CATALOG_FACTS, STORE_POLICIES } from './catalogKnowledge';
 import { PRODUCTS } from '../data/products';
 import { recommendProducts } from './recommendationEngine';
 import { generateCardSuggestions } from './greetingCardEngine';
-import { formatDiscountExplanation } from './discountEngine';
 
 /**
  * Compose natural, grounded Vietnamese response for given intent and state context.
@@ -74,7 +73,7 @@ export function composeResponse(
         suggestedQuickReplies: [
           'Viết thiệp giúp tôi',
           'Cách pha trà này',
-          'Chính sách ưu đãi',
+          'Chính sách giao hàng',
         ],
       };
     }
@@ -86,7 +85,7 @@ export function composeResponse(
 
       let text = `Dạ, **${product.name}** có giá niêm yết chính thức là **${product.price.toLocaleString('vi-VN')}đ** ạ.\n`;
       text += `Quy cách: ${fact.packaging}.\n`;
-      text += `Hiện Mộc Ngôn Hương đang có ưu đãi miễn phí giao hàng toàn quốc và chính sách giảm tới 12% khi mua số lượng nhiều!`;
+      text += `Hiện Mộc Ngôn Hương đang miễn phí vận chuyển toàn quốc và tặng kèm hộp quà, thiệp lời chúc cho mỗi đơn hàng ạ.`;
 
       return {
         text,
@@ -94,7 +93,7 @@ export function composeResponse(
         suggestedQuickReplies: [
           'Có loại rẻ hơn không?',
           'Viết thiệp tặng kèm',
-          'Chính sách giảm giá',
+          'Chính sách giao hàng',
         ],
       };
     }
@@ -171,15 +170,14 @@ export function composeResponse(
     }
 
     case 'DISCOUNT_INQUIRY': {
-      const qty = cartSummary?.totalQuantity || 0;
-      const sub = cartSummary?.subtotal || 0;
-      const text = formatDiscountExplanation(qty, sub);
+      let text = `Hiện tại Mộc Ngôn Hương áp dụng **giá niêm yết thống nhất** (75.000đ/túi lẻ, 289.000đ/hộp quà 4 vị, 399.000đ/Hộp Quà Tâm Ý) cùng **miễn phí giao hàng toàn quốc** và tặng kèm thiệp lời chúc cho mọi đơn đặt trực tuyến ạ.\n\n`;
+      text += `Nếu bạn đặt số lượng lớn cho doanh nghiệp hoặc sự kiện, vui lòng tham khảo trang **Quà Doanh Nghiệp** hoặc liên hệ Hotline/Zalo **0889 742 556** (email: mocngonhuong@gmail.com) để được tư vấn báo giá riêng nhé.`;
 
       return {
         text,
         suggestedQuickReplies: [
           'Tư vấn combo Tâm Ý',
-          'Xem giỏ hàng',
+          'Xem Quà Doanh Nghiệp',
           'Chính sách giao hàng',
         ],
       };
@@ -246,7 +244,7 @@ export function composeResponse(
         suggestedQuickReplies: [
           'Xem combo Tâm Ý',
           'Liên hệ hotline',
-          'Ưu đãi số lượng',
+          'Chính sách giao hàng',
         ],
       };
     }
@@ -278,7 +276,7 @@ export function composeResponse(
         suggestedQuickReplies: [
           'Tư vấn quà tặng',
           'Chính sách giao hàng',
-          'Ưu đãi số lượng',
+          'Quà Doanh Nghiệp',
         ],
       };
     }

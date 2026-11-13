@@ -15,7 +15,6 @@ import {
   ConversationContext,
   AssistantReply,
   CardSuggestionItem,
-  DemoDiscountInfo,
 } from '../assistant';
 
 interface ChatMessage {
@@ -25,7 +24,6 @@ interface ChatMessage {
   time: string;
   products?: Product[];
   cardSuggestions?: CardSuggestionItem[];
-  discountDemoInfo?: DemoDiscountInfo;
   quickReplies?: string[];
 }
 
@@ -40,8 +38,20 @@ const INITIAL_QUICK_REPLIES = [
   'Tư vấn quà tặng mẹ',
   'Trà hương nhẹ nhàng',
   'Combo Tâm Ý 4 vị',
-  'Ưu đãi mua nhiều',
+  'Chính sách giao hàng',
 ];
+
+function renderFormattedText(text: string): React.ReactNode {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, idx) =>
+    part.startsWith('**') && part.endsWith('**') ? (
+      <strong key={idx} className="font-semibold text-[#203323]">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      <React.Fragment key={idx}>{part}</React.Fragment>
+    )
+  );
+}
 
 export const ChatBox: React.FC<ChatBoxProps> = ({
   onNavigate,
@@ -136,7 +146,6 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
         time: 'Vừa xong',
         products: reply.products,
         cardSuggestions: reply.cardSuggestions,
-        discountDemoInfo: reply.discountDemoInfo,
         quickReplies: reply.suggestedQuickReplies,
       };
 
@@ -251,7 +260,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                   }`}
                 >
                   {/* Message Text with simple paragraphs */}
-                  <div className="whitespace-pre-line">{msg.text}</div>
+                  <div className="whitespace-pre-line">
+                    {msg.sender === 'bot' ? renderFormattedText(msg.text) : msg.text}
+                  </div>
 
                   {/* Product Recommendation Cards (Phase 6 & 10) */}
                   {msg.products && msg.products.length > 0 && (

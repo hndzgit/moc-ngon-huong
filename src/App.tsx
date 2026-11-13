@@ -6,7 +6,7 @@ import { warmMotionEngine } from './motion/engine-loader';
 import { useRouteScroll } from './motion/useRouteScroll';
 import { FigmaArtwork } from './components/FigmaArtwork';
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
-import { CartItem, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
+import { CartItem, GiftConfiguration, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
 import { changeEmotion, createGiftDraft, INTENTIONS, journeyHash } from './data/giftJourney';
 import { AtelierIntroduction } from './components/AtelierIntroduction';
 import { PRODUCTS, LOOSE_TEA_PRODUCTS } from './data/products';
@@ -34,6 +34,33 @@ const AdminPage=lazy(()=>import('./pages/AdminPage').then(module=>({default:modu
 
 const CART_STORAGE_KEY = 'mnh_cart_items_v1';
 const USER_STORAGE_KEY = 'mnh_user_email_v1';
+const MAX_CART_QTY = 99;
+const VALID_EMOTIONS = new Set<string>(['AN', 'THUONG', 'CAM', 'NHO']);
+
+const clampQty = (qty: number, maxStock: number) =>
+  Math.max(1, Math.min(MAX_CART_QTY, maxStock || MAX_CART_QTY, qty));
+
+const sanitizeGiftConfiguration = (raw: unknown): GiftConfiguration | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const obj = raw as Record<string, unknown>;
+  if (
+    typeof obj.intention !== 'string' ||
+    typeof obj.emotion !== 'string' ||
+    !VALID_EMOTIONS.has(obj.emotion) ||
+    typeof obj.recipient !== 'string' ||
+    typeof obj.message !== 'string' ||
+    (obj.cardStyle !== 'botanical' && obj.cardStyle !== 'letter')
+  ) {
+    return undefined;
+  }
+  return {
+    intention: obj.intention.slice(0, 64),
+    emotion: obj.emotion as TeaEmotion,
+    recipient: obj.recipient.slice(0, 80),
+    message: obj.message.slice(0, 280),
+    cardStyle: obj.cardStyle,
+  };
+};
 
 const DEFAULT_CART_ITEMS: CartItem[] = [
   { product: PRODUCTS[0], quantity: 1 },
@@ -79,8 +106,15 @@ export function App() {
           // data stays authoritative; never trust stored prices or product shapes.
           return parsed.flatMap(item => {
             const product = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS].find(p => p.id === item?.product?.id);
-            return product && Number.isSafeInteger(item?.quantity) && item.quantity > 0
-              ? [{ product, quantity: item.quantity }] : [];
+            if (!product || !Number.isSafeInteger(item?.quantity) || item.quantity <= 0) {
+              return [];
+            }
+            const giftConfiguration = sanitizeGiftConfiguration(item?.giftConfiguration);
+            return [{
+              product,
+              quantity: clampQty(item.quantity, product.stock),
+              ...(giftConfiguration ? { giftConfiguration } : {}),
+            }];
           });
         }
       }
@@ -97,10 +131,19 @@ export function App() {
   // Only treat genuine Firebase Auth user as logged in. Never trust unauthenticated localStorage strings.
   const effectiveUserEmail = user ? (authEmail || user.email || null) : null;
 
-  // Sync cartItems to localStorage
+  // Sync cartItems to localStorage (preserving validated giftConfiguration)
   useEffect(() => {
     try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems.map(({product,quantity})=>({product,quantity}))));
+      localStorage.setItem(
+        CART_STORAGE_KEY,
+        JSON.stringify(
+          cartItems.map(({ product, quantity, giftConfiguration }) => ({
+            product,
+            quantity,
+            ...(giftConfiguration ? { giftConfiguration } : {}),
+          }))
+        )
+      );
     } catch {
       // Ignore storage write errors
     }
@@ -142,7 +185,7 @@ export function App() {
       const existing = prev.find((i) => i.product.id === product.id);
       if (!existing) {
         if (delta > 0) {
-          return [...prev, { product, quantity: delta }];
+          return [...prev, { product, quantity: clampQty(delta, product.stock) }];
         }
         return prev;
       }
@@ -151,7 +194,7 @@ export function App() {
         return prev.filter((i) => i.product.id !== product.id);
       }
       return prev.map((i) =>
-        i.product.id === product.id ? { ...i, quantity: nextQty } : i
+        i.product.id === product.id ? { ...i, quantity: clampQty(nextQty, i.product.stock) } : i
       );
     });
   };
@@ -160,11 +203,13 @@ export function App() {
   const handleUpdateCartById = (productId: string, delta: number) => {
     setCartItems((prev) =>
       prev
-        .map((item) =>
-          item.product.id === productId
-            ? { ...item, quantity: item.quantity + delta }
-            : item
-        )
+        .map((item) => {
+          if (item.product.id !== productId) return item;
+          const next = item.quantity + delta;
+          return next <= 0
+            ? { ...item, quantity: 0 }
+            : { ...item, quantity: clampQty(next, item.product.stock) };
+        })
         .filter((item) => item.quantity > 0)
     );
   };
@@ -190,7 +235,7 @@ export function App() {
     const {productId:_,...giftConfiguration}=draft;
     setCartItems(prev=>{
       const existing=prev.find(i=>i.product.id===product.id);
-      return existing?prev.map(i=>i.product.id===product.id?{...i,quantity:i.quantity+1,giftConfiguration}:i):[...prev,{product,quantity:1,giftConfiguration}];
+      return existing?prev.map(i=>i.product.id===product.id?{...i,quantity:clampQty(i.quantity+1,product.stock),giftConfiguration}:i):[...prev,{product,quantity:1,giftConfiguration}];
     });
     if(checkout)handleNavigate('checkout');else setCartOpen(true);
   };

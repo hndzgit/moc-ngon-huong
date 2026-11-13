@@ -11,9 +11,7 @@ import {
   extractRecipient,
   extractOccasion,
   extractFlavorPreference,
-  calculateDemoDiscount,
   generateCardSuggestions,
-  DEMO_DISCOUNT_DISCLAIMER,
   CATALOG_FACTS,
 } from '../src/assistant';
 
@@ -480,48 +478,34 @@ async function runTestSuite() {
     console.log('  ✅ All greeting card templates strictly <= 280 characters across warm, formal, short styles.');
   }
 
-  // TEST 5: Quantity Discount Demo Tier Math & Disclaimer
-  console.log('\n[TEST SUITE 5] Testing Quantity Discount Demo Calculation & Disclaimer...');
+  // TEST 5: Truthful Pricing & Absence of Fake Bulk Discount Claims
+  console.log('\n[TEST SUITE 5] Verifying Truthful Pricing & Zero Simulated Discount Claims...');
   let discountPassed = true;
 
-  const t1 = calculateDemoDiscount(1, 289000);
-  if (t1.activePercentage !== 0 || t1.itemsToNextTier !== 1) {
-    console.error('  ❌ Discount Tier 1 item failed math');
+  const discountInquiry = processUserMessage('Mua nhiều có được giảm giá không?', createInitialContext(), {
+    totalQuantity: 5,
+    subtotal: 1445000,
+  });
+  const replyText = discountInquiry.reply.text.toLowerCase();
+
+  if (replyText.includes('mô phỏng') || replyText.includes('12%') || replyText.includes('giảm 5%')) {
+    console.error('  ❌ Assistant still mentions simulated or fake 5%/12% discount claims!');
     discountPassed = false;
   }
 
-  const t2 = calculateDemoDiscount(2, 578000);
-  if (t2.activePercentage !== 5 || t2.itemsToNextTier !== 1) {
-    console.error('  ❌ Discount Tier 2 items failed math');
+  if (!replyText.includes('giá niêm yết') || !replyText.includes('0889 742 556')) {
+    console.error('  ❌ Assistant discount response missing listed price policy or corporate inquiry hotline!');
     discountPassed = false;
   }
 
-  const t3 = calculateDemoDiscount(3, 867000);
-  if (t3.activePercentage !== 8 || t3.itemsToNextTier !== 2) {
-    console.error('  ❌ Discount Tier 3 items failed math');
-    discountPassed = false;
-  }
-
-  const t4 = calculateDemoDiscount(4, 1156000);
-  if (t4.activePercentage !== 8 || t4.itemsToNextTier !== 1) {
-    console.error('  ❌ Discount Tier 4 items failed math');
-    discountPassed = false;
-  }
-
-  const t5 = calculateDemoDiscount(5, 1445000);
-  if (t5.activePercentage !== 12 || t5.itemsToNextTier !== 0) {
-    console.error('  ❌ Discount Tier 5+ items failed math');
-    discountPassed = false;
-  }
-
-  if (!t1.disclaimer.includes(DEMO_DISCOUNT_DISCLAIMER)) {
-    console.error('  ❌ Discount disclaimer missing mandatory text!');
+  const priceInquiry = processUserMessage('Giá Trà Hoa Bưởi AN bao nhiêu?', createInitialContext());
+  if (priceInquiry.reply.text.includes('12%') || priceInquiry.reply.text.toLowerCase().includes('mô phỏng')) {
+    console.error('  ❌ PRICE_INQUIRY still claims unimplemented bulk discount!');
     discountPassed = false;
   }
 
   if (discountPassed) {
-    console.log('  ✅ Quantity discount tiers verified: 1 (0%), 2 (5%), 3-4 (8%), 5+ (12%).');
-    console.log(`  ✅ Mandatory disclaimer verified: "${DEMO_DISCOUNT_DISCLAIMER}"`);
+    console.log('  ✅ Truthful pricing verified: zero fake 5%/8%/12% discount claims; corporate bulk inquiries directed cleanly.');
   }
 
   // TEST 6: Zero AI API Request Verification & Latency Benchmark

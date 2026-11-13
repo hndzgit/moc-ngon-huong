@@ -187,7 +187,7 @@ export const STORE_POLICIES = {
   contact: {
     hotline: '0889 742 556 (Hỗ trợ Hotline & Zalo 8:00 - 21:00)',
     address: 'Xã La Bằng, Huyện Đại Từ, Tỉnh Thái Nguyên',
-    email: 'taikhoan@mail.mocngonhuong.com',
+    email: 'mocngonhuong@gmail.com',
   },
   corporateGifting: {
     benefits: [

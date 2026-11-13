@@ -22,13 +22,20 @@ const root = process.cwd();
   console.log('✓ PASS: ContactPage has standardized, clickable business contact information.');
 }
 
-// 2. Check ChatBox.tsx
+// 2. Check ChatBox.tsx & assistant/catalogKnowledge.ts
 {
-  console.log('[2/8] Verifying src/components/ChatBox.tsx...');
+  console.log('[2/8] Verifying src/components/ChatBox.tsx & src/assistant/catalogKnowledge.ts...');
   const chatContent = fs.readFileSync(path.join(root, 'src/components/ChatBox.tsx'), 'utf-8');
+  const knowledgeContent = fs.readFileSync(path.join(root, 'src/assistant/catalogKnowledge.ts'), 'utf-8');
   assert(!chatContent.includes('(Ms. My)'), 'ChatBox must not contain personal name "(Ms. My)"');
-  assert(chatContent.includes('Hotline/Zalo 0889 742 556'), 'ChatBox must contain standardized Hotline/Zalo 0889 742 556');
-  console.log('✓ PASS: ChatBox has neutral, verified business contact information.');
+  assert(!knowledgeContent.includes('(Ms. My)'), 'catalogKnowledge must not contain personal name "(Ms. My)"');
+  assert(!knowledgeContent.includes('taikhoan@mail.mocngonhuong.com'), 'catalogKnowledge must use mocngonhuong@gmail.com instead of mailer sender');
+  assert(
+    chatContent.includes('0889 742 556') || knowledgeContent.includes('0889 742 556'),
+    'ChatBox assistant knowledge must contain standardized hotline 0889 742 556'
+  );
+  assert(knowledgeContent.includes('mocngonhuong@gmail.com'), 'catalogKnowledge must contain mocngonhuong@gmail.com');
+  console.log('✓ PASS: ChatBox & catalogKnowledge contain neutral, verified business contact information.');
 }
 
 // 3. Check CheckoutPage.tsx
