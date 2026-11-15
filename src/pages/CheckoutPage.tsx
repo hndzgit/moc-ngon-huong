@@ -1307,7 +1307,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-philosopher font-bold text-[14.5px] text-[#222222] truncate leading-tight group-hover:text-[#3E5641] transition-colors">
+                        <h3 className="font-philosopher font-bold text-[14.5px] text-[#222222] leading-snug group-hover:text-[#3E5641] transition-colors">
                           {product.id === 'hop-qua-tam-y'
                             ? 'Hộp Quà Tâm Ý'
                             : FIGMA_PRODUCT_COPY[product.id]?.title || product.name}

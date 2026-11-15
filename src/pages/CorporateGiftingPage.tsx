@@ -70,7 +70,7 @@ export function CorporateGiftingPage({ onNavigate }: CorporateGiftingPageProps) 
         <div className="figma-container corporate-hero-grid">
           <div className="corporate-hero-copy">
             <p className="corporate-kicker">MỘC NGÔN HƯƠNG / QUÀ DOANH NGHIỆP</p>
-            <h1 id="corporate-title">Lời tri ân,<br />được trao bằng<br /><em>hương trà.</em></h1>
+            <h1 id="corporate-title">Lời tri ân,{' '}<br />được trao bằng{' '}<br /><em>hương trà.</em></h1>
             <p>Một món quà dành cho đối tác, đồng nghiệp hay những người đã cùng bạn đi qua một chặng đường.</p>
             <a className="corporate-button" href="#yeu-cau-doanh-nghiep" onClick={event => {
               event.preventDefault();
@@ -87,7 +87,7 @@ export function CorporateGiftingPage({ onNavigate }: CorporateGiftingPageProps) 
       </section>
 
       <section className="corporate-approach figma-container" aria-labelledby="corporate-approach-title">
-        <div><p className="corporate-kicker">BẮT ĐẦU TỪ NGƯỜI NHẬN</p><h2 id="corporate-approach-title">Mỗi dịp trao quà,<br />một điều muốn nói.</h2></div>
+        <div><p className="corporate-kicker">BẮT ĐẦU TỪ NGƯỜI NHẬN</p><h2 id="corporate-approach-title">Mỗi dịp trao quà,{' '}<br />một điều muốn nói.</h2></div>
         <ol>
           <li><span>01</span><div><h3>Chia sẻ ý định</h3><p>Bạn tặng ai, vào dịp nào và muốn gửi lời cảm ơn hay lời chúc gì?</p></div></li>
           <li><span>02</span><div><h3>Chọn hương trà & hộp quà</h3><p>Khám phá bốn sắc hương hiện có: AN, THƯƠNG, CẢM và NHỚ. Dùng giá catalog làm điểm bắt đầu.</p></div></li>
@@ -103,7 +103,7 @@ export function CorporateGiftingPage({ onNavigate }: CorporateGiftingPageProps) 
           </div>
           <div className="corporate-product-copy">
             <p className="corporate-kicker">QUÀ TỪ BỘ SƯU TẬP HIỆN CÓ</p>
-            <h2 id="corporate-collection-title">Một hộp trà,<br />một lời trân trọng.</h2>
+            <h2 id="corporate-collection-title">Một hộp trà,{' '}<br />một lời trân trọng.</h2>
             <label htmlFor="corporate-product">Khám phá sản phẩm</label>
             <select id="corporate-product" value={draft.productId} onChange={event => setField('productId', event.target.value)}>
               {PRODUCTS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -120,7 +120,7 @@ export function CorporateGiftingPage({ onNavigate }: CorporateGiftingPageProps) 
       <section id="yeu-cau-doanh-nghiep" className="corporate-inquiry figma-container" aria-labelledby="corporate-inquiry-title">
         <div className="corporate-inquiry-heading">
           <p className="corporate-kicker">MỘT VÀI THÔNG TIN ĐỂ BẮT ĐẦU</p>
-          <h2 id="corporate-inquiry-title">Cùng chuẩn bị<br /><em>một món quà có ý nghĩa.</em></h2>
+          <h2 id="corporate-inquiry-title">Cùng chuẩn bị{' '}<br /><em>một món quà có ý nghĩa.</em></h2>
           <p>Điền những điều bạn đã biết. Các chi tiết còn lại có thể trao đổi trực tiếp với Mộc Ngôn Hương.</p>
           <div className="corporate-service-note"><FigmaIcon name="sms" /><p>Biểu mẫu hiện chỉ tạo bản nháp tại trang này, <strong>chưa gửi trực tuyến</strong>. Dữ liệu không được lưu khi tải lại trang.</p></div>
         </div>

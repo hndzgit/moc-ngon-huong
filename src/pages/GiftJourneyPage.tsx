@@ -65,7 +65,7 @@ export default function GiftJourneyPage({draft,step,onChange,onStep,onNavigate,o
             {step===3&&<>
               <p className="journey-lead">{tea.name}</p>
               <p className="journey-aroma">{tea.scentNotes[0]}</p>
-              <dl className="journey-tea-facts"><div><dt>Thành phần theo catalog</dt><dd>{tea.ingredients.join(' · ')}</dd></div><div><dt>Vị trà</dt><dd>{tea.tasteNotes}</dd></div><div><dt>Pha một chén trà</dt><dd>{tea.brewingTemp} · {tea.brewingTime}<br/>{tea.brewingAmount}</dd></div></dl>
+              <dl className="journey-tea-facts"><div><dt>Thành phần theo catalog</dt><dd>{tea.ingredients.join(' · ')}</dd></div><div><dt>Vị trà</dt><dd>{tea.tasteNotes}</dd></div><div><dt>Pha một chén trà</dt><dd>{tea.brewingTemp} · {tea.brewingTime}{' '}<br/>{tea.brewingAmount}</dd></div></dl>
               <div className="journey-flavor-switch" role="group" aria-label="So sánh hương trà">{TEAS.map(item=><button type="button" key={item.id} aria-pressed={tea.id===item.id} onClick={()=>onChange(changeEmotion(draft,item.emotion as GiftDraft['emotion']))}>{emotionName(item.emotion as GiftDraft['emotion'])}</button>)}</div>
               <button className="atelier-text-link" type="button" onClick={()=>onNavigate('detail',tea.id)}>Xem trang sản phẩm <span className="atelier-arrow"><FigmaIcon name="arrowRight" /></span></button>
             </>}
@@ -85,7 +85,7 @@ export default function GiftJourneyPage({draft,step,onChange,onStep,onNavigate,o
             </>}
             {step===5&&<>
               <p className="journey-lead">{INTENTIONS.find(i=>i.id===draft.intention)?.label||'Chưa chọn lời muốn gửi'} · {emotionName(draft.emotion)}</p>
-              <dl className="journey-summary"><div><dt>Hộp quà</dt><dd>{product.name}</dd></div><div><dt>Hương trà</dt><dd>{product.isSignature?'Bưởi · Nhài · Hoa Sói · Cốm':tea.shortName}</dd></div><div><dt>Bên trong</dt><dd>{product.packaging}</dd></div><div><dt>Giá sản phẩm</dt><dd>{money(product.price)}</dd></div><div><dt>Cá nhân hóa</dt><dd>Bản nháp lời nhắn · {draft.cardStyle==='botanical'?'Nét hoa':'Lá thư'}<br/>Chưa bao gồm dịch vụ tùy chỉnh; cần tư vấn.</dd></div></dl>
+              <dl className="journey-summary"><div><dt>Hộp quà</dt><dd>{product.name}</dd></div><div><dt>Hương trà</dt><dd>{product.isSignature?'Bưởi · Nhài · Hoa Sói · Cốm':tea.shortName}</dd></div><div><dt>Bên trong</dt><dd>{product.packaging}</dd></div><div><dt>Giá sản phẩm</dt><dd>{money(product.price)}</dd></div><div><dt>Cá nhân hóa</dt><dd>Bản nháp lời nhắn · {draft.cardStyle==='botanical'?'Nét hoa':'Lá thư'}{' '}<br/>Chưa bao gồm dịch vụ tùy chỉnh; cần tư vấn.</dd></div></dl>
               <p className="journey-note">Thêm đúng sản phẩm vào giỏ với giá catalog. Bản nháp đi cùng dòng sản phẩm trong phiên này; nếu thêm lại cùng sản phẩm, bản nháp mới thay bản cũ. Chưa gửi lời nhắn hay đặt hàng.</p>
               <div className="journey-summary-actions"><button type="button" className="atelier-button" onClick={()=>add()}>Thêm món quà vào giỏ <FigmaIcon name="giftBag" /></button><button type="button" className="atelier-button atelier-button-outline" onClick={()=>add(true)}>Tiếp tục đến thanh toán</button><button type="button" className="atelier-text-link" onClick={()=>onNavigate('contact')}>Trao đổi với cửa hàng</button></div>
               <button type="button" className="atelier-text-link" onClick={()=>onNavigate('products')}>Tiếp tục khám phá bộ sưu tập</button>
