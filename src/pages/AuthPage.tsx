@@ -881,6 +881,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                     <p className="text-[13px] text-[#777777] mt-0.5">
                                       Số lượng: <span className="font-medium text-[#222222]">{item.quantity}</span> • Đơn giá:{' '}
                                       <span className="font-medium text-[#222222]">{item.price?.toLocaleString('vi-VN')} đ</span>
+                                      {item.sku && (
+                                        <span className="font-mono text-[#555555] whitespace-nowrap">
+                                          {' • Mã SP: '}
+                                          {item.sku}
+                                        </span>
+                                      )}
                                     </p>
                                     {item.giftConfiguration && (
                                       <span className="inline-block mt-1 text-[11px] font-medium text-[#8e6746] bg-[#f8f5ee] px-2 py-0.5 rounded-md">
@@ -1673,6 +1679,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         </h4>
                         <p className="text-[13px] text-[#777777] mt-1">
                           Đơn giá xác thực: <span className="font-medium text-[#222222]">{item.price?.toLocaleString('vi-VN')} đ</span> • Số lượng: <span className="font-bold text-[#3e5641]">x{item.quantity}</span>
+                          {item.sku && (
+                            <span className="font-mono text-[#555555] whitespace-nowrap">
+                              {' • Mã SP: '}
+                              {item.sku}
+                            </span>
+                          )}
                         </p>
                         {item.giftConfiguration && (
                           <div className="mt-2.5 p-3 rounded-[12px] bg-[#f8f5ee] border border-[#e8e2d5] text-[12.5px] text-[#555555] space-y-1">

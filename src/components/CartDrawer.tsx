@@ -148,6 +148,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </h3>
                       <p className="cart-item-subtitle text-[12px] text-[#222] mt-1">
                         {product.emotion === 'COMBO' ? 'AN · THƯƠNG · CẢM · NHỚ' : {AN:'Trà Hương Hoa Bưởi',THUONG:'Trà Hương Hoa Nhài',CAM:'Trà Hương Hoa Sói',NHO:'Trà Hương Cốm',ALL:'Các hương trà'}[product.emotion]}
+                        {product.sku && (
+                          <span data-testid={`cart-item-sku-${product.id}`} className="text-[#666666] font-mono whitespace-nowrap">
+                            {' · '}
+                            {product.sku}
+                          </span>
+                        )}
                       </p>
                       <p className="cart-item-price text-[14px] text-[#444444] mt-1">
                         {product.price.toLocaleString('en-US')}đ

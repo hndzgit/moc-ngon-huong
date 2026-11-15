@@ -105,7 +105,11 @@ export function App() {
           // Recover valid rows after a malformed/stale storage entry. Catalogue
           // data stays authoritative; never trust stored prices or product shapes.
           return parsed.flatMap(item => {
-            const product = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS].find(p => p.id === item?.product?.id);
+            const product = PRODUCTS.find(
+              p =>
+                p.id === item?.product?.id &&
+                (!item?.product?.sku || p.sku === item.product.sku)
+            );
             if (!product || !Number.isSafeInteger(item?.quantity) || item.quantity <= 0) {
               return [];
             }
@@ -182,7 +186,9 @@ export function App() {
   // Update quantity from inline ProductCard stepper (- 0 +)
   const handleUpdateProductQuantity = (product: Product, delta: number) => {
     setCartItems((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
+      const isSameVariant = (a: Product, b: Product) =>
+        a.id === b.id && a.sku === b.sku && (a.variantId || '') === (b.variantId || '');
+      const existing = prev.find((i) => isSameVariant(i.product, product));
       if (!existing) {
         if (delta > 0) {
           return [...prev, { product, quantity: clampQty(delta, product.stock) }];
@@ -191,10 +197,12 @@ export function App() {
       }
       const nextQty = existing.quantity + delta;
       if (nextQty <= 0) {
-        return prev.filter((i) => i.product.id !== product.id);
+        return prev.filter((i) => !isSameVariant(i.product, product));
       }
       return prev.map((i) =>
-        i.product.id === product.id ? { ...i, quantity: clampQty(nextQty, i.product.stock) } : i
+        isSameVariant(i.product, product)
+          ? { ...i, quantity: clampQty(nextQty, i.product.stock) }
+          : i
       );
     });
   };

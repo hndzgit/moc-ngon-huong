@@ -72,11 +72,44 @@ export interface OrderNotificationDelivery {
   paymentConfirmed?: NotificationDeliveryEntry;
 }
 
+export type ProductSku =
+  | 'MNH-A01'
+  | 'MNH-T01'
+  | 'MNH-C01'
+  | 'MNH-N01'
+  | 'MNH-A02'
+  | 'MNH-T02'
+  | 'MNH-C02'
+  | 'MNH-N02'
+  | 'MNH-TY';
+
+export type ProductCategoryCode = 'CATEGORY_A_100G' | 'CATEGORY_B_200G_GIFT' | 'CATEGORY_C_COMBO';
+
+export type ProductPublicationStatus = 'published' | 'reserved_pending_approval';
+
+export interface SkuCatalogEntry {
+  sku: ProductSku;
+  productId: string;
+  variantId: string;
+  shortCodeName: 'AN' | 'THƯƠNG' | 'CẢM' | 'NHỚ' | 'TÂM Ý';
+  productName: string;
+  category: ProductCategoryCode;
+  emotion: EmotionKey;
+  weightGrams?: number;
+  weightLabel?: string;
+  price: number;
+  published: boolean;
+  publicationStatus: ProductPublicationStatus;
+}
+
 export interface OrderItemSnapshot {
   productId: string;
+  variantId?: string;
+  sku?: string;
   productName: string;
   price: number;
   quantity: number;
+  weightGrams?: number;
   image?: string;
   giftConfiguration?: any;
 }
@@ -145,6 +178,8 @@ export interface IncludedFlavorItem {
 
 export interface Product {
   id: string;
+  sku: ProductSku;
+  variantId?: string;
   name: string;
   shortName: string;
   code: string;
@@ -157,6 +192,9 @@ export interface Product {
   rating: number;
   reviewsCount: number;
   weight: string;
+  weightGrams?: number;
+  published?: boolean;
+  publicationStatus?: ProductPublicationStatus;
   packaging: string;
   image: string;
   gallery: string[];

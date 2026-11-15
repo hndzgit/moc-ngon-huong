@@ -383,6 +383,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         userId: user?.uid || null,
         items: items.map((item) => ({
           productId: item.product.id,
+          sku: item.product.sku,
+          variantId: item.product.variantId || undefined,
           quantity: item.quantity,
           giftConfiguration: item.giftConfiguration || undefined,
         })),
@@ -1322,6 +1324,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                 NHO: 'Trà Hương Cốm · Dịu Êm',
                                 ALL: 'Các hương trà đặc sản',
                               }[product.emotion]}
+                          {product.sku && (
+                            <span
+                              data-testid={`checkout-item-sku-${product.id}`}
+                              className="font-mono text-[#666666] whitespace-nowrap"
+                            >
+                              {' · '}
+                              {product.sku}
+                            </span>
+                          )}
                         </p>
                         {giftConfiguration && (
                           <span className="inline-flex items-center gap-1 text-[11px] text-[#C89F5D] font-medium mt-0.5">

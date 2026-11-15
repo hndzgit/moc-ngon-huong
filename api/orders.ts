@@ -24,20 +24,43 @@ import {
   writeLocalNextSeq,
 } from './_lib/orderRecovery.js';
 import { buildOrderPaymentInstructions } from '../src/lib/vietqr.js';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../src/data/products.js';
+import {
+  PRODUCTS,
+  getAnyCatalogEntryByProductId,
+  getCatalogEntryBySku,
+} from '../src/data/products.js';
 import {
   validateDeliveryAddress,
   getProvinceByCode,
   getCommuneByCode,
 } from '../src/data/address/index.js';
 
-const SERVER_CATALOG: Record<string, { name: string; price: number; maxStock: number }> = {};
-for (const p of [...PRODUCTS, ...LOOSE_TEA_PRODUCTS]) {
-  SERVER_CATALOG[p.id] = {
+interface ServerCatalogItem {
+  productId: string;
+  sku: string;
+  variantId: string;
+  name: string;
+  price: number;
+  weightGrams?: number;
+  maxStock: number;
+}
+
+const SERVER_CATALOG: Record<string, ServerCatalogItem> = {};
+const SERVER_CATALOG_BY_SKU: Record<string, ServerCatalogItem> = {};
+
+for (const p of PRODUCTS) {
+  if (p.published === false) continue;
+  const entry: ServerCatalogItem = {
+    productId: p.id,
+    sku: p.sku,
+    variantId: p.variantId || p.id,
     name: p.name,
     price: p.price,
+    ...(typeof p.weightGrams === 'number' ? { weightGrams: p.weightGrams } : {}),
     maxStock: p.stock || 50,
   };
+  SERVER_CATALOG[p.id] = entry;
+  SERVER_CATALOG_BY_SKU[p.sku.toUpperCase()] = entry;
 }
 
 const VALID_EMOTIONS = new Set(['AN', 'THUONG', 'CAM', 'NHO']);
@@ -794,9 +817,12 @@ export default async function handler(req: any, res: any) {
   let calculatedSubtotal = 0;
   const verifiedItems: Array<{
     productId: string;
+    variantId: string;
+    sku: string;
     productName: string;
     price: number;
     quantity: number;
+    weightGrams?: number;
     giftConfiguration?: any;
   }> = [];
 
@@ -808,14 +834,57 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    const productId = typeof item.productId === 'string' ? item.productId.trim() : '';
+    const rawProductId = typeof item.productId === 'string' ? item.productId.trim() : '';
+    const rawSku = typeof item.sku === 'string' ? item.sku.trim().toUpperCase() : '';
+    const rawVariantId = typeof item.variantId === 'string' ? item.variantId.trim() : '';
     const quantity = Number(item.quantity);
-    const catalogEntry = SERVER_CATALOG[productId];
+
+    // Check if the client requested an unpublished / reserved 100g SKU or product ID
+    const knownById = rawProductId ? getAnyCatalogEntryByProductId(rawProductId) : undefined;
+    const knownBySku = rawSku ? getCatalogEntryBySku(rawSku) : undefined;
+
+    if ((knownById && !knownById.published) || (knownBySku && !knownBySku.published)) {
+      const reservedSku = knownBySku?.sku || knownById?.sku || rawSku || rawProductId;
+      return sendJson(res, 400, {
+        success: false,
+        code: 'PRODUCT_NOT_PUBLISHED',
+        error: `Phân loại sản phẩm (${reservedSku}) hiện đang tạm dừng mở bán trực tuyến.`,
+      });
+    }
+
+    const catalogEntry = rawProductId
+      ? SERVER_CATALOG[rawProductId]
+      : rawSku
+      ? SERVER_CATALOG_BY_SKU[rawSku]
+      : undefined;
 
     if (!catalogEntry) {
       return sendJson(res, 400, {
         success: false,
-        error: `Sản phẩm không tồn tại trong danh mục chính thức (mã: ${productId || 'trống'}).`,
+        code: 'INVALID_PRODUCT',
+        error: `Sản phẩm không tồn tại trong danh mục chính thức (mã: ${rawProductId || rawSku || 'trống'}).`,
+      });
+    }
+
+    // Reject manipulated or mismatched client SKU
+    if (rawSku && rawSku !== catalogEntry.sku) {
+      return sendJson(res, 400, {
+        success: false,
+        code: 'INVALID_PRODUCT_SKU',
+        error: `Mã SKU sản phẩm "${rawSku}" không hợp lệ hoặc không khớp với sản phẩm "${catalogEntry.name}" (${catalogEntry.sku}).`,
+      });
+    }
+
+    // Reject manipulated or mismatched client variantId
+    if (
+      rawVariantId &&
+      rawVariantId !== catalogEntry.variantId &&
+      rawVariantId !== catalogEntry.productId
+    ) {
+      return sendJson(res, 400, {
+        success: false,
+        code: 'INVALID_PRODUCT_VARIANT',
+        error: `Phân loại sản phẩm "${rawVariantId}" không hợp lệ hoặc không khớp với danh mục.`,
       });
     }
 
@@ -829,10 +898,15 @@ export default async function handler(req: any, res: any) {
     const sanitizedGift = sanitizeGiftConfig(item.giftConfiguration);
     calculatedSubtotal += catalogEntry.price * quantity;
     verifiedItems.push({
-      productId,
+      productId: catalogEntry.productId,
+      variantId: catalogEntry.variantId,
+      sku: catalogEntry.sku,
       productName: catalogEntry.name,
       price: catalogEntry.price,
       quantity,
+      ...(typeof catalogEntry.weightGrams === 'number'
+        ? { weightGrams: catalogEntry.weightGrams }
+        : {}),
       ...(sanitizedGift ? { giftConfiguration: sanitizedGift } : {}),
     });
   }

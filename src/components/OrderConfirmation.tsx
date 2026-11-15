@@ -147,34 +147,12 @@ export function OrderConfirmation({
 
   // Reconstruct display items from CartItem[] OR OrderRecord.items (for recovered orders)
   const displayItems = useMemo(() => {
-    if (items && items.length > 0) {
-      return items.map(({ product, quantity }) => ({
-        id: product.id,
-        name:
-          product.id === 'hop-qua-tam-y'
-            ? 'Hộp Quà Tâm Ý'
-            : FIGMA_PRODUCT_COPY[product.id]?.title || product.name,
-        subtitle:
-          product.emotion === 'COMBO'
-            ? 'AN, THƯƠNG, CẢM, NHỚ'
-            : {
-                AN: 'Trà Hương Hoa Bưởi thanh khiết',
-                THUONG: 'Trà Hương Hoa Nhài đượm hương',
-                CAM: 'Trà Hương Hoa Sói trầm ấm',
-                NHO: 'Trà Hương Cốm dịu ngọt',
-                ALL: 'Bộ sưu tập hương trà',
-              }[product.emotion] || product.emotion,
-        price: product.price,
-        quantity,
-        image: getOrderMedia(product.id)?.image || product.image,
-        position: getOrderMedia(product.id)?.position,
-      }));
-    }
     if (order?.items && order.items.length > 0) {
       return order.items.map((snap) => {
         const found = ALL_CATALOG.find((p) => p.id === snap.productId);
         return {
           id: snap.productId,
+          sku: typeof snap.sku === 'string' && snap.sku.trim() ? snap.sku.trim() : undefined,
           name:
             snap.productId === 'hop-qua-tam-y'
               ? 'Hộp Quà Tâm Ý'
@@ -200,6 +178,30 @@ export function OrderConfirmation({
           position: getOrderMedia(snap.productId)?.position,
         };
       });
+    }
+    if (items && items.length > 0) {
+      return items.map(({ product, quantity }) => ({
+        id: product.id,
+        sku: product.sku,
+        name:
+          product.id === 'hop-qua-tam-y'
+            ? 'Hộp Quà Tâm Ý'
+            : FIGMA_PRODUCT_COPY[product.id]?.title || product.name,
+        subtitle:
+          product.emotion === 'COMBO'
+            ? 'AN, THƯƠNG, CẢM, NHỚ'
+            : {
+                AN: 'Trà Hương Hoa Bưởi thanh khiết',
+                THUONG: 'Trà Hương Hoa Nhài đượm hương',
+                CAM: 'Trà Hương Hoa Sói trầm ấm',
+                NHO: 'Trà Hương Cốm dịu ngọt',
+                ALL: 'Bộ sưu tập hương trà',
+              }[product.emotion] || product.emotion,
+        price: product.price,
+        quantity,
+        image: getOrderMedia(product.id)?.image || product.image,
+        position: getOrderMedia(product.id)?.position,
+      }));
     }
     return [];
   }, [items, order?.items]);
@@ -886,7 +888,18 @@ export function OrderConfirmation({
                     <h3 className="font-philosopher text-[17px] sm:text-[20px] text-[#3E5641] font-bold truncate">
                       {item.name}
                     </h3>
-                    <p className="text-[#777777] text-[13px] mt-0.5">{item.subtitle}</p>
+                    <p className="text-[#777777] text-[13px] mt-0.5">
+                      {item.subtitle}
+                      {item.sku && (
+                        <span
+                          data-testid={`confirmation-item-sku-${item.id}`}
+                          className="font-mono text-[#555555] whitespace-nowrap"
+                        >
+                          {' · Mã SP: '}
+                          {item.sku}
+                        </span>
+                      )}
+                    </p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="text-[#3E5641] text-[16px] sm:text-[18px] font-semibold">
                         {money(item.price * item.quantity)}

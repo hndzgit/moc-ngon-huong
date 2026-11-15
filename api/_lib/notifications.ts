@@ -39,9 +39,12 @@ export interface OrderNotificationPayload {
   };
   items: Array<{
     productId: string;
+    variantId?: string;
+    sku?: string;
     productName: string;
     price: number;
     quantity: number;
+    weightGrams?: number;
     giftConfiguration?: {
       intention?: string;
       emotion?: string;
@@ -149,10 +152,15 @@ function formatItemsHtmlRows(order: OrderNotificationPayload): string {
            </div>`
         : '';
 
+      const skuHtml = item.sku
+        ? `<div style="margin-top: 2px; font-size: 12px; color: #666; font-family: monospace;">Mã SP: ${escapeHtml(item.sku)}</div>`
+        : '';
+
       return `
         <tr>
           <td style="padding: 12px 8px; border-bottom: 1px solid #eee; font-size: 14px; color: #222;">
             <strong>${escapeHtml(item.productName)}</strong>
+            ${skuHtml}
             ${giftHtml}
           </td>
           <td style="padding: 12px 8px; border-bottom: 1px solid #eee; font-size: 14px; text-align: center; color: #444;">

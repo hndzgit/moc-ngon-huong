@@ -189,11 +189,19 @@ async function handleGetOrders(req: any, res: any, adminUid: string) {
       const name = String(o.customer?.fullName || '').toLowerCase();
       const phone = String(o.customer?.phone || '').toLowerCase();
       const email = String(o.customer?.email || '').toLowerCase();
+      const matchesItem = Array.isArray(o.items)
+        ? o.items.some((item: any) => {
+            const sku = String(item?.sku || '').toLowerCase();
+            const productName = String(item?.productName || '').toLowerCase();
+            return sku.includes(search) || productName.includes(search);
+          })
+        : false;
       return (
         code.includes(search) ||
         name.includes(search) ||
         phone.includes(search) ||
-        email.includes(search)
+        email.includes(search) ||
+        matchesItem
       );
     });
   }

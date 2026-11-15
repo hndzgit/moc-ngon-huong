@@ -1,11 +1,160 @@
-import { Product, ReviewItem } from '../types';
+import { Product, ProductSku, ReviewItem, SkuCatalogEntry } from '../types';
+
+/**
+ * Official Mộc Ngôn Hương Centralized Product SKU Reference Table.
+ *
+ * Category A — Individual Tea Boxes (100g, 100,000 VND):
+ *   MNH-A01 (AN), MNH-T01 (THƯƠNG), MNH-C01 (CẢM), MNH-N01 (NHỚ)
+ *   Status: Reserved / Inactive (`published: false`) until commercial assets & stock are approved for storefront sale.
+ *
+ * Category B — Gift Tea Boxes (200g, 289,000 VND):
+ *   MNH-A02 (AN), MNH-T02 (THƯƠNG), MNH-C02 (CẢM), MNH-N02 (NHỚ)
+ *   Status: Active / Published (`published: true`).
+ *
+ * Category C — Gift Combo (399,000 VND):
+ *   MNH-TY (TÂM Ý)
+ *   Status: Active / Published (`published: true`).
+ */
+export const OFFICIAL_SKU_CATALOG: readonly SkuCatalogEntry[] = [
+  // Category A — Individual Tea Boxes (100g) — Reserved / Inactive for storefront checkout
+  {
+    sku: 'MNH-A01',
+    productId: 'buoi-an-100g',
+    variantId: 'buoi-an-100g',
+    shortCodeName: 'AN',
+    productName: 'Trà Hương Hoa Bưởi – AN (100g)',
+    category: 'CATEGORY_A_100G',
+    emotion: 'AN',
+    weightGrams: 100,
+    weightLabel: '100g',
+    price: 100000,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
+  },
+  {
+    sku: 'MNH-T01',
+    productId: 'nhai-thuong-100g',
+    variantId: 'nhai-thuong-100g',
+    shortCodeName: 'THƯƠNG',
+    productName: 'Trà Hương Hoa Nhài – THƯƠNG (100g)',
+    category: 'CATEGORY_A_100G',
+    emotion: 'THUONG',
+    weightGrams: 100,
+    weightLabel: '100g',
+    price: 100000,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
+  },
+  {
+    sku: 'MNH-C01',
+    productId: 'soi-cam-100g',
+    variantId: 'soi-cam-100g',
+    shortCodeName: 'CẢM',
+    productName: 'Trà Hương Hoa Sói – CẢM (100g)',
+    category: 'CATEGORY_A_100G',
+    emotion: 'CAM',
+    weightGrams: 100,
+    weightLabel: '100g',
+    price: 100000,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
+  },
+  {
+    sku: 'MNH-N01',
+    productId: 'com-nho-100g',
+    variantId: 'com-nho-100g',
+    shortCodeName: 'NHỚ',
+    productName: 'Trà Hương Cốm – NHỚ (100g)',
+    category: 'CATEGORY_A_100G',
+    emotion: 'NHO',
+    weightGrams: 100,
+    weightLabel: '100g',
+    price: 100000,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
+  },
+
+  // Category B — Gift Tea Boxes (200g) — Active / Published
+  {
+    sku: 'MNH-A02',
+    productId: 'buoi-an',
+    variantId: 'buoi-an-200g',
+    shortCodeName: 'AN',
+    productName: 'Trà Hương Hoa Bưởi – AN',
+    category: 'CATEGORY_B_200G_GIFT',
+    emotion: 'AN',
+    weightGrams: 200,
+    weightLabel: '200g',
+    price: 289000,
+    published: true,
+    publicationStatus: 'published',
+  },
+  {
+    sku: 'MNH-T02',
+    productId: 'nhai-thuong',
+    variantId: 'nhai-thuong-200g',
+    shortCodeName: 'THƯƠNG',
+    productName: 'Trà Hương Hoa Nhài – THƯƠNG',
+    category: 'CATEGORY_B_200G_GIFT',
+    emotion: 'THUONG',
+    weightGrams: 200,
+    weightLabel: '200g',
+    price: 289000,
+    published: true,
+    publicationStatus: 'published',
+  },
+  {
+    sku: 'MNH-C02',
+    productId: 'soi-cam',
+    variantId: 'soi-cam-200g',
+    shortCodeName: 'CẢM',
+    productName: 'Trà Hương Hoa Sói – CẢM',
+    category: 'CATEGORY_B_200G_GIFT',
+    emotion: 'CAM',
+    weightGrams: 200,
+    weightLabel: '200g',
+    price: 289000,
+    published: true,
+    publicationStatus: 'published',
+  },
+  {
+    sku: 'MNH-N02',
+    productId: 'com-nho',
+    variantId: 'com-nho-200g',
+    shortCodeName: 'NHỚ',
+    productName: 'Trà Hương Cốm – NHỚ',
+    category: 'CATEGORY_B_200G_GIFT',
+    emotion: 'NHO',
+    weightGrams: 200,
+    weightLabel: '200g',
+    price: 289000,
+    published: true,
+    publicationStatus: 'published',
+  },
+
+  // Category C — Gift Combo — Active / Published
+  {
+    sku: 'MNH-TY',
+    productId: 'hop-qua-tam-y',
+    variantId: 'hop-qua-tam-y',
+    shortCodeName: 'TÂM Ý',
+    productName: 'Hộp Quà Trà Đa Hương — "TÂM Ý"',
+    category: 'CATEGORY_C_COMBO',
+    emotion: 'COMBO',
+    price: 399000,
+    published: true,
+    publicationStatus: 'published',
+  },
+] as const;
 
 export const PRODUCTS: Product[] = [
   {
     id: 'buoi-an',
+    sku: 'MNH-A02',
+    variantId: 'buoi-an-200g',
     name: 'Trà Hương Hoa Bưởi – AN',
     shortName: 'Trà Hương Hoa Bưởi (AN)',
-    code: 'MNH-AN-01',
+    code: 'MNH-A02',
     emotion: 'AN',
     emotionLabel: 'AN — Bình an & Biết ơn',
     tagline: 'Gói trọn hương bưởi thanh sạch của những ngày đầu xuân',
@@ -14,6 +163,9 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 100,
     weight: '100g',
+    weightGrams: 200,
+    published: true,
+    publicationStatus: 'published',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
     image: '/assets/optimized/card-buoi-an-800.webp',
     gallery: [
@@ -49,9 +201,11 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'nhai-thuong',
+    sku: 'MNH-T02',
+    variantId: 'nhai-thuong-200g',
     name: 'Trà Hương Hoa Nhài – THƯƠNG',
     shortName: 'Trà Hương Hoa Nhài (THƯƠNG)',
-    code: 'MNH-THUONG-02',
+    code: 'MNH-T02',
     emotion: 'THUONG',
     emotionLabel: 'THƯƠNG — Dịu Ngọt & Yêu thương',
     tagline: 'Ủ từ những bông nhài quế nở rộ lúc đêm muộn',
@@ -60,6 +214,9 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 100,
     weight: '100g',
+    weightGrams: 200,
+    published: true,
+    publicationStatus: 'published',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
     image: '/assets/optimized/card-nhai-thuong-800.webp',
     gallery: [
@@ -95,9 +252,11 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'soi-cam',
+    sku: 'MNH-C02',
+    variantId: 'soi-cam-200g',
     name: 'Trà Hương Hoa Sói – CẢM',
     shortName: 'Trà Hương Hoa Sói (CẢM)',
-    code: 'MNH-CAM-03',
+    code: 'MNH-C02',
     emotion: 'CAM',
     emotionLabel: 'CẢM — Tri ân & Hoài niệm',
     tagline: 'Một thức trà cổ truyền quý hiếm với hương thơm trầm ấm',
@@ -106,6 +265,9 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 100,
     weight: '100g',
+    weightGrams: 200,
+    published: true,
+    publicationStatus: 'published',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
     image: '/assets/optimized/card-soi-cam-800.webp',
     gallery: [
@@ -141,9 +303,11 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'com-nho',
+    sku: 'MNH-N02',
+    variantId: 'com-nho-200g',
     name: 'Trà Hương Cốm – NHỚ',
     shortName: 'Trà Hương Cốm (NHỚ)',
-    code: 'MNH-NHO-04',
+    code: 'MNH-N02',
     emotion: 'NHO',
     emotionLabel: 'NHỚ — Ký ức & Dịu êm',
     tagline: 'Đánh thức miền ký ức dịu êm với hương cốm non thanh tao',
@@ -152,6 +316,9 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 100,
     weight: '100g',
+    weightGrams: 200,
+    published: true,
+    publicationStatus: 'published',
     packaging: 'Hộp trà 100g + Kẹo lạc + Muỗng gỗ + Thẻ thư pháp QR',
     image: '/assets/optimized/card-com-nho-800.webp',
     gallery: [
@@ -187,9 +354,11 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'hop-qua-tam-y',
+    sku: 'MNH-TY',
+    variantId: 'hop-qua-tam-y',
     name: 'Hộp Quà Trà Đa Hương — "TÂM Ý"',
     shortName: 'Combo Signature "Tâm Ý"',
-    code: 'MNH-TAMY-SIGNATURE',
+    code: 'MNH-TY',
     emotion: 'COMBO',
     emotionLabel: 'MÓN QUÀ ĐẶC BIỆT',
     tagline: '“Trao hương, gửi lời thương.”',
@@ -198,6 +367,8 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 100,
     weight: '4 thức trà (Bưởi, Nhài, Hoa Sói, Cốm) + Kẹo lạc + Phụ kiện trà',
+    published: true,
+    publicationStatus: 'published',
     packaging: '4 hộp trà 50g + Kẹo lạc truyền thống + Túi vải đay + Muỗng gỗ + 4 Thẻ thông điệp QR',
     image: '/assets/optimized/card-hop-qua-tam-y-800.webp',
     gallery: [
@@ -268,49 +439,174 @@ export const PRODUCTS: Product[] = [
   }
 ];
 
-// Loose tea & accessories row (Section 3 of ProductsPage 77:2583 & Related Products on DetailPage 120:6560 & SearchOverlay 127:12938)
-export const LOOSE_TEA_PRODUCTS: Product[] = [
+// Category A — Individual Tea Boxes (100g, 100,000 VND) — Reserved / Inactive in storefront until business launch approval
+export const RESERVED_100G_PRODUCTS: Product[] = [
   {
     ...PRODUCTS[0],
-    id: 'buoi-an-le',
-    name: 'Trà Hương Hoa Bưởi (AN)',
+    id: 'buoi-an-100g',
+    sku: 'MNH-A01',
+    variantId: 'buoi-an-100g',
+    code: 'MNH-A01',
+    name: 'Trà Hương Hoa Bưởi – AN (100g)',
     shortName: 'Trà Hương Hoa Bưởi (AN)',
-    price: 75000,
+    price: 100000,
+    weight: '100g',
+    weightGrams: 100,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
     image: '/assets/optimized/card-buoi-an-800.webp',
   },
   {
     ...PRODUCTS[1],
-    id: 'nhai-thuong-le',
-    name: 'Trà Hương Hoa Nhài (THƯƠNG)',
+    id: 'nhai-thuong-100g',
+    sku: 'MNH-T01',
+    variantId: 'nhai-thuong-100g',
+    code: 'MNH-T01',
+    name: 'Trà Hương Hoa Nhài – THƯƠNG (100g)',
     shortName: 'Trà Hương Hoa Nhài (THƯƠNG)',
-    price: 75000,
+    price: 100000,
+    weight: '100g',
+    weightGrams: 100,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
     image: '/assets/optimized/card-nhai-thuong-800.webp',
   },
   {
     ...PRODUCTS[2],
-    id: 'soi-cam-le',
-    name: 'Trà Hương Hoa Sói (CẢM)',
+    id: 'soi-cam-100g',
+    sku: 'MNH-C01',
+    variantId: 'soi-cam-100g',
+    code: 'MNH-C01',
+    name: 'Trà Hương Hoa Sói – CẢM (100g)',
     shortName: 'Trà Hương Hoa Sói (CẢM)',
-    price: 75000,
+    price: 100000,
+    weight: '100g',
+    weightGrams: 100,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
     image: '/assets/optimized/card-soi-cam-800.webp',
   },
   {
     ...PRODUCTS[3],
-    id: 'com-nho-le',
-    name: 'Trà Hương Cốm (NHỚ)',
+    id: 'com-nho-100g',
+    sku: 'MNH-N01',
+    variantId: 'com-nho-100g',
+    code: 'MNH-N01',
+    name: 'Trà Hương Cốm – NHỚ (100g)',
     shortName: 'Trà Hương Cốm (NHỚ)',
-    price: 75000,
+    price: 100000,
+    weight: '100g',
+    weightGrams: 100,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
     image: '/assets/optimized/card-com-nho-800.webp',
+  },
+];
+
+// Legacy compatibility export for historical cart/order media lookup (Marked unpublished/inactive for new orders)
+export const LOOSE_TEA_PRODUCTS: Product[] = [
+  {
+    ...RESERVED_100G_PRODUCTS[0],
+    id: 'buoi-an-le',
+  },
+  {
+    ...RESERVED_100G_PRODUCTS[1],
+    id: 'nhai-thuong-le',
+  },
+  {
+    ...RESERVED_100G_PRODUCTS[2],
+    id: 'soi-cam-le',
+  },
+  {
+    ...RESERVED_100G_PRODUCTS[3],
+    id: 'com-nho-le',
   },
   {
     ...PRODUCTS[4],
     id: 'combo-tam-y-le',
+    sku: 'MNH-TY',
+    variantId: 'hop-qua-tam-y',
+    code: 'MNH-TY',
     name: 'Combo Signature "Tâm Ý"',
     shortName: 'Combo Signature "Tâm Ý"',
     price: 399000,
+    published: false,
+    publicationStatus: 'reserved_pending_approval',
     image: '/assets/optimized/card-hop-qua-tam-y-800.webp',
   },
 ];
+
+const SKU_BY_UPPER_CODE = new Map<string, SkuCatalogEntry>(
+  OFFICIAL_SKU_CATALOG.map((entry) => [entry.sku.toUpperCase(), entry])
+);
+
+const PUBLISHED_SKU_BY_PRODUCT_ID = new Map<string, SkuCatalogEntry>(
+  OFFICIAL_SKU_CATALOG.filter((entry) => entry.published).map((entry) => [entry.productId, entry])
+);
+
+const ALL_SKU_BY_PRODUCT_ID = new Map<string, SkuCatalogEntry>(
+  OFFICIAL_SKU_CATALOG.map((entry) => [entry.productId, entry])
+);
+
+export function getCatalogEntryBySku(sku: string | undefined | null): SkuCatalogEntry | undefined {
+  if (!sku || typeof sku !== 'string') return undefined;
+  return SKU_BY_UPPER_CODE.get(sku.trim().toUpperCase());
+}
+
+export function getPublishedCatalogEntryByProductId(
+  productId: string | undefined | null
+): SkuCatalogEntry | undefined {
+  if (!productId || typeof productId !== 'string') return undefined;
+  return PUBLISHED_SKU_BY_PRODUCT_ID.get(productId.trim());
+}
+
+export function getAnyCatalogEntryByProductId(
+  productId: string | undefined | null
+): SkuCatalogEntry | undefined {
+  if (!productId || typeof productId !== 'string') return undefined;
+  const trimmed = productId.trim();
+  if (ALL_SKU_BY_PRODUCT_ID.has(trimmed)) {
+    return ALL_SKU_BY_PRODUCT_ID.get(trimmed);
+  }
+  const legacyMap: Record<string, ProductSku> = {
+    'buoi-an-le': 'MNH-A01',
+    'nhai-thuong-le': 'MNH-T01',
+    'soi-cam-le': 'MNH-C01',
+    'com-nho-le': 'MNH-N01',
+    'combo-tam-y-le': 'MNH-TY',
+  };
+  const mappedSku = legacyMap[trimmed];
+  return mappedSku ? getCatalogEntryBySku(mappedSku) : undefined;
+}
+
+/**
+ * Safe SKU resolution for order item snapshots (including historical pre-SKU orders).
+ * - If the snapshot explicitly stores `sku`, returns it directly.
+ * - If `sku` is missing (legacy order), never guesses a wrong SKU when variant ambiguity exists.
+ */
+export function resolveOrderItemSkuDisplay(item: {
+  sku?: string | null;
+  productId?: string;
+  price?: number;
+}): {
+  sku: string | null;
+  isLegacyFallback: boolean;
+  displayText: string;
+} {
+  const explicitSku = typeof item?.sku === 'string' ? item.sku.trim().toUpperCase() : '';
+  if (explicitSku) {
+    return {
+      sku: explicitSku,
+      isLegacyFallback: false,
+      displayText: explicitSku,
+    };
+  }
+  return {
+    sku: null,
+    isLegacyFallback: true,
+    displayText: 'Chưa gắn SKU (đơn cũ)',
+  };
+}
 
 export const LISTING_PRODUCTS: Product[] = PRODUCTS.slice(0, 4);
 

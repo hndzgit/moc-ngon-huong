@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useDialogLifecycle } from '../components/useDialogLifecycle';
 import { useAuth } from '../context/AuthContext';
 import { assetUrl } from '../lib/assets';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { PRODUCTS, LOOSE_TEA_PRODUCTS, resolveOrderItemSkuDisplay } from '../data/products';
 import { getOrderMedia } from '../data/figmaMedia';
 import type { OrderRecord, OrderStatus, PaymentStatus, PageRoute } from '../types';
 import {
@@ -506,14 +506,27 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         if (paymentFilter === 'payment_review' && paySt !== 'payment_review') return false;
       }
 
-      // Search term filter
+      // Search term filter (matches order code, customer name, phone, email, item SKU, or product name)
       if (searchTerm.trim()) {
         const term = searchTerm.trim().toLowerCase();
         const code = (o.orderCode || '').toLowerCase();
         const name = (o.customer?.fullName || '').toLowerCase();
         const phone = o.customer?.phone || '';
         const email = (o.customer?.email || '').toLowerCase();
-        if (!code.includes(term) && !name.includes(term) && !phone.includes(term) && !email.includes(term)) {
+        const matchesItemSkuOrName = Boolean(
+          o.items?.some((item) => {
+            const sku = (item.sku || '').toLowerCase();
+            const pName = (item.productName || '').toLowerCase();
+            return sku.includes(term) || pName.includes(term);
+          })
+        );
+        if (
+          !code.includes(term) &&
+          !name.includes(term) &&
+          !phone.includes(term) &&
+          !email.includes(term) &&
+          !matchesItemSkuOrName
+        ) {
           return false;
         }
       }
@@ -893,7 +906,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                   setSearchTerm(e.target.value);
                   setCurrentPageNum(1);
                 }}
-                placeholder="Tìm kiếm theo mã đơn (MNH-...), tên khách hàng, số điện thoại..."
+                placeholder="Tìm kiếm theo mã đơn (MNH000...), mã SKU (MNH-T02...), tên khách hàng, số điện thoại..."
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/50 focus:bg-white focus:outline-none focus:border-[#3e5641] focus:ring-1 focus:ring-[#3e5641] text-sm"
               />
               {searchTerm && (
@@ -1063,6 +1076,20 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                           <div className="text-[12px] text-stone-400 mt-0.5">
                             {formatDateTime(order.createdAt)}
                           </div>
+                          {order.items && order.items.some((it) => it.sku) && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {Array.from(
+                                new Set(order.items.map((it) => it.sku).filter(Boolean))
+                              ).map((skuCode) => (
+                                <span
+                                  key={skuCode}
+                                  className="inline-block font-mono text-[10px] font-semibold text-[#3e5641] bg-[#3e5641]/10 px-1.5 py-0.5 rounded"
+                                >
+                                  {skuCode}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </td>
 
                         {/* Customer Info */}
@@ -1678,36 +1705,56 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                 Sản phẩm trong đơn ({selectedOrder.items?.length || 0})
               </span>
               <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden">
-                {selectedOrder.items?.map((item, idx) => (
-                  <div key={idx} className="p-3.5 flex items-center gap-3 bg-white">
-                    <img
-                      src={getItemThumbnail(item)}
-                      style={{ objectPosition: getOrderMedia(item.productId)?.position }}
-                      alt={item.productName}
-                      loading="lazy"
-                      decoding="async"
-                      width={56}
-                      height={56}
-                      className="w-14 h-14 object-cover rounded-xl border border-stone-100 flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-stone-900 truncate">
-                        {item.productName}
-                      </h4>
-                      <p className="text-xs text-stone-500">
-                        {formatMoney(item.price)} × {item.quantity}
-                      </p>
-                      {item.giftConfiguration?.recipient && (
-                        <p className="text-[11px] text-[#c89f5d] italic mt-0.5">
-                          Tặng: {item.giftConfiguration.recipient}
+                {selectedOrder.items?.map((item, idx) => {
+                  const skuInfo = resolveOrderItemSkuDisplay(item);
+                  return (
+                    <div key={idx} className="p-3.5 flex items-center gap-3 bg-white">
+                      <img
+                        src={getItemThumbnail(item)}
+                        style={{ objectPosition: getOrderMedia(item.productId)?.position }}
+                        alt={item.productName}
+                        loading="lazy"
+                        decoding="async"
+                        width={56}
+                        height={56}
+                        className="w-14 h-14 object-cover rounded-xl border border-stone-100 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-stone-900 truncate">
+                          {item.productName}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span
+                            data-testid={`admin-order-item-sku-${idx}`}
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono ${
+                              skuInfo.isLegacyFallback
+                                ? 'bg-stone-100 text-stone-500'
+                                : 'bg-[#3e5641]/10 text-[#3e5641] font-semibold'
+                            }`}
+                          >
+                            SKU: {skuInfo.displayText}
+                          </span>
+                          {item.weightGrams ? (
+                            <span className="text-[11px] text-stone-500">
+                              • {item.weightGrams}g
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          {formatMoney(item.price)} × {item.quantity}
                         </p>
-                      )}
+                        {item.giftConfiguration?.recipient && (
+                          <p className="text-[11px] text-[#c89f5d] italic mt-0.5">
+                            Tặng: {item.giftConfiguration.recipient}
+                          </p>
+                        )}
+                      </div>
+                      <div className="font-semibold text-sm text-stone-900">
+                        {formatMoney(item.price * item.quantity)}
+                      </div>
                     </div>
-                    <div className="font-semibold text-sm text-stone-900">
-                      {formatMoney(item.price * item.quantity)}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
