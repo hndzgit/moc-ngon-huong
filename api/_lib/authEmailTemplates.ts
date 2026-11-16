@@ -10,10 +10,126 @@
  * - Logo: https://mocngonhuong.com/assets/figma/logo-header.png
  */
 
+import type { } from 'http';
+
+export type EmailLocale = 'vi' | 'en';
+
+export function normalizeEmailLocale(input: unknown): EmailLocale {
+  if (typeof input === 'string' && input.trim().toLowerCase().startsWith('en')) {
+    return 'en';
+  }
+  return 'vi';
+}
+
 export interface EmailTemplateResult {
   subject: string;
   html: string;
   text: string;
+}
+
+function renderBrandAuthEmailEn(params: {
+  title: string;
+  heading: string;
+  greetingName: string;
+  paragraphsHtml: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  fallbackLinkNote?: string;
+  footnoteHtml?: string;
+}): string {
+  const escapedHeading = escapeHtml(params.heading);
+  const escapedGreeting = escapeHtml(params.greetingName);
+  const safeCtaUrl = escapeHtml(params.ctaUrl);
+
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
+  <title>${escapeHtml(params.title)}</title>
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; min-width: 100%; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #1A1E1B !important; }
+      .card-bg { background-color: #242A25 !important; border-color: #353F36 !important; }
+      .text-title { color: #E8EFE9 !important; }
+      .text-body { color: #C5D1C6 !important; }
+      .text-muted { color: #9AABA0 !important; }
+      .fallback-box { background-color: #1E241F !important; border-color: #353F36 !important; }
+      .fallback-link { color: #C89F5D !important; }
+    }
+  </style>
+</head>
+<body class="email-bg" style="margin: 0; padding: 0; background-color: #FAF8F3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" class="email-bg" style="background-color: #FAF8F3; table-layout: fixed;">
+    <tr>
+      <td align="center" style="padding: 40px 16px 50px 16px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" class="card-bg" style="max-width: 600px; background-color: #FFFFFF; border-radius: 20px; border: 1px solid #ECE7DF; box-shadow: 0 4px 20px rgba(62,86,65,0.06); overflow: hidden;">
+          <tr>
+            <td align="center" style="padding: 44px 36px 20px 36px;">
+              <a href="https://mocngonhuong.com" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img src="https://mocngonhuong.com/assets/figma/logo-header.png" width="80" height="72" alt="Mộc Ngôn Hương" style="display: block; margin: 0 auto; width: 80px; height: 72px; object-fit: contain;" />
+              </a>
+              <p style="margin: 14px 0 0 0; font-family: 'Times New Roman', Georgia, serif; font-size: 11px; letter-spacing: 3px; color: #C89F5D; text-transform: uppercase; font-weight: 700; text-align: center;">
+                MỘC NGÔN HƯƠNG
+              </p>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: #8C7B6B; font-style: italic; text-align: center; font-family: 'Times New Roman', Georgia, serif;">
+                Flavors of Tea Filled with Love
+              </p>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="60" align="center" style="margin: 18px auto 0 auto;">
+                <tr>
+                  <td style="height: 1px; background-color: #C89F5D; line-height: 1px; font-size: 1px;">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 40px 36px 40px;">
+              <h1 class="text-title" style="margin: 0 0 20px 0; font-family: 'Times New Roman', Georgia, serif; font-size: 24px; line-height: 34px; color: #3E5641; font-weight: 700; text-align: center;">
+                ${escapedHeading}
+              </h1>
+              <p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #2C352D;">
+                Dear <strong>${escapedGreeting}</strong>,
+              </p>
+              ${params.paragraphsHtml}
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${safeCtaUrl}" target="_blank" style="display: inline-block; background-color: #3E5641; color: #F7F4D5; padding: 14px 32px; border-radius: 999px; font-size: 14px; font-weight: 600; letter-spacing: 0.4px; text-decoration: none;">
+                      ${escapeHtml(params.ctaLabel)}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              ${params.fallbackLinkNote ? `
+              <div class="fallback-box" style="margin-top: 20px; padding: 14px 16px; background-color: #FAF8F3; border-radius: 10px; border: 1px solid #ECE7DF;">
+                <p class="text-muted" style="margin: 0 0 6px 0; font-size: 12px; color: #6B726D;">${escapeHtml(params.fallbackLinkNote)}</p>
+                <p class="fallback-link" style="margin: 0; font-size: 12px; color: #8B6E3A; word-break: break-all;">${safeCtaUrl}</p>
+              </div>` : ''}
+              ${params.footnoteHtml || ''}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 32px; background-color: #FAF8F3; border-top: 1px solid #ECE7DF; text-align: center;">
+              <p class="text-muted" style="margin: 0 0 4px 0; font-size: 12px; color: #6B726D;">
+                <strong>Mộc Ngôn Hương</strong> • Handcrafted Vietnamese Floral Tea &amp; Gifting
+              </p>
+              <p class="text-muted" style="margin: 0; font-size: 11px; color: #8C948D;">
+                La Bằng, Thái Nguyên • 42 Hàng Điếu, Hanoi • Hotline/Zalo: 0889 742 556 • mocngonhuong.com
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 /**
@@ -55,7 +171,26 @@ export function sanitizeCustomerName(rawName?: string, defaultName: string = 'Qu
 export function renderVerificationEmail(params: {
   customerName?: string;
   verificationLink: string;
+  locale?: EmailLocale;
 }): EmailTemplateResult {
+  if (normalizeEmailLocale(params.locale) === 'en') {
+    const plainName = sanitizeCustomerName(params.customerName, 'Valued Guest');
+    const subject = 'Verify Your Mộc Ngôn Hương Account';
+    const actionUrl = params.verificationLink;
+    const html = renderBrandAuthEmailEn({
+      title: subject,
+      heading: 'Welcome to Mộc Ngôn Hương!',
+      greetingName: plainName,
+      paragraphsHtml: `<p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">Thank you for joining Mộc Ngôn Hương to share meaningful floral teas and heartfelt gifts. One quick step remains—please verify your email address below to activate your account:</p>`,
+      ctaLabel: 'Verify Email Address',
+      ctaUrl: actionUrl,
+      fallbackLinkNote: 'If the button above does not work, copy and paste this verification link into your browser:',
+      footnoteHtml: `<p class="text-muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 22px; color: #6B726D;">If you did not register this account, you can safely ignore this email.</p>`,
+    });
+    const text = `Welcome to Mộc Ngôn Hương!\n\nDear ${plainName},\n\nThank you for joining Mộc Ngôn Hương. Please verify your email address using the link below:\n${actionUrl}\n\nIf you did not create this account, you may safely ignore this message.\n\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com`;
+    return { subject, html, text };
+  }
+
   const plainName = sanitizeCustomerName(params.customerName, 'bạn');
   const escapedName = escapeHtml(plainName);
   const actionUrl = params.verificationLink;
@@ -233,7 +368,26 @@ Email: mocngonhuong@gmail.com
 export function renderPasswordResetEmail(params: {
   customerName?: string;
   resetLink: string;
+  locale?: EmailLocale;
 }): EmailTemplateResult {
+  if (normalizeEmailLocale(params.locale) === 'en') {
+    const plainName = sanitizeCustomerName(params.customerName, 'Valued Guest');
+    const subject = 'Reset Your Mộc Ngôn Hương Password';
+    const actionUrl = params.resetLink;
+    const html = renderBrandAuthEmailEn({
+      title: subject,
+      heading: 'Reset Your Account Password',
+      greetingName: plainName,
+      paragraphsHtml: `<p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">We received a request to reset the password for your Mộc Ngôn Hương account. Click the button below to choose a new password:</p>`,
+      ctaLabel: 'Set New Password',
+      ctaUrl: actionUrl,
+      fallbackLinkNote: 'If the button above does not open, copy and paste this secure link into your browser:',
+      footnoteHtml: `<p class="text-muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 22px; color: #6B726D;">For security reasons, this link expires soon. If you did not request a password reset, please ignore this email—your account remains safe.</p>`,
+    });
+    const text = `Reset Your Account Password\n\nDear ${plainName},\n\nWe received a password reset request for your Mộc Ngôn Hương account.\nOpen the link below to create a new password:\n${actionUrl}\n\nIf you did not request this, you can safely ignore this email.\n\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com`;
+    return { subject, html, text };
+  }
+
   const plainName = sanitizeCustomerName(params.customerName, 'bạn');
   const escapedName = escapeHtml(plainName);
   const actionUrl = params.resetLink;
@@ -410,7 +564,25 @@ Email: mocngonhuong@gmail.com
  */
 export function renderWelcomeEmail(params: {
   customerName?: string;
+  locale?: EmailLocale;
 }): EmailTemplateResult {
+  if (normalizeEmailLocale(params.locale) === 'en') {
+    const plainName = sanitizeCustomerName(params.customerName, 'Valued Guest');
+    const shopUrl = 'https://mocngonhuong.com/#/san-pham?lang=en';
+    const subject = 'Welcome to Mộc Ngôn Hương!';
+    const html = renderBrandAuthEmailEn({
+      title: subject,
+      heading: 'Welcome to Mộc Ngôn Hương!',
+      greetingName: plainName,
+      paragraphsHtml: `<p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">Your account has been created successfully. Starting today, you can explore our heritage Vietnamese flower-scented teas (Pomelo Blossom, Jasmine, Wild Chloranthus, and Young Green Rice), craft personalized keepsake gift cards, and track every order seamlessly.</p><p class="text-body" style="margin: 0 0 16px 0; font-size: 15px; line-height: 26px; color: #4A554D;">We look forward to accompanying you in sharing heartfelt wishes and calm moments through every cup of tea.</p>`,
+      ctaLabel: 'Explore Our Tea Collection',
+      ctaUrl: shopUrl,
+      footnoteHtml: `<p class="text-muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 22px; color: #6B726D;">Need gift recommendations or corporate assistance? Reach us anytime via Hotline/Zalo <strong>0889 742 556</strong> or reply to this email.</p>`,
+    });
+    const text = `Dear ${plainName},\n\nWelcome to Mộc Ngôn Hương!\nYour account has been created successfully.\n\nExplore our flower-scented teas and curate thoughtful gifts at:\n${shopUrl}\n\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com`;
+    return { subject, html, text };
+  }
+
   const plainName = sanitizeCustomerName(params.customerName, 'Quý khách');
   const escapedName = escapeHtml(plainName);
   const shopUrl = 'https://mocngonhuong.com/#/san-pham';

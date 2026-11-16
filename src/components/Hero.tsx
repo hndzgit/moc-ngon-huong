@@ -1,6 +1,7 @@
 import { assetUrl } from '../lib/assets';
 import { scrollBehavior } from '../motion/motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import './Hero.css';
 import { PageRoute } from '../types';
 
@@ -10,6 +11,7 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
+  const { t } = useTranslation('home');
   const scrollToEmotionSelector = () => {
     const el = document.getElementById('chon-cam-xuc');
     if (el) {
@@ -36,7 +38,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
             fetchPriority="high"
             decoding="async"
             data-figma-node="61:1165"
-            alt="Mộc Ngôn Hương — Trao hương, gửi lời thương"
+            alt={t('hero.bannerAlt')}
             className="hero-photo"
           />
         </picture>
@@ -50,11 +52,11 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
       <div className="hero-content relative z-10 figma-container h-full text-left">
         <div className="hero-copy">
           <h1 className="font-philosopher">
-            Mộc Ngôn Hương
+            {t('hero.title')}
           </h1>
 
           <p className="hero-description">
-            Không chỉ chọn một hộp trà, mà chọn một cách gửi lời thương.
+            {t('hero.description')}
           </p>
 
           <div className="hero-cta">
@@ -63,7 +65,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
               onClick={onStartGift||scrollToEmotionSelector}
               className="hero-button hero-button-primary"
             >
-              Bắt đầu chọn món quà
+              {t('hero.ctaPrimary')}
             </button>
 
             <button
@@ -71,7 +73,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate,onStartGift }) => {
               onClick={scrollToEmotionSelector}
               className="hero-button hero-button-secondary"
             >
-              Khám phá hương trà
+              {t('hero.ctaSecondary')}
             </button>
           </div>
         </div>

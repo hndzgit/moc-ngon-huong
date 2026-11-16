@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { assetUrl } from '../lib/assets';
 import type {
   CartItem,
@@ -8,7 +9,9 @@ import type {
   PaymentStatus,
 } from '../types';
 import { PRODUCTS, findLegacyOrderProductVisual } from '../data/products';
-import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
+import { getOrderMedia } from '../data/figmaMedia';
+import { getCartProductSubtitle, getCartProductTitle } from '../data/localizedCatalog';
+import { formatLocaleDateTime, formatVnd, normalizeLocale } from '../lib/locale';
 import {
   buildOrderPaymentInstructions,
   DEFAULT_VIETQR_ACCOUNT_NAME,
@@ -92,6 +95,8 @@ export function OrderConfirmation({
   onStartNewCheckout,
   onNavigate,
 }: OrderConfirmationProps) {
+  const { t, i18n } = useTranslation(['cartCheckout', 'common']);
+  const locale = normalizeLocale(i18n.language);
   const { user, getIdToken, ensureGuestAuthToken } = useAuth();
 
   const effectiveOrderId = order?.id || propOrderId || '';
@@ -131,7 +136,7 @@ export function OrderConfirmation({
   const [reportingTransfer, setReportingTransfer] = useState(false);
   const [reportFeedback, setReportFeedback] = useState<string | null>(
     currentPaymentStatus === 'customer_reported_paid'
-      ? 'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.'
+      ? t('cartCheckout:confirmation.reportMessages.defaultFeedback')
       : null
   );
   const [reportError, setReportError] = useState<string | null>(null);
@@ -150,24 +155,14 @@ export function OrderConfirmation({
         const found = PRODUCTS.find((p) => p.id === snap.productId);
         const visualFallback = findLegacyOrderProductVisual(snap.productId);
         const resolvedEmotion = found?.emotion || visualFallback.emotion;
+        const resolvedProduct = found || ({ id: snap.productId, name: snap.productName, emotion: resolvedEmotion || 'ALL' } as any);
         return {
           id: snap.productId,
           sku: typeof snap.sku === 'string' && snap.sku.trim() ? snap.sku.trim() : undefined,
-          name:
-            snap.productId === 'hop-qua-tam-y'
-              ? 'Hộp Quà Tâm Ý'
-              : FIGMA_PRODUCT_COPY[snap.productId]?.title || snap.productName,
+          name: getCartProductTitle(resolvedProduct, locale),
           subtitle: resolvedEmotion
-            ? resolvedEmotion === 'COMBO'
-              ? 'AN, THƯƠNG, CẢM, NHỚ'
-              : {
-                  AN: 'Trà Hương Hoa Bưởi thanh khiết',
-                  THUONG: 'Trà Hương Hoa Nhài đượm hương',
-                  CAM: 'Trà Hương Hoa Sói trầm ấm',
-                  NHO: 'Trà Hương Cốm dịu ngọt',
-                  ALL: 'Bộ sưu tập hương trà',
-                }[resolvedEmotion] || ''
-            : 'Trà thủ công Mộc Ngôn Hương',
+            ? getCartProductSubtitle(resolvedProduct, locale)
+            : t('cartCheckout:confirmation.items.defaultSubtitle'),
           price: snap.price,
           quantity: snap.quantity,
           image:
@@ -182,20 +177,8 @@ export function OrderConfirmation({
       return items.map(({ product, quantity }) => ({
         id: product.id,
         sku: product.sku,
-        name:
-          product.id === 'hop-qua-tam-y'
-            ? 'Hộp Quà Tâm Ý'
-            : FIGMA_PRODUCT_COPY[product.id]?.title || product.name,
-        subtitle:
-          product.emotion === 'COMBO'
-            ? 'AN, THƯƠNG, CẢM, NHỚ'
-            : {
-                AN: 'Trà Hương Hoa Bưởi thanh khiết',
-                THUONG: 'Trà Hương Hoa Nhài đượm hương',
-                CAM: 'Trà Hương Hoa Sói trầm ấm',
-                NHO: 'Trà Hương Cốm dịu ngọt',
-                ALL: 'Bộ sưu tập hương trà',
-              }[product.emotion] || product.emotion,
+        name: getCartProductTitle(product, locale),
+        subtitle: getCartProductSubtitle(product, locale),
         price: product.price,
         quantity,
         image: getOrderMedia(product.id)?.image || product.image,
@@ -203,7 +186,7 @@ export function OrderConfirmation({
       }));
     }
     return [];
-  }, [items, order?.items]);
+  }, [items, order?.items, locale, t]);
 
   const calculatedSubtotal = displayItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -234,7 +217,7 @@ export function OrderConfirmation({
     return rawInst || null;
   }, [effectivePaymentMethod, order?.paymentInstructions, propPaymentInstructions, effectiveOrderCode, total]);
 
-  const money = (n: number) => `${Math.round(n || 0).toLocaleString('vi-VN')} đ`;
+  const money = (n: number) => formatVnd(n, locale, 'spaced-vi');
 
   useEffect(() => {
     window.scrollTo({
@@ -300,6 +283,7 @@ export function OrderConfirmation({
         body: JSON.stringify({
           action: 'report_transfer',
           orderId: effectiveOrderId,
+          locale,
           ...(activeToken ? { recoveryToken: activeToken } : {}),
         }),
       });
@@ -307,7 +291,7 @@ export function OrderConfirmation({
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         throw new Error(
-          data.error || 'Không thể ghi nhận thông báo chuyển khoản. Vui lòng thử lại.'
+          data.error || t('cartCheckout:confirmation.reportMessages.failed')
         );
       }
 
@@ -320,14 +304,13 @@ export function OrderConfirmation({
         setPaymentConfirmedAt(updated.paymentConfirmedAt);
       }
       setReportFeedback(
-        data.message ||
-          'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.'
+        t('cartCheckout:confirmation.reportMessages.defaultFeedback')
       );
       if (onOrderUpdated) {
         onOrderUpdated(updated);
       }
     } catch (err: any) {
-      setReportError(err?.message || 'Đã xảy ra lỗi kết nối. Vui lòng thử lại.');
+      setReportError(err?.message || t('cartCheckout:confirmation.reportMessages.networkError'));
     } finally {
       setReportingTransfer(false);
     }
@@ -373,7 +356,7 @@ export function OrderConfirmation({
     setReportError(null);
     try {
       const idToken = await getIdToken();
-      if (!idToken) throw new Error('Vui lòng đăng nhập lại.');
+      if (!idToken) throw new Error(t('cartCheckout:confirmation.reloginError'));
       const res = await fetch('/api/me/orders', {
         method: 'POST',
         headers: {
@@ -388,23 +371,23 @@ export function OrderConfirmation({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Không thể liên kết đơn hàng.');
+        throw new Error(data.error || t('cartCheckout:confirmation.linkError'));
       }
       setLinkedSuccessMsg(
-        data.message || `Đã liên kết đơn hàng ${effectiveOrderCode} vào tài khoản của bạn.`
+        t('cartCheckout:confirmation.linkedDefault', { code: effectiveOrderCode })
       );
       if (onOrderUpdated && data.order) {
         onOrderUpdated(data.order);
       }
     } catch (err: any) {
-      setReportError(err?.message || 'Không thể liên kết đơn hàng.');
+      setReportError(err?.message || t('cartCheckout:confirmation.linkError'));
     } finally {
       setLinkingOrder(false);
     }
   };
 
   const formattedDate = orderDate
-    ? new Date(orderDate).toLocaleDateString('vi-VN', {
+    ? formatLocaleDateTime(orderDate, locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -415,58 +398,69 @@ export function OrderConfirmation({
   const isReported = currentPaymentStatus === 'customer_reported_paid';
   const isCancelled = currentPaymentStatus === 'cancelled' || order?.orderStatus === 'cancelled';
 
-  const rawOrderStatus = order?.orderStatus || orderStatus || 'Đang chuẩn bị đơn';
+  const rawOrderStatus = order?.orderStatus || orderStatus || 'pending';
+  const resolvedPickup = (order?.customer?.shippingMode || shippingMode) === 'pickup';
   const displayOrderStatus =
     ({
-      pending: 'Đang chuẩn bị đơn',
-      confirmed: 'Đã xác nhận đơn',
-      shipping: 'Đang giao hàng',
-      delivered: 'Đã giao thành công',
-      cancelled: 'Đã hủy đơn',
+      pending: t('cartCheckout:confirmation.orderStatuses.pending'),
+      pending_confirmation: resolvedPickup
+        ? t('cartCheckout:confirmation.orderStatuses.preparingPickup')
+        : t('cartCheckout:confirmation.orderStatuses.preparingDelivery'),
+      preparing: resolvedPickup
+        ? t('cartCheckout:confirmation.orderStatuses.preparingPickup')
+        : t('cartCheckout:confirmation.orderStatuses.preparingDelivery'),
+      confirmed: t('cartCheckout:confirmation.orderStatuses.confirmed'),
+      ready_for_pickup: t('cartCheckout:confirmation.orderStatuses.readyForPickup'),
+      shipping: t('cartCheckout:confirmation.orderStatuses.shipping'),
+      delivered: t('cartCheckout:confirmation.orderStatuses.delivered'),
+      completed: resolvedPickup
+        ? t('cartCheckout:confirmation.orderStatuses.completedPickup')
+        : t('cartCheckout:confirmation.orderStatuses.completedDelivery'),
+      cancelled: t('cartCheckout:confirmation.orderStatuses.cancelled'),
     } as Record<string, string>)[rawOrderStatus] || rawOrderStatus;
 
   const paymentBadgeInfo = useMemo(() => {
     if (isPaid) {
       return {
-        label: 'Đã xác nhận thanh toán',
+        label: t('cartCheckout:confirmation.paymentStatuses.paid'),
         className: 'bg-emerald-50 text-emerald-800 border-emerald-200',
         dotClass: 'bg-emerald-600',
       };
     }
     if (isReported) {
       return {
-        label: 'Đã báo chuyển khoản • Chờ xác nhận',
+        label: t('cartCheckout:confirmation.paymentStatuses.reported'),
         className: 'bg-blue-50 text-blue-800 border-blue-200',
         dotClass: 'bg-blue-600 animate-pulse',
       };
     }
     if (currentPaymentStatus === 'payment_review') {
       return {
-        label: 'Đang kiểm tra giao dịch',
+        label: t('cartCheckout:confirmation.paymentStatuses.review'),
         className: 'bg-purple-50 text-purple-800 border-purple-200',
         dotClass: 'bg-purple-600',
       };
     }
     if (isCancelled) {
       return {
-        label: 'Đã hủy thanh toán',
+        label: t('cartCheckout:confirmation.paymentStatuses.cancelled'),
         className: 'bg-rose-50 text-rose-800 border-rose-200',
         dotClass: 'bg-rose-600',
       };
     }
     if (effectivePaymentMethod === 'cod') {
       return {
-        label: 'Thanh toán khi nhận hàng (COD)',
+        label: t('cartCheckout:confirmation.paymentStatuses.cod'),
         className: 'bg-[#3E5641]/10 text-[#3E5641] border-[#3E5641]/20',
         dotClass: 'bg-[#3E5641]',
       };
     }
     return {
-      label: 'Chờ thanh toán chuyển khoản VietQR',
+      label: t('cartCheckout:confirmation.paymentStatuses.pendingVietQr'),
       className: 'bg-amber-50 text-amber-800 border-amber-200',
       dotClass: 'bg-amber-500 animate-pulse',
     };
-  }, [isPaid, isReported, currentPaymentStatus, isCancelled, effectivePaymentMethod]);
+  }, [isPaid, isReported, currentPaymentStatus, isCancelled, effectivePaymentMethod, t]);
 
   return (
     <section
@@ -492,19 +486,19 @@ export function OrderConfirmation({
           </div>
 
           <p className="font-serif text-[#C89F5D] tracking-[.25em] text-[12px] md:text-[13px] uppercase font-semibold mb-2">
-            MỘC NGÔN HƯƠNG • TRÀ THỦ CÔNG
+            {t('cartCheckout:confirmation.brandKicker')}
           </p>
           <h1 className="font-philosopher text-[#3E5641] font-bold text-[30px] sm:text-[42px] md:text-[50px] leading-tight tracking-wide">
             {effectivePaymentMethod === 'bank' && !isPaid
-              ? 'ĐẶT HÀNG THÀNH CÔNG • CHỜ CHUYỂN KHOẢN'
-              : 'ĐẶT HÀNG THÀNH CÔNG!'}
+              ? t('cartCheckout:confirmation.headingBankPending')
+              : t('cartCheckout:confirmation.headingSuccess')}
           </h1>
           <p className="mt-3 text-[#666666] text-[15px] sm:text-[16px] md:text-[17px] max-w-2xl mx-auto leading-relaxed">
             {isPaid
-              ? 'Mộc Ngôn Hương đã xác nhận khoản thanh toán cho đơn hàng của bạn. Cảm ơn bạn đã tin tưởng lựa chọn sản phẩm của chúng tôi.'
+              ? t('cartCheckout:confirmation.subtitlePaid')
               : effectivePaymentMethod === 'bank'
-              ? 'Đơn hàng đã được lưu trữ an toàn kèm mã đơn hàng riêng. Quý khách vui lòng quét mã VietQR hoặc chuyển khoản theo thông tin bên dưới để hoàn tất thanh toán.'
-              : 'Đơn hàng của bạn đã được ghi nhận. Mộc Ngôn Hương đang chuẩn bị đơn hàng để sớm trao gửi đến bạn.'}
+              ? t('cartCheckout:confirmation.subtitleBankPending')
+              : t('cartCheckout:confirmation.subtitleCod')}
           </p>
 
           <div className="flex items-center justify-center gap-3 mt-5">
@@ -522,7 +516,7 @@ export function OrderConfirmation({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5DFD5]">
                 <div>
                   <span className="text-[12px] font-semibold tracking-wider text-[#8E867B] uppercase block mb-1">
-                    Mã Đơn Hàng Của Bạn
+                    {t('cartCheckout:confirmation.yourOrderCodeLabel')}
                   </span>
                   <div className="flex items-center gap-3 flex-wrap">
                     <strong
@@ -535,17 +529,17 @@ export function OrderConfirmation({
                       type="button"
                       onClick={() => handleCopyText(effectiveOrderCode, 'code')}
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium bg-white text-[#3E5641] border border-[#3E5641]/25 hover:bg-[#3E5641]/5 transition-all active:scale-95 shadow-2xs cursor-pointer"
-                      title="Sao chép mã đơn hàng"
+                      title={t('cartCheckout:confirmation.copyOrderCodeTitle')}
                     >
                       {copiedField === 'code' ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-[#3E5641]" />
-                          <span className="text-[#3E5641] font-semibold">Đã chép mã</span>
+                          <span className="text-[#3E5641] font-semibold">{t('cartCheckout:confirmation.copiedCodeBtn')}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Sao chép mã</span>
+                          <span>{t('cartCheckout:confirmation.copyCodeBtn')}</span>
                         </>
                       )}
                     </button>
@@ -574,7 +568,7 @@ export function OrderConfirmation({
                   </div>
                   {total > 0 && (
                     <div className="text-[13.5px] text-[#555555]">
-                      Tổng tiền:{' '}
+                      {t('cartCheckout:confirmation.totalLabelInline')}{' '}
                       <strong
                         data-testid="order-confirmation-header-total"
                         className="text-[#3E5641] font-bold"
@@ -590,8 +584,8 @@ export function OrderConfirmation({
               {user && order?.isGuestOrder && (recoveryToken || order?.recoveryToken) && !linkedSuccessMsg && (
                 <div className="mt-4 p-3.5 rounded-xl bg-white border border-[#C89F5D]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="text-[13px] text-[#444444]">
-                    <strong className="text-[#3E5641]">Đồng bộ vào tài khoản:</strong> Bạn đang đăng nhập với{' '}
-                    <span className="font-medium">{user.email}</span>. Liên kết đơn hàng này vào lịch sử tài khoản của bạn?
+                    <strong className="text-[#3E5641]">{t('cartCheckout:confirmation.syncPromptStrong')}</strong> {t('cartCheckout:confirmation.syncPromptBodyPrefix')}{' '}
+                    <span className="font-medium">{user.email}</span>{t('cartCheckout:confirmation.syncPromptBodySuffix')}
                   </div>
                   <button
                     type="button"
@@ -600,7 +594,7 @@ export function OrderConfirmation({
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#3E5641] text-[#FAF8F3] text-[12.5px] font-semibold hover:bg-[#2B3C2D] transition-colors shrink-0 cursor-pointer"
                   >
                     <Link2 className="w-3.5 h-3.5" />
-                    <span>{linkingOrder ? 'Đang liên kết...' : 'Liên kết vào tài khoản'}</span>
+                    <span>{linkingOrder ? t('cartCheckout:confirmation.linkingBtn') : t('cartCheckout:confirmation.linkBtn')}</span>
                   </button>
                 </div>
               )}
@@ -632,14 +626,16 @@ export function OrderConfirmation({
                     <Check className="w-6 h-6 stroke-[2.5]" />
                   </div>
                   <h3 className="font-philosopher font-bold text-[22px] text-emerald-900">
-                    Đã Xác Nhận Thanh Toán Thành Công
+                    {t('cartCheckout:confirmation.paidBanner.title')}
                   </h3>
                   <p className="text-[14.5px] text-emerald-800 max-w-xl mx-auto leading-relaxed">
-                    Mộc Ngôn Hương đã xác nhận khoản thanh toán cho đơn hàng của bạn. Cảm ơn bạn đã tin tưởng lựa chọn sản phẩm của chúng tôi.
+                    {t('cartCheckout:confirmation.paidBanner.note')}
                   </p>
                   {paymentConfirmedAt && (
                     <p className="text-[12.5px] text-emerald-700 font-medium">
-                      Thời gian xác nhận: {new Date(paymentConfirmedAt).toLocaleString('vi-VN')}
+                      {t('cartCheckout:confirmation.paidBanner.confirmedAt', {
+                        time: formatLocaleDateTime(paymentConfirmedAt, locale),
+                      })}
                     </p>
                   )}
                 </div>
@@ -652,10 +648,10 @@ export function OrderConfirmation({
                       </div>
                       <div>
                         <h2 className="font-philosopher font-bold text-[20px] sm:text-[22px] text-[#203323]">
-                          Thanh Toán Chuyển Khoản VietQR 24/7
+                          {t('cartCheckout:confirmation.vietQrBox.title')}
                         </h2>
                         <p className="text-[12.5px] text-[#666666]">
-                          Quét mã QR bằng bất kỳ ứng dụng Ngân hàng hoặc Ví điện tử hỗ trợ NAPAS 247
+                          {t('cartCheckout:confirmation.vietQrBox.subtitle')}
                         </p>
                       </div>
                     </div>
@@ -667,7 +663,7 @@ export function OrderConfirmation({
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[#D9D2C7] text-[#3E5641] text-[12px] font-semibold hover:bg-[#FAF8F3] transition-colors self-start sm:self-auto cursor-pointer"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${refreshingOrder ? 'animate-spin' : ''}`} />
-                      <span>Cập nhật trạng thái</span>
+                      <span>{t('cartCheckout:confirmation.vietQrBox.refreshBtn')}</span>
                     </button>
                   </div>
 
@@ -685,7 +681,10 @@ export function OrderConfirmation({
                             <img
                               data-testid="vietqr-dynamic-image"
                               src={vietQrDetails.qrSvgDataUrl}
-                              alt={`Mã VietQR đơn hàng ${effectiveOrderCode} - Số tiền ${money(total)}`}
+                              alt={t('cartCheckout:confirmation.vietQrBox.qrAlt', {
+                                code: effectiveOrderCode,
+                                amount: money(total),
+                              })}
                               width={240}
                               height={240}
                               className="w-full max-w-[200px] sm:max-w-[240px] aspect-square h-auto object-contain mx-auto block"
@@ -701,7 +700,7 @@ export function OrderConfirmation({
                             {vietQrDetails.accountNo || DEFAULT_VIETQR_ACCOUNT_NO}
                           </p>
                           <p className="text-[11px] text-[#777777]">
-                            Tự động điền đúng số tiền &amp; mã đơn <strong className="text-[#3E5641]">{effectiveOrderCode}</strong>
+                            {t('cartCheckout:confirmation.vietQrBox.autoFillPrefix')} <strong className="text-[#3E5641]">{effectiveOrderCode}</strong>
                           </p>
                         </div>
                       </div>
@@ -711,14 +710,14 @@ export function OrderConfirmation({
                     <div className="lg:col-span-7 space-y-4">
                       <div className="bg-white rounded-[16px] p-4 sm:p-5 border border-[#E5DFD5] space-y-3 text-[13.5px] sm:text-[14px]">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2.5 border-b border-gray-100">
-                          <span className="text-[#777777]">Ngân hàng thụ hưởng:</span>
+                          <span className="text-[#777777]">{t('cartCheckout:confirmation.vietQrBox.bankLabel')}</span>
                           <strong className="text-[#222222] sm:text-right">
                             {DEFAULT_VIETQR_BANK_SHORT_NAME} — {DEFAULT_VIETQR_BANK_FULL_NAME}
                           </strong>
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2.5 border-b border-gray-100">
-                          <span className="text-[#777777]">Chủ tài khoản:</span>
+                          <span className="text-[#777777]">{t('cartCheckout:confirmation.vietQrBox.accountOwnerLabel')}</span>
                           <strong
                             data-testid="vietqr-account-name"
                             className="text-[#203323] font-bold uppercase tracking-wide"
@@ -729,7 +728,7 @@ export function OrderConfirmation({
 
                         <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-gray-100">
                           <div>
-                            <span className="text-[#777777] block text-[12.5px]">Số tài khoản BIDV:</span>
+                            <span className="text-[#777777] block text-[12.5px]">{t('cartCheckout:confirmation.vietQrBox.accountNoLabel')}</span>
                             <strong
                               data-testid="vietqr-account-no"
                               className="text-[17px] sm:text-[18px] font-mono font-bold text-[#3E5641] tracking-wider"
@@ -751,12 +750,12 @@ export function OrderConfirmation({
                             {copiedField === 'account' ? (
                               <>
                                 <Check className="w-3.5 h-3.5" />
-                                <span>Đã sao chép STK</span>
+                                <span>{t('cartCheckout:confirmation.vietQrBox.copiedAccountBtn')}</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="w-3.5 h-3.5" />
-                                <span>Sao chép số TK</span>
+                                <span>{t('cartCheckout:confirmation.vietQrBox.copyAccountBtn')}</span>
                               </>
                             )}
                           </button>
@@ -764,7 +763,7 @@ export function OrderConfirmation({
 
                         <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-gray-100">
                           <div>
-                            <span className="text-[#777777] block text-[12.5px]">Số tiền cần chuyển:</span>
+                            <span className="text-[#777777] block text-[12.5px]">{t('cartCheckout:confirmation.vietQrBox.amountLabel')}</span>
                             <strong
                               data-testid="vietqr-amount"
                               className="text-[18px] sm:text-[20px] font-mono font-bold text-[#3E5641]"
@@ -773,14 +772,14 @@ export function OrderConfirmation({
                             </strong>
                           </div>
                           <span className="text-[11.5px] px-2.5 py-1 rounded-md bg-[#3E5641]/10 text-[#3E5641] font-medium">
-                            Chính xác 100%
+                            {t('cartCheckout:confirmation.vietQrBox.exactBadge')}
                           </span>
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <span className="text-[#777777] block text-[12.5px]">
-                              Nội dung chuyển khoản (Bắt buộc giữ nguyên):
+                              {t('cartCheckout:confirmation.vietQrBox.transferContentLabel')}
                             </span>
                             <strong
                               data-testid="vietqr-transfer-content"
@@ -803,12 +802,12 @@ export function OrderConfirmation({
                             {copiedField === 'content' ? (
                               <>
                                 <Check className="w-3.5 h-3.5" />
-                                <span>Đã chép nội dung</span>
+                                <span>{t('cartCheckout:confirmation.vietQrBox.copiedContentBtn')}</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="w-3.5 h-3.5" />
-                                <span>Sao chép nội dung</span>
+                                <span>{t('cartCheckout:confirmation.vietQrBox.copyContentBtn')}</span>
                               </>
                             )}
                           </button>
@@ -817,7 +816,7 @@ export function OrderConfirmation({
 
                       {/* Instructions note */}
                       <div className="text-[12.5px] text-[#555555] bg-white/80 rounded-xl p-3.5 border border-[#E5DFD5] leading-relaxed">
-                        <strong>Hướng dẫn:</strong> Mở ứng dụng ngân hàng, chọn <strong>Quét mã QR</strong> và quét mã bên cạnh (hoặc nhập đúng số tài khoản và nội dung <strong>{effectiveOrderCode}</strong>). Sau khi hoàn tất chuyển khoản trên ứng dụng ngân hàng, vui lòng bấm nút <strong>&ldquo;Tôi đã chuyển khoản&rdquo;</strong> bên dưới.
+                        <strong>{t('cartCheckout:confirmation.vietQrBox.guideLabel')}</strong> {t('cartCheckout:confirmation.vietQrBox.guidePart1')} <strong>{t('cartCheckout:confirmation.vietQrBox.guideScanBold')}</strong> {t('cartCheckout:confirmation.vietQrBox.guidePart2')} <strong>{effectiveOrderCode}</strong>{t('cartCheckout:confirmation.vietQrBox.guidePart3')} <strong>{t('cartCheckout:confirmation.vietQrBox.guideBtnBold')}</strong> {t('cartCheckout:confirmation.vietQrBox.guidePart4')}
                       </div>
 
                       {/* Error message if reporting transfer failed */}
@@ -839,15 +838,16 @@ export function OrderConfirmation({
                         >
                           <div className="flex items-center gap-2 font-bold text-[14.5px] text-blue-900">
                             <CheckCircle2 className="w-5 h-5 text-blue-700 shrink-0" />
-                            <span>Đã ghi nhận thông báo chuyển khoản</span>
+                            <span>{t('cartCheckout:confirmation.vietQrBox.reportedBoxTitle')}</span>
                           </div>
                           <p className="text-[13.5px] leading-relaxed text-blue-900">
-                            {reportFeedback ||
-                              'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.'}
+                            {t('cartCheckout:confirmation.reportMessages.defaultFeedback')}
                           </p>
                           {customerReportedAt && (
                             <p className="text-[11.5px] text-blue-700 pt-0.5">
-                              Thời gian báo chuyển khoản: {new Date(customerReportedAt).toLocaleString('vi-VN')}
+                              {t('cartCheckout:confirmation.vietQrBox.reportedAt', {
+                                time: formatLocaleDateTime(customerReportedAt, locale),
+                              })}
                             </p>
                           )}
                         </div>
@@ -861,7 +861,9 @@ export function OrderConfirmation({
                         >
                           <CheckCircle2 className="w-5 h-5 text-[#C89F5D]" />
                           <span>
-                            {reportingTransfer ? 'Đang ghi nhận thông báo...' : 'Tôi đã chuyển khoản'}
+                            {reportingTransfer
+                              ? t('cartCheckout:confirmation.vietQrBox.reportButtonSubmitting')
+                              : t('cartCheckout:confirmation.vietQrBox.reportButton')}
                           </span>
                         </button>
                       )}
@@ -876,7 +878,7 @@ export function OrderConfirmation({
           <div className="mb-8">
             <h2 className="text-[14px] font-semibold text-[#8E867B] uppercase tracking-wider mb-4 flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 text-[#3E5641]" />
-              Sản Phẩm Đã Chọn ({displayItems.length})
+              {t('cartCheckout:confirmation.items.heading', { count: displayItems.length })}
             </h2>
 
             <div className="divide-y divide-[#E5DFD5]/60 border-t border-b border-[#E5DFD5]/60">
@@ -904,7 +906,7 @@ export function OrderConfirmation({
                         data-testid={`confirmation-item-sku-${item.id}`}
                         className="text-[#555555] text-[12px] font-mono mt-0.5"
                       >
-                        Mã sản phẩm:{' '}
+                        {t('cartCheckout:confirmation.items.skuPrefix')}{' '}
                         <span className="whitespace-nowrap font-semibold text-[#3E5641]">
                           {item.sku}
                         </span>
@@ -915,7 +917,10 @@ export function OrderConfirmation({
                         {money(item.price * item.quantity)}
                       </span>
                       <span className="text-[#777777] text-[12.5px]">
-                        (Số lượng: {item.quantity} × {money(item.price)})
+                        {t('cartCheckout:confirmation.items.qtyAndPrice', {
+                          qty: item.quantity,
+                          price: money(item.price),
+                        })}
                       </span>
                     </div>
                   </div>
@@ -928,18 +933,18 @@ export function OrderConfirmation({
           <div className="bg-[#FAF8F3] rounded-[20px] p-6 mb-8 border border-[#E5DFD5]">
             <h3 className="text-[14px] font-semibold text-[#8E867B] uppercase tracking-wider mb-4 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#3E5641]" />
-              Thông Tin Nhận Hàng &amp; Thanh Toán
+              {t('cartCheckout:confirmation.receiver.heading')}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-[14.5px]">
               {/* Recipient Details */}
               <div className="space-y-2">
                 <div className="flex items-start gap-2.5">
-                  <span className="text-[#8E867B] min-w-[100px] shrink-0">Người nhận:</span>
+                  <span className="text-[#8E867B] min-w-[100px] shrink-0">{t('cartCheckout:confirmation.receiver.recipientLabel')}</span>
                   <strong className="text-[#222222] font-semibold">{fullName}</strong>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <span className="text-[#8E867B] min-w-[100px] shrink-0">Điện thoại:</span>
+                  <span className="text-[#8E867B] min-w-[100px] shrink-0">{t('cartCheckout:confirmation.receiver.phoneLabel')}</span>
                   <a
                     href={`tel:${phone}`}
                     className="text-[#3E5641] font-semibold hover:underline"
@@ -949,7 +954,7 @@ export function OrderConfirmation({
                 </div>
                 {email && (
                   <div className="flex items-start gap-2.5">
-                    <span className="text-[#8E867B] min-w-[100px] shrink-0">Email:</span>
+                    <span className="text-[#8E867B] min-w-[100px] shrink-0">{t('cartCheckout:confirmation.receiver.emailLabel')}</span>
                     <span className="text-[#444444] break-all">{email}</span>
                   </div>
                 )}
@@ -958,19 +963,25 @@ export function OrderConfirmation({
               {/* Delivery & Payment Method */}
               <div className="space-y-2">
                 <div className="flex items-start gap-2.5">
-                  <span className="text-[#8E867B] min-w-[110px] shrink-0">Hình thức nhận:</span>
+                  <span className="text-[#8E867B] min-w-[110px] shrink-0">{t('cartCheckout:confirmation.receiver.methodLabel')}</span>
                   <span className="text-[#222222] font-medium">
-                    {shippingMode === 'pickup' ? 'Đến lấy tại tiệm' : 'Giao tận nơi'}
+                    {shippingMode === 'pickup'
+                      ? t('cartCheckout:confirmation.receiver.pickupText')
+                      : t('cartCheckout:confirmation.receiver.deliveryText')}
                   </span>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <span className="text-[#8E867B] min-w-[110px] shrink-0">Địa chỉ:</span>
+                  <span className="text-[#8E867B] min-w-[110px] shrink-0">{t('cartCheckout:confirmation.receiver.addressLabel')}</span>
                   <span className="text-[#333333] leading-relaxed">{address}</span>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <span className="text-[#8E867B] min-w-[110px] shrink-0">Thanh toán:</span>
+                  <span className="text-[#8E867B] min-w-[110px] shrink-0">{t('cartCheckout:confirmation.receiver.paymentLabel')}</span>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[#222222] font-medium">{payment}</span>
+                    <span className="text-[#222222] font-medium">
+                      {effectivePaymentMethod === 'bank'
+                        ? t('cartCheckout:confirmation.paymentMethodLabels.bank')
+                        : t('cartCheckout:confirmation.paymentMethodLabels.cod')}
+                    </span>
                     <span className="text-[12.5px] font-semibold text-[#3E5641]">
                       ({paymentBadgeInfo.label})
                     </span>
@@ -983,7 +994,7 @@ export function OrderConfirmation({
               <div className="mt-4 pt-4 border-t border-[#E5DFD5]/80 flex items-start gap-2.5 text-[13.5px]">
                 <FileText className="w-4 h-4 text-[#8E867B] shrink-0 mt-0.5" />
                 <div className="text-[#555555]">
-                  <strong className="text-[#333333] mr-1">Ghi chú:</strong>
+                  <strong className="text-[#333333] mr-1">{t('cartCheckout:confirmation.receiver.noteLabel')}</strong>
                   <span className="italic">&ldquo;{note}&rdquo;</span>
                 </div>
               </div>
@@ -993,21 +1004,23 @@ export function OrderConfirmation({
           {/* Pricing Breakdown */}
           <dl className="border-t border-[#E5DFD5] pt-5 pb-6 mb-6 text-[15px] sm:text-[16px] space-y-3">
             <div className="flex justify-between gap-4">
-              <dt className="text-[#666666]">Tạm tính sản phẩm</dt>
+              <dt className="text-[#666666]">{t('cartCheckout:confirmation.breakdown.subtotal')}</dt>
               <dd className="font-medium text-[#222222]">{money(subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-[#666666]">Phí vận chuyển toàn quốc</dt>
-              <dd className="font-semibold text-[#3E5641]">Miễn phí (0 đ)</dd>
+              <dt className="text-[#666666]">{t('cartCheckout:confirmation.breakdown.shipping')}</dt>
+              <dd className="font-semibold text-[#3E5641]">
+                {shippingFee === 0 ? t('cartCheckout:confirmation.breakdown.shippingFree') : money(shippingFee)}
+              </dd>
             </div>
             {discount > 0 && (
               <div className="flex justify-between gap-4">
-                <dt className="text-[#666666]">Ưu đãi giảm giá</dt>
+                <dt className="text-[#666666]">{t('cartCheckout:confirmation.breakdown.discount')}</dt>
                 <dd className="font-medium text-[#B37424]">-{money(discount)}</dd>
               </div>
             )}
             <div className="flex justify-between items-baseline gap-4 pt-4 border-t border-[#E5DFD5] text-[18px] sm:text-[22px] font-bold text-[#222222]">
-              <dt className="font-philosopher">Tổng Thanh Toán</dt>
+              <dt className="font-philosopher">{t('cartCheckout:confirmation.breakdown.total')}</dt>
               <dd
                 data-testid="order-confirmation-total"
                 className="text-[#3E5641] font-mono font-bold text-[22px] sm:text-[26px]"
@@ -1016,7 +1029,7 @@ export function OrderConfirmation({
               </dd>
             </div>
             <p className="text-right text-[#999999] text-[12px] mt-1">
-              (Giá đã bao gồm thuế GTGT &amp; quy cách đóng gói hộp quà cao cấp Mộc Ngôn Hương)
+              {t('cartCheckout:confirmation.breakdown.taxNote')}
             </p>
           </dl>
 
@@ -1027,7 +1040,7 @@ export function OrderConfirmation({
               onClick={() => onNavigate('auth')}
               className="rounded-full bg-[#3E5641] min-h-[50px] text-[#FAF8F3] font-semibold text-[14.5px] hover:bg-[#2B3C2D] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] cursor-pointer"
             >
-              <span>Xem Đơn Hàng Của Tôi</span>
+              <span>{t('cartCheckout:confirmation.actions.myOrders')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -1038,25 +1051,25 @@ export function OrderConfirmation({
               }}
               className="rounded-full border border-[#C89F5D] min-h-[50px] text-[#3E5641] bg-white font-semibold text-[14.5px] hover:bg-[#FAF8F3] hover:border-[#3E5641] transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
             >
-              <span>Tiếp Tục Mua Sắm</span>
+              <span>{t('cartCheckout:confirmation.actions.continueShopping')}</span>
             </button>
             <button
               type="button"
               onClick={() => onNavigate('contact')}
               className="rounded-full border border-[#D9D2C7] min-h-[50px] text-[#555555] bg-white font-medium text-[14.5px] hover:bg-gray-50 hover:text-[#222222] transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
             >
-              <span>Liên Hệ Tiệm Trà</span>
+              <span>{t('cartCheckout:confirmation.actions.contact')}</span>
             </button>
           </div>
 
           {/* Reassurance Footer */}
           <div className="mt-8 pt-6 border-t border-[#E5DFD5]/70 text-center text-[13px] text-[#8E867B]">
             <p>
-              Cần hỗ trợ gấp về đơn hàng? Gọi ngay hotline:{' '}
+              {t('cartCheckout:confirmation.supportFooterPrefix')}{' '}
               <a href="tel:0889742556" className="text-[#3E5641] font-bold hover:underline">
                 0889 742 556
               </a>{' '}
-              hoặc email{' '}
+              {t('cartCheckout:confirmation.supportFooterOr')}{' '}
               <a
                 href="mailto:mocngonhuong@gmail.com"
                 className="text-[#3E5641] font-medium hover:underline"

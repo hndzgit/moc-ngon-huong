@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { getAdminAuth, verifyAuthToken, getIsProduction } from '../_lib/firebaseAdmin.js';
 import { dispatchResendEmail } from '../_lib/notifications.js';
-import { renderVerificationEmail } from '../_lib/authEmailTemplates.js';
+import { renderVerificationEmail, normalizeEmailLocale } from '../_lib/authEmailTemplates.js';
 
 interface VercelRequest extends IncomingMessage {
   query?: Record<string, string | string[]>;
@@ -101,10 +101,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     // 3. Render brand-aligned HTML email
+    let parsedBody: any = req.body;
+    if (typeof parsedBody === 'string') {
+      try {
+        parsedBody = JSON.parse(parsedBody);
+      } catch {
+        parsedBody = {};
+      }
+    }
+    const locale = normalizeEmailLocale(parsedBody?.locale);
     const customerName = targetEmail.split('@')[0];
     const { subject, html, text } = renderVerificationEmail({
       customerName,
       verificationLink,
+      locale,
     });
 
     // 4. Dispatch through Resend using verified brand sender

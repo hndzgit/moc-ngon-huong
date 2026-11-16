@@ -17,6 +17,7 @@ import {
   signInAnonymously,
   User,
 } from '../services/firebase';
+import { getActiveLocale } from '../i18n';
 
 export interface CustomerProfile {
   fullName: string;
@@ -159,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             Authorization: `Bearer ${idToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ fullName: fullName.trim() }),
+          body: JSON.stringify({ fullName: fullName.trim(), locale: getActiveLocale() }),
           keepalive: true,
         });
         if (!res.ok) {
@@ -209,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: cleanEmail }),
+        body: JSON.stringify({ email: cleanEmail, locale: getActiveLocale() }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {

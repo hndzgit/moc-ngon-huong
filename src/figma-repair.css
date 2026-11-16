@@ -543,3 +543,9 @@ select { appearance:none; background-image:url('/assets/figma/originals/4f88c.sv
   .home-teas .product-card h3,
   .product-detail-page > section:nth-child(3) .product-card h3 { min-height:2.25em; }
 }
+@media (max-width:360px) {
+  .site-header .brand-logo { width:50px; height:45px; }
+  .site-header .header-main > .flex:last-child { gap:2px; }
+  .site-header .header-main > .flex:last-child > button { width:32px; height:32px; padding-left:4px; padding-right:4px; }
+  .site-header .header-main [data-testid="header-language-switcher"] { height:28px; padding-left:6px; padding-right:6px; font-size:11px; }
+}

@@ -15,10 +15,12 @@ import {
   clearContextStorage,
 } from './conversationState';
 import { composeResponse } from './responseEngine';
+import type { SupportedLocale } from '../lib/locale';
 
 export * from './types';
 export * from './vietnameseUtils';
 export * from './catalogKnowledge';
+export * from './englishNlp';
 export * from './synonyms';
 export * from './intentClassifier';
 export * from './conversationState';
@@ -38,7 +40,8 @@ export interface ProcessMessageResult {
 export function processUserMessage(
   userQuery: string,
   currentContext: ConversationContext,
-  cartSummary?: { totalQuantity: number; subtotal: number }
+  cartSummary?: { totalQuantity: number; subtotal: number },
+  locale: SupportedLocale = 'vi'
 ): ProcessMessageResult {
   const trimmed = (userQuery || '').trim();
 
@@ -55,7 +58,7 @@ export function processUserMessage(
   // Step 3: Update conversation context
   let nextContext = updateContextWithEntities(activeContext, entities, intent);
 
-  // If user asked "Bao nhiêu?" without mentioning a product, use the current active product
+  // If user asked "Bao nhiêu?" / "How much?" without mentioning a product, use the current active product
   if (intent === 'PRICE_INQUIRY' && !nextContext.selectedProductId) {
     if (nextContext.lastRecommendedProductIds && nextContext.lastRecommendedProductIds.length > 0) {
       nextContext.selectedProductId = nextContext.lastRecommendedProductIds[0];
@@ -65,7 +68,7 @@ export function processUserMessage(
   }
 
   // Step 4: Compose grounded response
-  const reply = composeResponse(intent, nextContext, cartSummary);
+  const reply = composeResponse(intent, nextContext, cartSummary, locale);
 
   // If products were recommended in the response, record their IDs in context
   if (reply.products && reply.products.length > 0) {

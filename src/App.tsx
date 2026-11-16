@@ -6,11 +6,14 @@ import { warmMotionEngine } from './motion/engine-loader';
 import { useRouteScroll } from './motion/useRouteScroll';
 import { FigmaArtwork } from './components/FigmaArtwork';
 import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CartItem, GiftConfiguration, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
 import { changeEmotion, createGiftDraft, INTENTIONS, journeyHash } from './data/giftJourney';
+import { getLocalizedCardCopy } from './data/localizedCatalog';
+import { normalizeLocale } from './lib/locale';
+import { updateDocumentSeo } from './i18n';
 import { AtelierIntroduction } from './components/AtelierIntroduction';
 import { PRODUCTS } from './data/products';
-import { FIGMA_CARD_COPY } from './data/figmaMedia';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { EmotionSelector } from './components/EmotionSelector';
@@ -68,6 +71,8 @@ const DEFAULT_CART_ITEMS: CartItem[] = [
 ];
 
 export function App() {
+  const { t, i18n } = useTranslation(['home', 'common']);
+  const locale = normalizeLocale(i18n.language);
   const [currentPage, setCurrentPage] = useState<PageRoute>(()=>readRoute().page);
   const [selectedProductId, setSelectedProductId] = useState<string>(()=>readRoute().productId || 'buoi-an');
   const [giftDraft,setGiftDraft]=useState<GiftDraft>(()=>{
@@ -78,6 +83,10 @@ export function App() {
   const motionScope = usePageMotion(`${currentPage}/${selectedProductId}`);
   const rememberNavigation = useRouteScroll(`${currentPage}/${selectedProductId}`);
   useEffect(warmMotionEngine,[]);
+
+  useEffect(() => {
+    updateDocumentSeo(locale, currentPage, selectedProductId);
+  }, [locale, currentPage, selectedProductId]);
 
   useEffect(() => {
     const restoreRoute = () => {
@@ -270,9 +279,9 @@ export function App() {
       {/* Main Page Router */}
       <main className="flex-1">
         {currentPage === 'not-found' && <section className="figma-container py-20 text-center">
-          <h1 className="font-philosopher text-4xl text-[#3e5641]">Không tìm thấy trang</h1>
-          <p className="my-6">Đường dẫn này không tồn tại.</p>
-          <button type="button" className="rounded-full border border-[#3e5641] px-8 py-3 text-[#3e5641]" onClick={()=>handleNavigate('home')}>Về trang chủ</button>
+          <h1 className="font-philosopher text-4xl text-[#3e5641]">{t('common:notFound.title')}</h1>
+          <p className="my-6">{t('common:notFound.description')}</p>
+          <button type="button" className="rounded-full border border-[#3e5641] px-8 py-3 text-[#3e5641]" onClick={()=>handleNavigate('home')}>{t('common:notFound.backHome')}</button>
         </section>}
         {currentPage === 'home' && (
           <>
@@ -292,29 +301,32 @@ export function App() {
               <div className="figma-container">
                 <div className="text-center max-w-[680px] mx-auto mb-10">
                   <p className="text-[13px] md:text-[14px] font-medium text-[#9c5435] mb-1">
-                    Trà tại Mộc Ngôn Hương
+                    {t('home:teasGrid.kicker')}
                   </p>
                   <h2 className="font-philosopher font-bold text-[28px] sm:text-[36px] lg:text-[42px] text-[#203323] mb-2">
-                    Bốn Sắc Hương Trà Việt
+                    {t('home:teasGrid.title')}
                   </h2>
                   <p className="text-[14px] text-[#666666] leading-[22px]">
-                    Lựa chọn từng búp trà đạt chuẩn từ những nghệ nhân vùng chè danh tiếng Thái Nguyên.
+                    {t('home:teasGrid.subtitle')}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {homepageFourProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      imageSrc={`/assets/optimized/discovery-card-${product.id}.webp`}
-                      displayTitle={FIGMA_CARD_COPY[product.id]?.title}
-                      displayDescription={FIGMA_CARD_COPY[product.id]?.description}
-                      product={product}
-                      quantity={cartQuantities[product.id] || 0}
-                      onUpdateQuantity={handleUpdateProductQuantity}
-                      onSelect={(id) => handleNavigate('detail', id)}
-                    />
-                  ))}
+                  {homepageFourProducts.map((product) => {
+                    const cardCopy = getLocalizedCardCopy(product.id, locale);
+                    return (
+                      <ProductCard
+                        key={product.id}
+                        imageSrc={`/assets/optimized/discovery-card-${product.id}.webp`}
+                        displayTitle={cardCopy?.title}
+                        displayDescription={cardCopy?.description}
+                        product={product}
+                        quantity={cartQuantities[product.id] || 0}
+                        onUpdateQuantity={handleUpdateProductQuantity}
+                        onSelect={(id) => handleNavigate('detail', id)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </section>
@@ -332,39 +344,25 @@ export function App() {
               <div className="figma-container">
                 <div className="text-center max-w-[720px] mx-auto mb-10">
                   <p className="text-[13px] md:text-[14px] font-medium text-[#9c5435] mb-1">
-                    Trải nghiệm Đa Giác Quan
+                    {t('home:unboxing.kicker')}
                   </p>
                   <h2 className="font-philosopher font-bold text-[28px] sm:text-[36px] lg:text-[42px] text-[#203323] mb-2">
-                    Nghệ Thuật Mở Hộp Đa Giác Quan
+                    {t('home:unboxing.title')}
                   </h2>
                   <p className="text-[14px] text-[#666666] leading-[22px]">
-                    Mỗi chi tiết đều được thiết kế tỉ mỉ để người nhận cảm nhận được sự trân quý ngay từ cái chạm tay đầu tiên.
+                    {t('home:unboxing.subtitle')}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {[
-                    {
-                      icon: 'kraft' as const,
-                      title: 'Chất Liệu Kraft Mộc Mỹ Thuật',
-                      desc: 'Bao bì sử dụng giấy tái chế tự nhiên, ép kim hoa văn lá trà cổ điển, thân thiện với môi trường và mang hơi thở tự nhiên thuần phác.',
-                      tag: '01 • XÚC GIÁC MỘC MẠC',
-                    },
-                    {
-                      icon: 'envelope' as const,
-                      title: 'Một Lời Nhắn Của Riêng Bạn',
-                      desc: 'Viết và xem trước lời nhắn trong hành trình chọn quà. Bản nháp chưa được gửi tới cửa hàng; cách thực hiện thiệp và chi phí cần trao đổi trước khi đặt.',
-                      tag: '02 • LỜI THƯƠNG ĐÍCH THỰC',
-                    },
-                    {
-                      icon: 'spoon' as const,
-                      title: 'Muỗng Gỗ Thưởng Trà Khắc Logo',
-                      desc: 'Chiếc muỗng gỗ đong trà định lượng chính xác 5g cho mỗi ấm trà hoàn hảo, đồng hành cùng người nhận trong những phút giây tĩnh tại.',
-                      tag: '03 • KỶ NIỆM BỀN LÂU',
-                    },
-                  ].map((item) => (
+                  {(t('home:unboxing.cards', { returnObjects: true }) as ReadonlyArray<{
+                    icon: 'kraft' | 'envelope' | 'spoon';
+                    title: string;
+                    desc: string;
+                    tag: string;
+                  }>).map((item) => (
                     <div
-                      key={item.title}
+                      key={item.tag}
                       className="bg-white rounded-[16px] p-6 border border-gray-200/80 shadow-2xs flex flex-col justify-between"
                     >
                       <div>
@@ -392,13 +390,13 @@ export function App() {
               <div className="figma-container">
                 <div className="text-center max-w-[720px] mx-auto mb-10">
                   <p className="text-[13px] md:text-[14px] font-medium text-[#9c5435] mb-1">
-                    Triết lý Thương Hiệu
+                    {t('home:philosophy.kicker')}
                   </p>
                   <h2 className="font-philosopher font-bold text-[28px] sm:text-[36px] lg:text-[42px] text-[#203323] mb-2">
-                    Vì Sao Là &ldquo;Mộc Ngôn Hương&rdquo;?
+                    {t('home:philosophy.title')}
                   </h2>
                   <p className="text-[14px] text-[#666666] leading-[22px]">
-                    Ba chữ giản dị đại diện cho ba lời cam kết chân thành nhất của chúng mình đối với văn hóa trà Việt và thế hệ người thưởng thức trẻ.
+                    {t('home:philosophy.subtitle')}
                   </p>
                 </div>
 
@@ -406,29 +404,15 @@ export function App() {
                   {/* Left Column: M - N - H Cards */}
                   <div className="lg:col-span-6 space-y-4">
                     <h3 className="font-philosopher font-bold text-[22px] text-[#203323] mb-3">
-                      Mộc Ngôn Hương - Trao Hương, Gửi Lời Thương
+                      {t('home:philosophy.columnHeading')}
                     </h3>
 
-                    {[
-                      {
-                        letter: 'M',
-                        title: 'Chân Bản Của Đất Trời - Mộc',
-                        desc: '100% búp chè tươi hái vào lúc sớm sương tại Tân Cương và La Bằng. Tôn trọng trọn vẹn vị mộc chát dịu, ngọt hậu sâu sắc tự nhiên mà không pha trộn bất kỳ phụ gia nào.',
-                        tags: '#TraThuanKhiet #ThaiNguyen',
-                      },
-                      {
-                        letter: 'N',
-                        title: 'Lời Khó Cất Thành Tiếng - Ngôn',
-                        desc: 'Người Việt vốn kín kẽ trong cách bày tỏ cảm xúc. "Ngôn" chính là sứ mệnh biến chén trà và tấm thiệp thành tiếng nói yêu thương, lòng biết ơn và sự trân trọng chân thành.',
-                        tags: '#MessageFirst #GuiLoiThuong',
-                      },
-                      {
-                        letter: 'H',
-                        title: 'Hương Hoa Thân Thuộc - Hương',
-                        desc: 'Hương bưởi sau vườn mẹ, hoa nhài đêm hè thanh khiết, hoa sói cổ truyền hay nốt cốm ngây thơm. Những nốt hương mang theo linh hồn làng quê đánh thức miền ký ức bình yên.',
-                        tags: '#HuongHoaViet #KyUcTuoiTho',
-                      },
-                    ].map((card) => (
+                    {(t('home:philosophy.cards', { returnObjects: true }) as ReadonlyArray<{
+                      letter: string;
+                      title: string;
+                      desc: string;
+                      tags: string;
+                    }>).map((card) => (
                       <div
                         key={card.letter}
                         className="bg-white rounded-[14px] p-5 border border-gray-200/80 shadow-2xs"
@@ -454,7 +438,7 @@ export function App() {
                     <div className="rounded-[16px] overflow-hidden shadow-md aspect-[16/10]">
                       <img
                         src={assetUrl("/assets/optimized/detail-hop-qua-tam-y-3.webp")}
-                        alt="Hộp quà Tâm Ý Mộc Ngôn Hương"
+                        alt={t('home:philosophy.photo1Alt')}
                         loading="lazy"
                         decoding="async"
                         width={1280}
@@ -465,7 +449,7 @@ export function App() {
                     <div className="rounded-[16px] overflow-hidden shadow-md aspect-[16/10]">
                       <img
                         src={assetUrl("/assets/optimized/detail-hop-qua-tam-y-story.webp")}
-                        alt="Bộ sưu tập trà Mộc Ngôn Hương"
+                        alt={t('home:philosophy.photo2Alt')}
                         loading="lazy"
                         decoding="async"
                         width={1280}
@@ -480,7 +464,7 @@ export function App() {
           </>
         )}
 
-        {currentPage === 'story' && <Suspense fallback={<div className="figma-container py-16" role="status">Đang mở câu chuyện trà…</div>}><StoryPage onNavigate={handleNavigate} /></Suspense>}
+        {currentPage === 'story' && <Suspense fallback={<div className="figma-container py-16" role="status">{t('common:loading.story')}</div>}><StoryPage onNavigate={handleNavigate} /></Suspense>}
 
         {currentPage === 'products' && (
           <ProductsPage
@@ -503,7 +487,7 @@ export function App() {
 
         {currentPage === 'contact' && <ContactPage onNavigate={handleNavigate} />}
 
-        {(currentPage==='gift-journey'||currentPage==='corporate')&&<Suspense fallback={<div className="figma-container py-16" role="status">Đang mở không gian quà tặng…</div>}>
+        {(currentPage==='gift-journey'||currentPage==='corporate')&&<Suspense fallback={<div className="figma-container py-16" role="status">{t('common:loading.gifting')}</div>}>
           {currentPage==='corporate'?<CorporateGiftingPage onNavigate={handleNavigate}/>:<GiftJourneyPage
             draft={giftDraft} step={journeyStep} onChange={draft=>{setGiftDraft(draft);history.replaceState(null,'',journeyHash(draft.emotion,journeyStep));}}
             onStep={step=>{setJourneyStep(step);window.location.hash=journeyHash(giftDraft.emotion,step);}}

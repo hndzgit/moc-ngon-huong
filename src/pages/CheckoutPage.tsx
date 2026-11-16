@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChangeMotion } from '../motion/motion';
 import { assetUrl } from '../lib/assets';
 import { OrderConfirmation } from '../components/OrderConfirmation';
 import { GiftCardPreview } from '../components/GiftCardPreview';
 import { CartItem, PageRoute, OrderRecord } from '../types';
-import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
+import { getOrderMedia } from '../data/figmaMedia';
+import { getCartProductSubtitle, getCartProductTitle } from '../data/localizedCatalog';
+import { formatVnd, normalizeLocale } from '../lib/locale';
 import { useAuth } from '../context/AuthContext';
 import {
   getProvinces,
@@ -58,6 +61,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onClearCart,
   onNavigate,
 }) => {
+  const { t, i18n } = useTranslation(['cartCheckout', 'common']);
+  const locale = normalizeLocale(i18n.language);
   const { user, profile, updateProfileData, getIdToken, ensureGuestAuthToken } = useAuth();
 
   const [shippingMode, setShippingMode] = useState<'delivery' | 'pickup'>('delivery');
@@ -176,12 +181,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         } else {
           setRecoveryError(
             data?.error ||
-              'Không thể khôi phục phiên đơn hàng này. Liên kết có thể không hợp lệ hoặc đã hết hạn.'
+              t('cartCheckout:checkout.recoveryBanner.invalidLinkError')
           );
         }
       } catch {
         if (!cancelled) {
-          setRecoveryError('Không thể kết nối tới máy chủ để khôi phục đơn hàng. Vui lòng thử lại.');
+          setRecoveryError(t('cartCheckout:checkout.recoveryBanner.networkError'));
         }
       } finally {
         if (!cancelled) {
@@ -272,9 +277,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       name: p.name,
       fullName: p.fullName,
       badge: p.type,
-      extraInfo: `${p.communeCount} xã/phường`,
+      extraInfo: t('cartCheckout:checkout.delivery.communeCountBadge', { count: p.communeCount }),
     }));
-  }, []);
+  }, [t]);
 
   const communeOptions = React.useMemo(() => {
     if (!provinceCode) return [];
@@ -338,12 +343,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setErrorMsg('');
 
     if (items.length === 0) {
-      setErrorMsg('Giỏ hàng của bạn đang trống.');
+      setErrorMsg(t('cartCheckout:checkout.validation.emptyCart'));
       setCheckoutStatus('idle');
       return;
     }
     if (!fullName.trim() || !phone.trim() || !email.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ Họ và Tên, Số Điện Thoại và Email.');
+      setErrorMsg(t('cartCheckout:checkout.validation.missingContact'));
       setCheckoutStatus('idle');
       return;
     }
@@ -352,9 +357,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         address,
         provinceCode,
         communeCode,
+        locale,
       });
       if (!addressValidation.isValid) {
-        setErrorMsg(addressValidation.error || 'Vui lòng kiểm tra lại địa chỉ giao hàng.');
+        setErrorMsg(addressValidation.error || t('cartCheckout:checkout.validation.invalidAddress'));
         setAddressError(addressValidation.error || '');
         setCheckoutStatus('idle');
         return;
@@ -364,9 +370,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     // Phone format basic check
     const phoneClean = phone.replace(/[\s.-]/g, '');
     if (!/^(0|\+84)[1-9][0-9]{8}$/.test(phoneClean)) {
-      setErrorMsg(
-        'Số điện thoại không đúng định dạng. Vui lòng nhập số điện thoại 10 chữ số tại Việt Nam (Ví dụ: 0889 742 556).'
-      );
+      setErrorMsg(t('cartCheckout:checkout.validation.invalidPhone'));
       setCheckoutStatus('idle');
       return;
     }
@@ -381,6 +385,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       const payload = {
         idempotencyKey: idempotencyKeyRef.current,
         userId: user?.uid || null,
+        locale,
         items: items.map((item) => ({
           productId: item.product.id,
           sku: item.product.sku,
@@ -441,7 +446,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       try {
         data = await response.json();
       } catch {
-        throw new Error('Máy chủ phản hồi định dạng không hợp lệ.');
+        throw new Error(t('cartCheckout:checkout.validation.invalidServerResponse'));
       }
 
       // 1. Success confirmation: HTTP 201 (new persisted order) OR HTTP 200 (persisted retry/duplicate)
@@ -533,8 +538,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       if (response.status === 409) {
         setCheckoutStatus('failed');
         setErrorMsg(
-          data?.error ||
-            'Xung đột mã yêu cầu (409 Conflict): Khóa đặt hàng này đã được sử dụng với nội dung khác. Vui lòng tạo đơn hàng mới.'
+          data?.error || t('cartCheckout:checkout.validation.conflict409')
         );
         return;
       }
@@ -543,8 +547,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       if (response.status === 503) {
         setCheckoutStatus('failed');
         setErrorMsg(
-          data?.error ||
-            'Hệ thống tiếp nhận đơn hàng đang bảo trì cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline Mộc Ngôn Hương (0889 742 556). Giỏ hàng của bạn vẫn được lưu giữ an toàn.'
+          data?.error || t('cartCheckout:checkout.validation.unavailable503')
         );
         return;
       }
@@ -553,7 +556,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       setCheckoutStatus('failed');
       setErrorMsg(
         data?.error ||
-          `Không thể tạo đơn hàng (Mã lỗi ${response.status}). Giỏ hàng của bạn vẫn được lưu giữ.`
+          t('cartCheckout:checkout.validation.genericError', { status: response.status })
       );
     } catch (err: any) {
       clearTimeout(timeoutId);
@@ -566,15 +569,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         (typeof navigator !== 'undefined' && !navigator.onLine)
       ) {
         setCheckoutStatus('uncertain');
-        setErrorMsg(
-          'Kết nối tới máy chủ bị gián đoạn hoặc vượt quá thời gian chờ (Timeout). Đơn hàng của bạn có thể đã được tiếp nhận trên hệ thống.'
-        );
+        setErrorMsg(t('cartCheckout:checkout.validation.timeoutError'));
         return;
       }
 
       setCheckoutStatus('failed');
       setErrorMsg(
-        err?.message || 'Đã xảy ra lỗi khi gửi đơn hàng. Giỏ hàng của bạn vẫn được lưu giữ.'
+        err?.message || t('cartCheckout:checkout.validation.unexpectedError')
       );
     }
   };
@@ -598,15 +599,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           action: 'request_recovery_link',
           orderCode: recoveryOrderCodeInput.trim().toUpperCase(),
           email: recoveryEmailInput.trim(),
+          locale,
         }),
       });
       const data = await res.json().catch(() => ({}));
       setRecoveryEmailSentMsg(
-        data?.message ||
-          'Nếu mã đơn hàng và địa chỉ email trùng khớp, liên kết khôi phục đã được gửi tới hộp thư của bạn.'
+        t('cartCheckout:checkout.recoveryBanner.defaultSentMsg')
       );
     } catch {
-      setRecoveryEmailSentMsg('Không thể gửi yêu cầu lúc này. Vui lòng thử lại sau ít phút.');
+      setRecoveryEmailSentMsg(t('cartCheckout:checkout.recoveryBanner.errorMsg'));
     } finally {
       setSendingRecoveryEmail(false);
     }
@@ -617,10 +618,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       <div className="min-h-[65vh] flex flex-col items-center justify-center bg-[#FAF8F3] px-4 py-16 text-center">
         <div className="w-11 h-11 border-4 border-[#3E5641]/20 border-t-[#3E5641] rounded-full animate-spin mb-4" />
         <p className="font-philosopher text-[20px] font-bold text-[#3E5641]">
-          Đang khôi phục phiên đơn hàng &amp; mã thanh toán VietQR...
+          {t('cartCheckout:checkout.recoveringTitle')}
         </p>
         <p className="text-[13.5px] text-[#666666] mt-1">
-          Đơn hàng của bạn được bảo toàn an toàn, không tạo trùng đơn mới.
+          {t('cartCheckout:checkout.recoveringSubtitle')}
         </p>
       </div>
     );
@@ -646,27 +647,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         }
         payment={
           serverOrder.paymentMethod === 'cod'
-            ? 'Thanh toán tiền mặt khi nhận hàng (COD)'
-            : 'Chuyển khoản ngân hàng (VietQR)'
+            ? t('cartCheckout:confirmation.paymentMethodLabels.cod')
+            : t('cartCheckout:confirmation.paymentMethodLabels.bank')
         }
         paymentMethod={serverOrder.paymentMethod}
         paymentStatus={serverOrder.paymentStatus}
         paymentInstructions={serverOrder.paymentInstructions}
         orderCode={serverOrder.orderCode}
         orderDate={serverOrder.createdAt}
-        orderStatus={
-          serverOrder.orderStatus === 'preparing' || serverOrder.orderStatus === 'pending_confirmation'
-            ? (serverOrder.customer?.shippingMode === 'pickup' ? 'Đang chuẩn bị đơn' : 'Đang chuẩn bị giao')
-            : serverOrder.orderStatus === 'ready_for_pickup'
-            ? 'Sẵn sàng nhận tại tiệm'
-            : serverOrder.orderStatus === 'shipping'
-            ? 'Đang giao hàng'
-            : serverOrder.orderStatus === 'completed'
-            ? (serverOrder.customer?.shippingMode === 'pickup' ? 'Đã nhận hàng' : 'Đã giao hàng')
-            : serverOrder.orderStatus === 'cancelled'
-            ? 'Đã hủy'
-            : serverOrder.orderStatus
-        }
+        orderStatus={serverOrder.orderStatus}
         subtotal={serverOrder.subtotal}
         shippingFee={serverOrder.shippingFee}
         discount={serverOrder.discount}
@@ -698,30 +687,30 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         <div className="text-center mb-8 md:mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#3E5641]/10 text-[#3E5641] text-[12px] md:text-[13px] font-semibold tracking-wider uppercase mb-3">
             <Sparkles className="w-3.5 h-3.5 text-[#C89F5D]" />
-            Mộc Ngôn Hương Atelier
+            {t('cartCheckout:checkout.atelierBadge')}
           </div>
           <h1 className="font-philosopher font-bold text-[32px] sm:text-[44px] md:text-[50px] text-[#3E5641] leading-[1.15]">
-            Hoàn Tất Đơn Hàng
+            {t('cartCheckout:checkout.pageTitle')}
           </h1>
           <p className="text-[14px] sm:text-[15px] text-[#666666] mt-2 max-w-[540px] mx-auto">
-            Hương trà thuần khiết được đóng gói thủ công trang trọng, sẵn sàng trao gửi tâm ý của bạn.
+            {t('cartCheckout:checkout.pageSubtitle')}
           </p>
 
           {/* Luxury Step Indicator */}
           <div className="flex items-center justify-center gap-3 sm:gap-6 mt-6 text-[12.5px] sm:text-[13.5px] font-medium text-[#777777]">
             <span className="flex items-center gap-1.5 text-[#3E5641]">
               <span className="w-5 h-5 rounded-full bg-[#3E5641] text-white flex items-center justify-center text-[11px]">✓</span>
-              Giỏ hàng
+              {t('cartCheckout:checkout.steps.cart')}
             </span>
             <span className="w-8 h-[1px] bg-[#C89F5D]/40"></span>
             <span className="flex items-center gap-1.5 text-[#3E5641] font-semibold">
               <span className="w-5 h-5 rounded-full bg-[#C89F5D] text-white flex items-center justify-center text-[11px]">2</span>
-              Thông tin & Đặt hàng
+              {t('cartCheckout:checkout.steps.info')}
             </span>
             <span className="w-8 h-[1px] bg-[#C89F5D]/40"></span>
             <span className="flex items-center gap-1.5 opacity-60">
               <span className="w-5 h-5 rounded-full border border-gray-300 text-gray-500 flex items-center justify-center text-[11px]">3</span>
-              Nhận hàng
+              {t('cartCheckout:checkout.steps.receive')}
             </span>
           </div>
         </div>
@@ -737,7 +726,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
               <div>
                 <h2 className="font-philosopher font-bold text-[19px] text-[#203323]">
-                  Không thể mở liên kết phiên đơn hàng
+                  {t('cartCheckout:checkout.recoveryBanner.title')}
                 </h2>
                 <p className="text-[13.5px] text-[#555555] mt-1 leading-relaxed">{recoveryError}</p>
               </div>
@@ -749,26 +738,26 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             >
               <div className="sm:col-span-4">
                 <label className="block text-[12px] font-semibold text-[#444444] mb-1">
-                  Mã đơn hàng (VD: MNH000000)
+                  {t('cartCheckout:checkout.recoveryBanner.orderCodeLabel')}
                 </label>
                 <input
                   type="text"
                   value={recoveryOrderCodeInput}
                   onChange={(e) => setRecoveryOrderCodeInput(e.target.value)}
-                  placeholder="MNH000000"
+                  placeholder={t('cartCheckout:checkout.recoveryBanner.orderCodePlaceholder')}
                   className="checkout-input font-mono uppercase"
                   required
                 />
               </div>
               <div className="sm:col-span-5">
                 <label className="block text-[12px] font-semibold text-[#444444] mb-1">
-                  Email đã dùng khi đặt hàng
+                  {t('cartCheckout:checkout.recoveryBanner.emailLabel')}
                 </label>
                 <input
                   type="email"
                   value={recoveryEmailInput}
                   onChange={(e) => setRecoveryEmailInput(e.target.value)}
-                  placeholder="email@example.com"
+                  placeholder={t('cartCheckout:checkout.recoveryBanner.emailPlaceholder')}
                   className="checkout-input"
                   required
                 />
@@ -779,7 +768,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   disabled={sendingRecoveryEmail}
                   className="w-full h-[46px] rounded-full bg-[#3E5641] text-[#FAF8F3] text-[13px] font-semibold hover:bg-[#203323] transition-colors cursor-pointer"
                 >
-                  {sendingRecoveryEmail ? 'Đang gửi...' : 'Gửi liên kết mới'}
+                  {sendingRecoveryEmail
+                    ? t('cartCheckout:checkout.recoveryBanner.sending')
+                    : t('cartCheckout:checkout.recoveryBanner.submit')}
                 </button>
               </div>
             </form>
@@ -795,22 +786,25 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         {/* Gift Card Attachments (if configured in cart) */}
         {items
           .filter((item) => item.giftConfiguration)
-          .map((item) => (
-            <aside
-              key={item.product.id}
-              className="checkout-gift-draft rounded-[18px] mb-8"
-              aria-label={`Bản nháp thiệp ${item.product.shortName}`}
-            >
-              <div>
-                <h2>Bản nháp đi cùng món quà</h2>
-                <p className="font-semibold text-[#3e5641] text-[15px]">{item.product.name}</p>
-                <p>
-                  Lời nhắn sẽ được nghệ nhân Mộc Ngôn Hương nắn nót viết tay trên thiệp mỹ thuật cao cấp kèm hộp quà.
-                </p>
-              </div>
-              <GiftCardPreview configuration={item.giftConfiguration!} compact />
-            </aside>
-          ))}
+          .map((item) => {
+            const localizedName = getCartProductTitle(item.product, locale);
+            return (
+              <aside
+                key={item.product.id}
+                className="checkout-gift-draft rounded-[18px] mb-8"
+                aria-label={`${t('cartCheckout:checkout.giftDraft.ariaPrefix')} ${localizedName}`}
+              >
+                <div>
+                  <h2>{t('cartCheckout:checkout.giftDraft.title')}</h2>
+                  <p className="font-semibold text-[#3e5641] text-[15px]">{localizedName}</p>
+                  <p>
+                    {t('cartCheckout:checkout.giftDraft.description')}
+                  </p>
+                </div>
+                <GiftCardPreview configuration={item.giftConfiguration!} compact />
+              </aside>
+            );
+          })}
 
         {/* Two-Column Master Layout (Form Left, Sticky Summary Right) */}
         <form onSubmit={handlePlaceOrder} noValidate>
@@ -827,15 +821,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </span>
                   <div>
                     <h2 id="section-buyer" className="font-philosopher font-bold text-[18px] sm:text-[20px] text-[#222222]">
-                      1. Thông tin người nhận
+                      {t('cartCheckout:checkout.buyer.heading')}
                     </h2>
-                    <p className="text-[12.5px] text-[#777777]">Thông tin nhận thông báo đơn hàng và hỗ trợ giao vận</p>
+                    <p className="text-[12.5px] text-[#777777]">{t('cartCheckout:checkout.buyer.subtitle')}</p>
                   </div>
                 </div>
 
                 {/* Salutation / Title */}
                 <div className="flex items-center gap-6 mb-4 text-[13.5px] text-[#444444]">
-                  <span className="text-[#888888] text-[13px]">Danh xưng:</span>
+                  <span className="text-[#888888] text-[13px]">{t('cartCheckout:checkout.buyer.salutationLabel')}</span>
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="radio"
@@ -844,7 +838,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       onChange={() => setGender('anh')}
                       className="accent-[#3E5641] w-4 h-4 cursor-pointer"
                     />
-                    <span className="group-hover:text-[#3E5641] transition-colors">Anh</span>
+                    <span className="group-hover:text-[#3E5641] transition-colors">{t('cartCheckout:checkout.buyer.salutationAnh')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input
@@ -854,33 +848,33 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       onChange={() => setGender('chi')}
                       className="accent-[#3E5641] w-4 h-4 cursor-pointer"
                     />
-                    <span className="group-hover:text-[#3E5641] transition-colors">Chị</span>
+                    <span className="group-hover:text-[#3E5641] transition-colors">{t('cartCheckout:checkout.buyer.salutationChi')}</span>
                   </label>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="checkout-fullName" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
-                      Họ và Tên <span className="text-red-500">*</span>
+                      {t('cartCheckout:checkout.buyer.fullNameLabel')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       id="checkout-fullName" value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Văn An"
+                      placeholder={t('cartCheckout:checkout.buyer.fullNamePlaceholder')}
                       className="checkout-input"
                       required
                     />
                   </div>
                   <div>
                     <label htmlFor="checkout-phone" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
-                      Số Điện Thoại <span className="text-red-500">*</span>
+                      {t('cartCheckout:checkout.buyer.phoneLabel')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
                       id="checkout-phone" value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Ví dụ: 0912 345 678"
+                      placeholder={t('cartCheckout:checkout.buyer.phonePlaceholder')}
                       className="checkout-input"
                       required
                     />
@@ -889,18 +883,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
                 <div className="mt-4">
                   <label htmlFor="checkout-email" className="block text-[13px] font-semibold text-[#222222] mb-1.5">
-                    Địa chỉ Email <span className="text-red-500">*</span>
+                    {t('cartCheckout:checkout.buyer.emailLabel')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     id="checkout-email" value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Ví dụ: an.nguyen@email.com"
+                    placeholder={t('cartCheckout:checkout.buyer.emailPlaceholder')}
                     className="checkout-input"
                     required
                   />
                   <p className="text-[11.5px] text-[#888888] mt-1.5 flex items-center gap-1.5">
-                    <span>✉️</span> Mã đơn hàng và hóa đơn điện tử sẽ được gửi trực tiếp đến hòm thư này.
+                    <span>✉️</span> {t('cartCheckout:checkout.buyer.emailHint')}
                   </p>
                 </div>
               </section>
@@ -913,9 +907,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </span>
                   <div>
                     <h2 id="section-delivery" className="font-philosopher font-bold text-[18px] sm:text-[20px] text-[#222222]">
-                      2. Hình thức nhận hàng
+                      {t('cartCheckout:checkout.delivery.heading')}
                     </h2>
-                    <p className="text-[12.5px] text-[#777777]">Chọn giao tận nhà hoặc ghé thăm không gian thưởng trà</p>
+                    <p className="text-[12.5px] text-[#777777]">{t('cartCheckout:checkout.delivery.subtitle')}</p>
                   </div>
                 </div>
 
@@ -932,13 +926,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <div className="checkout-radio-indicator" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-[14.5px] text-[#222222]">Giao tận nơi</span>
+                        <span className="font-semibold text-[14.5px] text-[#222222]">{t('cartCheckout:checkout.delivery.deliveryTitle')}</span>
                         <span className="px-2 py-0.5 rounded-full bg-[#3E5641]/10 text-[#3E5641] text-[11px] font-bold">
-                          Miễn phí
+                          {t('cartCheckout:checkout.delivery.deliveryBadge')}
                         </span>
                       </div>
                       <p className="text-[12px] text-[#666666] mt-1 leading-[18px]">
-                        Giao hàng toàn quốc chu đáo, bảo quản trà nguyên hương.
+                        {t('cartCheckout:checkout.delivery.deliveryDesc')}
                       </p>
                     </div>
                   </div>
@@ -954,10 +948,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <div className="checkout-radio-indicator" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-[14.5px] text-[#222222]">Đến lấy tại tiệm</span>
+                        <span className="font-semibold text-[14.5px] text-[#222222]">{t('cartCheckout:checkout.delivery.pickupTitle')}</span>
                       </div>
                       <p className="text-[12px] text-[#666666] mt-1 leading-[18px]">
-                        Ghé không gian thưởng trà tại Hà Nội hoặc Thái Nguyên.
+                        {t('cartCheckout:checkout.delivery.pickupDesc')}
                       </p>
                     </div>
                   </div>
@@ -972,14 +966,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <div className="p-3.5 rounded-xl bg-[#FAF8F3] border border-[#C89F5D]/40 text-[13px] space-y-2 animate-in fade-in duration-200">
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-[#3E5641] flex items-center gap-1.5">
-                              <Sparkles className="w-4 h-4 text-[#C89F5D]" /> Gợi ý cập nhật địa giới hành chính 2026
+                              <Sparkles className="w-4 h-4 text-[#C89F5D]" /> {t('cartCheckout:checkout.delivery.legacyBanner.title')}
                             </span>
                             <span className="text-[11px] bg-[#C89F5D]/20 text-[#3E5641] px-2 py-0.5 rounded-full font-medium">
-                              QĐ 19/2025/QĐ-TTg
+                              {t('cartCheckout:checkout.delivery.legacyBanner.badge')}
                             </span>
                           </div>
                           <p className="text-[#555555] text-[12.5px] leading-relaxed">
-                            Mộc Ngôn Hương đã xác thực địa chỉ cũ của bạn chuyển đổi tương ứng sang đơn vị hành chính mới:
+                            {t('cartCheckout:checkout.delivery.legacyBanner.desc')}
                           </p>
                           <div className="font-medium text-[#222222] bg-white p-2.5 rounded-lg border border-[#E5DFD5]">
                             {legacyProposal.proposedFormattedAddress}
@@ -990,14 +984,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                               onClick={handleAcceptProposal}
                               className="px-3.5 py-1.5 rounded-full bg-[#3E5641] text-[#FAF8F3] text-[12px] font-medium hover:bg-[#203323] transition-colors"
                             >
-                              Xác nhận dùng địa chỉ mới
+                              {t('cartCheckout:checkout.delivery.legacyBanner.acceptBtn')}
                             </button>
                             <button
                               type="button"
                               onClick={handleDismissProposal}
                               className="px-3 py-1.5 rounded-full border border-[#D5CFC5] text-[#666666] text-[12px] hover:bg-stone-50 transition-colors"
                             >
-                              Tự chọn thủ công
+                              {t('cartCheckout:checkout.delivery.legacyBanner.dismissBtn')}
                             </button>
                           </div>
                         </div>
@@ -1007,38 +1001,41 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <SearchableAddressSelect
                           id="checkout-province"
-                          label="Tỉnh / Thành phố"
+                          label={t('cartCheckout:checkout.delivery.provinceLabel')}
                           required
-                          placeholder="Chọn tỉnh / thành phố"
-                          searchPlaceholder="Tìm theo tên tỉnh, thành phố..."
+                          placeholder={t('cartCheckout:checkout.delivery.provincePlaceholder')}
+                          searchPlaceholder={t('cartCheckout:checkout.delivery.provinceSearchPlaceholder')}
                           value={provinceCode}
                           options={provinceOptions}
                           onChange={handleProvinceChange}
-                          emptyMessage="Không tìm thấy tỉnh / thành phố phù hợp"
+                          emptyMessage={t('cartCheckout:checkout.delivery.provinceEmpty')}
                         />
 
                         <SearchableAddressSelect
                           id="checkout-commune"
-                          label="Phường / Xã / Đặc khu"
+                          label={t('cartCheckout:checkout.delivery.communeLabel')}
                           required
                           disabled={!provinceCode}
                           placeholder={
                             provinceCode
-                              ? 'Chọn phường / xã / đặc khu'
-                              : 'Vui lòng chọn Tỉnh/Thành trước'
+                              ? t('cartCheckout:checkout.delivery.communePlaceholder')
+                              : t('cartCheckout:checkout.delivery.communeWaitPlaceholder')
                           }
-                          searchPlaceholder="Tìm theo tên phường, xã, đặc khu..."
+                          searchPlaceholder={t('cartCheckout:checkout.delivery.communeSearchPlaceholder')}
                           value={communeCode}
                           options={communeOptions}
                           onChange={handleCommuneChange}
                           emptyMessage={
                             provinceCode
-                              ? 'Không tìm thấy phường / xã phù hợp trong tỉnh này'
-                              : 'Vui lòng chọn Tỉnh / Thành phố trước'
+                              ? t('cartCheckout:checkout.delivery.communeEmptyProvinceSelected')
+                              : t('cartCheckout:checkout.delivery.communeEmptyNoProvince')
                           }
                           helperText={
                             provinceCode && selectedProvince
-                              ? `${selectedProvince.fullName} có ${communeOptions.length} đơn vị cấp xã`
+                              ? t('cartCheckout:checkout.delivery.communeHelper', {
+                                  provinceName: selectedProvince.fullName,
+                                  count: communeOptions.length,
+                                })
                               : undefined
                           }
                         />
@@ -1050,7 +1047,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           htmlFor="checkout-address"
                           className="block text-[12.5px] font-medium text-[#444444] mb-1"
                         >
-                          Số nhà, ngõ, đường, thôn, tổ dân phố <span className="text-red-500">*</span>
+                          {t('cartCheckout:checkout.delivery.streetLabel')} <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -1060,7 +1057,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             setAddress(e.target.value);
                             setAddressError('');
                           }}
-                          placeholder="Số nhà, ngõ/ngách, tên đường, thôn, buôn, ấp..."
+                          placeholder={t('cartCheckout:checkout.delivery.streetPlaceholder')}
                           className={`checkout-input ${
                             addressError ? 'border-red-400 ring-1 ring-red-400/20' : ''
                           }`}
@@ -1077,7 +1074,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           <MapPin className="w-4 h-4 text-[#C89F5D] shrink-0 mt-0.5" />
                           <div>
                             <span className="font-semibold text-[#8C827A] text-[11px] uppercase tracking-wider block">
-                              Địa chỉ giao nhận đầy đủ:
+                              {t('cartCheckout:checkout.delivery.fullAddressLabel')}
                             </span>
                             <span className="font-medium text-[#2B3A2D] text-[13px] block mt-0.5">
                               {formattedPreview}
@@ -1089,24 +1086,26 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   ) : (
                     <div className="space-y-3.5 pt-1">
                       <label className="block text-[13px] font-semibold text-[#222222]">
-                        Chọn điểm hẹn thưởng trà & nhận hàng
+                        {t('cartCheckout:checkout.delivery.pickupLabel')}
                       </label>
                       <select
                         value={pickupStore}
                         onChange={(e) => setPickupStore(e.target.value)}
                         className="checkout-input checkout-select text-[14px]"
                       >
-                        <option value="42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội">
-                          Không gian thưởng trà Hà Nội — 42 Phố Hàng Điếu, Hoàn Kiếm
-                        </option>
-                        <option value="Xã Tân Cương, TP. Thái Nguyên">
-                          Xưởng trà Mộc Ngôn Hương — Xã Tân Cương, TP. Thái Nguyên
-                        </option>
+                        {(t('cartCheckout:checkout.delivery.pickupStores', { returnObjects: true }) as ReadonlyArray<{
+                          value: string;
+                          label: string;
+                        }>).map((store) => (
+                          <option key={store.value} value={store.value}>
+                            {store.label}
+                          </option>
+                        ))}
                       </select>
                       <div className="p-3.5 rounded-[12px] bg-[#FAF8F3] border border-[#EAE5DB] text-[12.5px] text-[#666666] leading-[19px] flex items-start gap-2.5">
                         <MapPin className="w-4 h-4 text-[#3E5641] shrink-0 mt-0.5" />
                         <span>
-                          Tiệm sẽ chuẩn bị sẵn trà đóng gói quà tặng và thiệp viết tay để bạn ghé nhận thuận tiện nhất.
+                          {t('cartCheckout:checkout.delivery.pickupNote')}
                         </span>
                       </div>
                     </div>
@@ -1122,9 +1121,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </span>
                   <div>
                     <h2 id="section-payment" className="font-philosopher font-bold text-[18px] sm:text-[20px] text-[#222222]">
-                      3. Phương thức thanh toán
+                      {t('cartCheckout:checkout.payment.heading')}
                     </h2>
-                    <p className="text-[12.5px] text-[#777777]">Thanh toán linh hoạt, minh bạch và an tâm tuyệt đối</p>
+                    <p className="text-[12.5px] text-[#777777]">{t('cartCheckout:checkout.payment.subtitle')}</p>
                   </div>
                 </div>
 
@@ -1143,11 +1142,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <div className="flex items-center gap-2">
                         <Banknote className="w-4 h-4 text-[#3E5641]" />
                         <span className="font-semibold text-[14.5px] text-[#222222]">
-                          Thanh toán khi nhận hàng (COD)
+                          {t('cartCheckout:checkout.payment.codTitle')}
                         </span>
                       </div>
                       <p className="text-[12.5px] text-[#666666] mt-1 leading-[18px]">
-                        Thanh toán tiền mặt cho nhân viên giao hàng sau khi kiểm tra kiện hàng an tâm.
+                        {t('cartCheckout:checkout.payment.codDesc')}
                       </p>
                     </div>
                   </div>
@@ -1167,14 +1166,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <div className="flex items-center gap-2 flex-wrap">
                         <CreditCard className="w-4 h-4 text-[#C89F5D]" />
                         <span className="font-semibold text-[14.5px] text-[#222222]">
-                          Chuyển khoản ngân hàng (VietQR)
+                          {t('cartCheckout:checkout.payment.bankTitle')}
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-[#C89F5D]/15 text-[#8E6746] text-[11px] font-bold">
-                          BIDV • NAPAS 247
+                          {t('cartCheckout:checkout.payment.bankBadge')}
                         </span>
                       </div>
                       <p className="text-[12.5px] text-[#666666] mt-1 leading-[18px]">
-                        Tự động tạo mã VietQR động kèm số tiền chính xác và nội dung mã đơn hàng ngay sau khi đặt hàng.
+                        {t('cartCheckout:checkout.payment.bankDesc')}
                       </p>
                     </div>
                   </div>
@@ -1189,9 +1188,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </span>
                   <div>
                     <h2 id="section-notes" className="font-philosopher font-bold text-[18px] sm:text-[20px] text-[#222222]">
-                      4. Lời dặn & Ghi chú đơn hàng
+                      {t('cartCheckout:checkout.notes.heading')}
                     </h2>
-                    <p className="text-[12.5px] text-[#777777]">Yêu cầu đóng gói quà, thời gian giao hoặc dặn dò tiệm</p>
+                    <p className="text-[12.5px] text-[#777777]">{t('cartCheckout:checkout.notes.subtitle')}</p>
                   </div>
                 </div>
 
@@ -1199,7 +1198,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   rows={3}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ví dụ: Vui lòng giao giờ hành chính, gọi điện trước khi giao, hoặc đóng gói thêm nơ quà..."
+                  placeholder={t('cartCheckout:checkout.notes.placeholder')}
                   className="w-full p-4 rounded-[12px] border border-[#D9D2C7] text-[14px] text-[#222222] placeholder:text-[#9E968B] focus:outline-none focus:border-[#3E5641] focus:ring-2 focus:ring-[#3E5641]/15 transition-all"
                 />
 
@@ -1212,7 +1211,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       className="mt-0.5 w-4 h-4 rounded accent-[#3e5641] cursor-pointer"
                     />
                     <span className="group-hover:text-[#222222] transition-colors leading-[20px]">
-                      Đồng ý nhận cẩm nang thưởng trà và mã ưu đãi độc quyền qua email/SMS
+                      {t('cartCheckout:checkout.notes.agreePromo')}
                     </span>
                   </label>
                   <label className="flex items-start gap-2.5 cursor-pointer group select-none">
@@ -1223,7 +1222,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       className="mt-0.5 w-4 h-4 rounded accent-[#3e5641] cursor-pointer"
                     />
                     <span className="group-hover:text-[#222222] transition-colors leading-[20px]">
-                      Lưu thông tin giao nhận cho lần mua hàng tiếp theo
+                      {t('cartCheckout:checkout.notes.saveInfo')}
                     </span>
                   </label>
                 </div>
@@ -1239,11 +1238,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold text-[15px] text-amber-950">
-                        Trạng thái giao dịch chưa chắc chắn
+                        {t('cartCheckout:checkout.uncertain.title')}
                       </p>
                       <p className="mt-1 leading-[22px] text-amber-800">
-                        {errorMsg ||
-                          'Kết nối mạng bị gián đoạn hoặc vượt quá thời gian phản hồi. Để tránh tạo trùng 2 đơn hàng, giỏ hàng của bạn được giữ nguyên an toàn.'}
+                        {errorMsg || t('cartCheckout:checkout.uncertain.defaultMsg')}
                       </p>
                     </div>
                   </div>
@@ -1253,14 +1251,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       onClick={() => handlePlaceOrder()}
                       className="px-5 py-2.5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[13px] hover:bg-[#203323] transition-colors shadow-xs"
                     >
-                      Kiểm Tra & Gửi Lại (Bảo toàn đơn)
+                      {t('cartCheckout:checkout.uncertain.retryBtn')}
                     </button>
                     <button
                       type="button"
                       onClick={handleResetForNewOrder}
                       className="px-5 py-2.5 rounded-full bg-white border border-amber-300 text-amber-900 font-semibold text-[13px] hover:bg-amber-100 transition-colors"
                     >
-                      Tạo Mã Yêu Cầu Mới
+                      {t('cartCheckout:checkout.uncertain.newKeyBtn')}
                     </button>
                   </div>
                 </div>
@@ -1285,117 +1283,115 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 
                 <div className="flex items-center justify-between pb-4 border-b border-[#EAE5DB]">
                   <h2 id="section-summary" className="font-philosopher font-bold text-[20px] text-[#3E5641]">
-                    Đơn hàng của bạn
+                    {t('cartCheckout:checkout.summary.heading')}
                   </h2>
                   <span className="px-2.5 py-1 rounded-full bg-[#FAF8F3] border border-[#E5DFD5] text-[#3E5641] text-[12px] font-semibold">
-                    {items.reduce((acc, i) => acc + i.quantity, 0)} món
+                    {t('cartCheckout:checkout.summary.itemCount', {
+                      count: items.reduce<number>((acc, i) => acc + i.quantity, 0),
+                    })}
                   </span>
                 </div>
 
                 {/* Product Items List */}
                 <div className="divide-y divide-[#F0EBE1] max-h-[360px] overflow-y-auto pr-1">
-                  {items.map(({ product, quantity, giftConfiguration }) => (
-                    <div key={product.id} className="py-3.5 flex items-start sm:items-center gap-3 sm:gap-3.5 group">
-                      <div className="relative shrink-0">
-                        <img
-                          src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
-                          style={{ objectPosition: getOrderMedia(product.id)?.position }}
-                          alt={product.name}
-                          className="w-[56px] h-[56px] sm:w-[60px] sm:h-[60px] rounded-[10px] object-cover border border-[#E5DFD5] bg-[#FAF8F3]"
-                        />
-                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#3E5641] text-white text-[11px] font-bold flex items-center justify-center shadow-xs">
-                          {quantity}
-                        </span>
-                      </div>
+                  {items.map(({ product, quantity, giftConfiguration }) => {
+                    const localizedTitle = getCartProductTitle(product, locale);
+                    const localizedSubtitle = getCartProductSubtitle(product, locale);
+                    return (
+                      <div key={product.id} className="py-3.5 flex items-start sm:items-center gap-3 sm:gap-3.5 group">
+                        <div className="relative shrink-0">
+                          <img
+                            src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
+                            style={{ objectPosition: getOrderMedia(product.id)?.position }}
+                            alt={localizedTitle}
+                            className="w-[56px] h-[56px] sm:w-[60px] sm:h-[60px] rounded-[10px] object-cover border border-[#E5DFD5] bg-[#FAF8F3]"
+                          />
+                          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#3E5641] text-white text-[11px] font-bold flex items-center justify-center shadow-xs">
+                            {quantity}
+                          </span>
+                        </div>
 
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-philosopher font-bold text-[14.5px] text-[#222222] leading-snug group-hover:text-[#3E5641] transition-colors">
-                          {product.id === 'hop-qua-tam-y'
-                            ? 'Hộp Quà Tâm Ý'
-                            : FIGMA_PRODUCT_COPY[product.id]?.title || product.name}
-                        </h3>
-                        <p className="text-[11.5px] text-[#777777] mt-0.5">
-                          {product.emotion === 'COMBO'
-                            ? 'AN · THƯƠNG · CẢM · NHỚ'
-                            : {
-                                AN: 'Trà Hương Hoa Bưởi · Bình An',
-                                THUONG: 'Trà Hương Hoa Nhài · Yêu Thương',
-                                CAM: 'Trà Hương Hoa Sói · Tri Ân',
-                                NHO: 'Trà Hương Cốm · Dịu Êm',
-                                ALL: 'Các hương trà đặc sản',
-                              }[product.emotion]}
-                        </p>
-                        {product.sku && (
-                          <p
-                            data-testid={`checkout-item-sku-${product.id}`}
-                            className="text-[11px] font-mono text-[#555555] mt-0.5 leading-snug"
-                          >
-                            Mã sản phẩm:{' '}
-                            <span className="whitespace-nowrap font-semibold text-[#3E5641]">
-                              {product.sku}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-philosopher font-bold text-[14.5px] text-[#222222] leading-snug group-hover:text-[#3E5641] transition-colors">
+                            {localizedTitle}
+                          </h3>
+                          <p className="text-[11.5px] text-[#777777] mt-0.5">
+                            {localizedSubtitle}
+                          </p>
+                          {product.sku && (
+                            <p
+                              data-testid={`checkout-item-sku-${product.id}`}
+                              className="text-[11px] font-mono text-[#555555] mt-0.5 leading-snug"
+                            >
+                              {t('common:labels.sku')}:{' '}
+                              <span className="whitespace-nowrap font-semibold text-[#3E5641]">
+                                {product.sku}
+                              </span>
+                            </p>
+                          )}
+                          <p className="text-[11px] text-[#777777] mt-0.5 leading-snug">
+                            {t('common:labels.quantity')}: <strong className="text-[#222222]">{quantity}</strong> • {t('common:labels.unitPrice')}:{' '}
+                            <span className="whitespace-nowrap">
+                              {formatVnd(product.price, locale, 'compact-vi')}
                             </span>
                           </p>
-                        )}
-                        <p className="text-[11px] text-[#777777] mt-0.5 leading-snug">
-                          Số lượng: <strong className="text-[#222222]">{quantity}</strong> • Đơn giá:{' '}
-                          <span className="whitespace-nowrap">
-                            {product.price.toLocaleString('vi-VN')}đ
-                          </span>
-                        </p>
-                        {giftConfiguration && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-[#C89F5D] font-medium mt-0.5">
-                            <Sparkles className="w-3 h-3" /> Đã kèm thiệp cá nhân
-                          </span>
-                        )}
-                      </div>
+                          {giftConfiguration && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-[#C89F5D] font-medium mt-0.5">
+                              <Sparkles className="w-3 h-3" /> {t('cartCheckout:checkout.summary.giftAttached')}
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="font-semibold text-[14px] text-[#222222] block">
-                          {(product.price * quantity).toLocaleString('vi-VN')} đ
-                        </span>
-                        <span className="text-[11px] text-[#888888]">
-                          {product.price.toLocaleString('vi-VN')} đ / hộp
-                        </span>
+                        <div className="text-right shrink-0">
+                          <span className="font-semibold text-[14px] text-[#222222] block">
+                            {formatVnd(product.price * quantity, locale, 'spaced-vi')}
+                          </span>
+                          <span className="text-[11px] text-[#888888]">
+                            {t('cartCheckout:checkout.summary.perBox', {
+                              price: formatVnd(product.price, locale, 'spaced-vi'),
+                            })}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Financial Summary */}
                 <div className="pt-4 border-t border-[#EAE5DB] space-y-2.5 text-[13.5px]">
                   <div className="flex justify-between text-[#666666]">
-                    <span>Tạm tính sản phẩm</span>
+                    <span>{t('cartCheckout:checkout.summary.subtotal')}</span>
                     <span className="font-medium text-[#222222]">
-                      {subtotal.toLocaleString('vi-VN')} đ
+                      {formatVnd(subtotal, locale, 'spaced-vi')}
                     </span>
                   </div>
                   <div className="flex justify-between text-[#666666]">
                     <span className="flex items-center gap-1.5">
-                      Phí vận chuyển
+                      {t('cartCheckout:checkout.summary.shipping')}
                       <span className="text-[11px] text-[#C89F5D] bg-[#C89F5D]/10 px-1.5 py-0.5 rounded">
-                        Ra mắt
+                        {t('cartCheckout:checkout.summary.shippingBadge')}
                       </span>
                     </span>
                     <span className="font-semibold text-[#3E5641]">
-                      Miễn phí
+                      {t('cartCheckout:checkout.summary.shippingFree')}
                     </span>
                   </div>
                   <div className="flex justify-between text-[#666666]">
-                    <span>Ưu đãi đóng hộp quà</span>
-                    <span className="font-medium text-[#3E5641]">Tặng kèm</span>
+                    <span>{t('cartCheckout:checkout.summary.giftWrap')}</span>
+                    <span className="font-medium text-[#3E5641]">{t('cartCheckout:checkout.summary.giftWrapFree')}</span>
                   </div>
 
                   {/* Total Row */}
                   <div className="pt-3 mt-3 border-t border-[#EAE5DB] flex justify-between items-baseline">
                     <span className="font-philosopher font-bold text-[17px] text-[#222222]">
-                      Tổng thanh toán
+                      {t('cartCheckout:checkout.summary.totalLabel')}
                     </span>
                     <div className="text-right">
                       <span className="font-philosopher font-bold text-[24px] sm:text-[26px] text-[#3E5641]">
-                        {subtotal.toLocaleString('vi-VN')} đ
+                        {formatVnd(subtotal, locale, 'spaced-vi')}
                       </span>
                       <span className="block text-[11px] text-[#888888] -mt-1">
-                        (Đã bao gồm thuế & túi đay quà tặng)
+                        {t('cartCheckout:checkout.summary.taxNote')}
                       </span>
                     </div>
                   </div>
@@ -1428,16 +1424,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           d="M4 12a8 8 0 018-8v8H4z"
                         />
                       </svg>
-                      <span>Đang Xử Lý Đơn Hàng...</span>
+                      <span>{t('cartCheckout:checkout.summary.submittingBtn')}</span>
                     </>
                   ) : checkoutStatus === 'uncertain' ? (
                     <>
-                      <span>Kiểm Tra & Gửi Lại</span>
+                      <span>{t('cartCheckout:checkout.summary.retrySubmitBtn')}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      <span>Xác Nhận Đặt Hàng</span>
+                      <span>{t('cartCheckout:checkout.summary.confirmBtn')}</span>
                       <ArrowRight className="w-4 h-4 text-[#C89F5D]" />
                     </>
                   )}
@@ -1447,15 +1443,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 <div className="pt-4 border-t border-[#F0EBE1] grid grid-cols-1 gap-2.5 text-[12px] text-[#666666]">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#3E5641] shrink-0" />
-                    <span>Trà sạch Tân Cương tự nhiên 100% · Không hương liệu nhân tạo</span>
+                    <span>{t('cartCheckout:checkout.summary.trust1')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <PackageCheck className="w-4 h-4 text-[#C89F5D] shrink-0" />
-                    <span>Đổi trả an tâm trong 7 ngày nếu không ưng ý</span>
+                    <span>{t('cartCheckout:checkout.summary.trust2')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <PhoneCall className="w-4 h-4 text-[#3E5641] shrink-0" />
-                    <span>Hotline hỗ trợ tận tâm: <strong>0889 742 556</strong></span>
+                    <span>{t('cartCheckout:checkout.summary.trust3Prefix')} <strong>0889 742 556</strong></span>
                   </div>
                 </div>
 

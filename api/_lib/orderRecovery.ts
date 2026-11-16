@@ -126,12 +126,17 @@ export function verifyRecoveryTokenHash(
   return match ? { valid: true } : { valid: false, reason: 'mismatch' };
 }
 
-export function buildOrderRecoveryUrl(orderId: string, recoveryToken?: string | null): string {
+export function buildOrderRecoveryUrl(
+  orderId: string,
+  recoveryToken?: string | null,
+  locale?: 'vi' | 'en'
+): string {
   const baseUrl = (process.env.PUBLIC_SITE_URL || 'https://mocngonhuong.com').replace(/\/$/, '');
+  const langSuffix = locale === 'en' ? '&lang=en' : '';
   if (recoveryToken) {
-    return `${baseUrl}/#/thanh-toan?orderId=${encodeURIComponent(orderId)}&token=${encodeURIComponent(recoveryToken)}`;
+    return `${baseUrl}/#/thanh-toan?orderId=${encodeURIComponent(orderId)}&token=${encodeURIComponent(recoveryToken)}${langSuffix}`;
   }
-  return `${baseUrl}/#/tai-khoan`;
+  return `${baseUrl}/#/tai-khoan${locale === 'en' ? '?lang=en' : ''}`;
 }
 
 export function getConfiguredVietQrBankDetails(): {

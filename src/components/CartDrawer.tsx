@@ -3,8 +3,11 @@ import { usePresenceMotion, useChangeMotion } from '../motion/motion';
 import { useDialogLifecycle } from './useDialogLifecycle';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CartItem, PageRoute } from '../types';
-import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
+import { getOrderMedia } from '../data/figmaMedia';
+import { getCartProductSubtitle, getCartProductTitle } from '../data/localizedCatalog';
+import { formatVnd, normalizeLocale } from '../lib/locale';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -24,6 +27,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onNavigate,
   onCheckout,
 }) => {
+  const { t, i18n } = useTranslation(['cartCheckout', 'common']);
+  const locale = normalizeLocale(i18n.language);
   const {ref,present,phase}=usePresenceMotion<HTMLDivElement>(isOpen,'cart');
   useDialogLifecycle(present,onClose,ref);
   const itemMotion=useChangeMotion<HTMLDivElement>(items.map(i=>`${i.product.id}:${i.quantity}`).join(','),'[data-quantity], [data-empty-copy]',.18,false,present);
@@ -64,18 +69,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       <aside
         inert={!isOpen}
         className="relative z-10 w-full max-w-[558px] bg-white h-full shadow-2xl flex flex-col justify-between"
-        role="dialog" aria-modal="true" aria-label="Giỏ hàng"
+        role="dialog" aria-modal="true" aria-label={t('cartCheckout:cart.dialogAria')}
       >
         {/* Drawer Header */}
         <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
           <h2 className="sr-only font-philosopher font-bold text-[26px] md:text-[28px] text-[#222222]">
-            Giỏ hàng
+            {t('cartCheckout:cart.title')}
           </h2>
           <button
             type="button"
             onClick={onClose}
             className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center text-[#222222] transition-colors text-[20px]"
-            aria-label="Đóng giỏ hàng"
+            aria-label={t('cartCheckout:cart.closeAria')}
           >
             <FigmaIcon name="closeModal" />
           </button>
@@ -89,18 +94,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <FigmaIcon name="emptyCart" />
             </div>
             <h3 data-empty-copy className="font-philosopher font-bold text-[24px] text-[#222222] mb-2">
-              Giỏ hàng trống
+              {t('cartCheckout:cart.emptyTitle')}
             </h3>
             <p className="text-[14px] md:text-[15px] text-[#666666] max-w-[280px] leading-[22px]">
-              Có vẻ như bạn chưa chọn được vị trà ưng ý nào.
+              {t('cartCheckout:cart.emptySubtitle')}
             </p>
-            <button type="button" onClick={() => { onClose(); onNavigate('products'); }} className="mt-10 w-full min-h-[62px] border border-[#3e5641] rounded-full text-[#3e5641] text-[20px]">Tiếp tục mua sắm</button>
+            <button type="button" onClick={() => { onClose(); onNavigate('products'); }} className="mt-10 w-full min-h-[62px] border border-[#3e5641] rounded-full text-[#3e5641] text-[20px]">{t('cartCheckout:cart.continueShopping')}</button>
           </div>
         ) : (
           /* Variant 1: Populated Cart Items List (Figma 127:8439) */
           <div ref={itemMotion} className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-gray-100">
             {items.map(({ product, quantity, giftConfiguration }) => {
               const checked = selectedIds[product.id] ?? true;
+              const localizedTitle = getCartProductTitle(product, locale);
               return (
                 <div
                   key={product.id}
@@ -112,13 +118,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       checked={checked}
                       onChange={() => toggleSelect(product.id)}
                       className="w-4 h-4 rounded accent-[#3e5641] cursor-pointer shrink-0"
-                      aria-label={`Chọn ${product.name}`}
+                      aria-label={t('cartCheckout:cart.selectItemAria', { name: localizedTitle })}
                     />
 
                     <img
                       src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
                       style={{ objectPosition: getOrderMedia(product.id)?.position }}
-                      alt={product.name}
+                      alt={localizedTitle}
                       onClick={() => {
                         onNavigate('detail', product.id);
                         onClose();
@@ -134,32 +140,32 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         }}
                         className="font-philosopher font-bold text-[16px] md:text-[17px] text-[#222222] hover:text-[#3e5641] transition-colors cursor-pointer leading-snug truncate"
                       >
-                        {product.id === 'hop-qua-tam-y' ? 'Hộp Quà Tâm Ý' : FIGMA_PRODUCT_COPY[product.id]?.title || product.name}
+                        {localizedTitle}
                       </h3>
                       <p className="cart-item-subtitle text-[12px] text-[#222] mt-1">
-                        {product.emotion === 'COMBO' ? 'AN · THƯƠNG · CẢM · NHỚ' : {AN:'Trà Hương Hoa Bưởi',THUONG:'Trà Hương Hoa Nhài',CAM:'Trà Hương Hoa Sói',NHO:'Trà Hương Cốm',ALL:'Các hương trà'}[product.emotion]}
+                        {getCartProductSubtitle(product, locale)}
                       </p>
                       {product.sku && (
                         <div
                           data-testid={`cart-item-sku-${product.id}`}
                           className="text-[11.5px] text-[#666666] font-mono mt-0.5 leading-[16px]"
                         >
-                          Mã sản phẩm:{' '}
+                          {t('common:labels.sku')}:{' '}
                           <span className="whitespace-nowrap">{product.sku}</span>
                         </div>
                       )}
                       <p className="cart-item-price text-[14px] text-[#444444] mt-1">
-                        {product.price.toLocaleString('en-US')}đ
+                        {formatVnd(product.price, locale, 'compact-en')}
                         {quantity > 1 && (
                           <span
                             data-testid={`cart-item-line-total-${product.id}`}
                             className="ml-2 text-[12px] font-sans font-normal text-[#666666]"
                           >
-                            × {quantity} = {(product.price * quantity).toLocaleString('en-US')}đ
+                            × {quantity} = {formatVnd(product.price * quantity, locale, 'compact-en')}
                           </span>
                         )}
                       </p>
-                      {giftConfiguration&&<p className="text-[10px] leading-4 text-[#3e5641] mt-1">Có bản nháp thiệp · xem tại thanh toán</p>}
+                      {giftConfiguration&&<p className="text-[10px] leading-4 text-[#3e5641] mt-1">{t('cartCheckout:cart.giftDraftNote')}</p>}
                     </div>
                   </div>
 
@@ -169,7 +175,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       type="button"
                       onClick={() => onUpdateQuantity(product.id, -1)}
                       className="text-[#222222] hover:text-[#3e5641] font-medium text-[15px] px-0.5"
-                      aria-label="Giảm số lượng"
+                      aria-label={t('common:actions.decreaseQty')}
                     >
                       -
                     </button>
@@ -181,7 +187,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       onClick={() => onUpdateQuantity(product.id, 1)}
                       disabled={quantity >= Math.min(99, product.stock)}
                       className="text-[#222222] hover:text-[#3e5641] font-medium text-[15px] px-0.5 disabled:opacity-35 disabled:cursor-not-allowed"
-                      aria-label="Tăng số lượng"
+                      aria-label={t('common:actions.increaseQty')}
                     >
                       +
                     </button>
@@ -197,10 +203,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           <div className="p-6 border-t border-gray-200 bg-white space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-[16px] text-[#222222] font-medium">
-                Tạm tính
+                {t('cartCheckout:cart.subtotal')}
               </span>
               <span className="font-bold text-[20px] md:text-[22px] text-[#222222]">
-                {subtotal.toLocaleString('en-US')}đ
+                {formatVnd(subtotal, locale, 'compact-en')}
               </span>
             </div>
 
@@ -214,7 +220,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               disabled={subtotal <= 0}
               className="disabled:opacity-40 w-full h-[50px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[16px] hover:bg-[#203323] transition-colors flex items-center justify-center shadow-md"
             >
-              Thanh Toán Ngay
+              {t('cartCheckout:cart.checkoutCta')}
             </button>
           </div>
         )}

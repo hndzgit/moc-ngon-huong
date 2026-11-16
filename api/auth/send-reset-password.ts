@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { getAdminAuth, getIsProduction } from '../_lib/firebaseAdmin.js';
 import { dispatchResendEmail } from '../_lib/notifications.js';
-import { renderPasswordResetEmail } from '../_lib/authEmailTemplates.js';
+import { renderPasswordResetEmail, normalizeEmailLocale } from '../_lib/authEmailTemplates.js';
 
 interface VercelRequest extends IncomingMessage {
   query?: Record<string, string | string[]>;
@@ -97,6 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const body = await parseRequestBody(req);
   const emailInput = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const locale = normalizeEmailLocale(body?.locale);
 
   // 1. Email format validation
   if (!emailInput || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput)) {
@@ -174,6 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { subject, html, text } = renderPasswordResetEmail({
         customerName,
         resetLink,
+        locale,
       });
 
       // 5. Dispatch through Resend using verified brand sender

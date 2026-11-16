@@ -1,0 +1,35 @@
+export const assistant = {
+  chrome: {
+    regionAria: 'Tư vấn Mộc Ngôn Hương',
+    onlineStatus: 'Trợ lý tư vấn trà trực tuyến',
+    resetTitle: 'Làm mới trò chuyện',
+    resetAria: 'Làm mới cuộc trò chuyện',
+    closeAria: 'Đóng khung chat',
+    justNow: 'Vừa xong',
+    botAlt: 'Bot',
+    viewDetails: 'Xem chi tiết',
+    addToCart: '+ Thêm giỏ',
+    chooseGift: 'Chọn làm quà',
+    chooseGiftTitle: 'Tùy biến quà tặng',
+    cardHeading: 'Gợi ý thông điệp thiệp quà:',
+    cardChars: '{{count}}/280 ký tự',
+    copied: '✓ Đã sao chép',
+    copy: 'Sao chép',
+    useOnCard: 'Dùng cho thiệp quà →',
+    inputPlaceholder: 'Nhập câu hỏi của bạn (vd: tư vấn quà tặng mẹ)...',
+    sendAria: 'Gửi tin nhắn',
+    launcherAria: 'Mở trợ lý tư vấn trà trực tuyến',
+    launcherAlt: 'Trợ lý trà',
+    launcherSrOnly: 'Trợ lý Mộc Ngôn Hương',
+    welcomeMessage:
+      'Dạ chào bạn! Mình là trợ lý tư vấn trà Mộc Ngôn Hương. Hôm nay bạn đang tìm thức trà thưởng thức cho riêng mình hay muốn chọn món quà trao gửi người thương ạ?',
+    resetMessage:
+      'Dạ, mình đã làm mới phiên trò chuyện rồi ạ! Bạn muốn mình tư vấn chọn vị trà hay giải đáp thắc mắc nào khác không?',
+    initialQuickReplies: [
+      'Tư vấn quà tặng mẹ',
+      'Trà hương nhẹ nhàng',
+      'Combo Tâm Ý 4 vị',
+      'Chính sách giao hàng',
+    ],
+  },
+} as const;

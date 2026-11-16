@@ -4,6 +4,7 @@
 
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { ChevronDown, Search, X, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { normalizeVietnameseSearch } from '../data/address';
 
 export interface AddressSelectOption {
@@ -33,16 +34,20 @@ export const SearchableAddressSelect: React.FC<SearchableAddressSelectProps> = (
   id,
   label,
   required = false,
-  placeholder = 'Chọn một mục...',
-  searchPlaceholder = 'Nhập tìm kiếm...',
+  placeholder,
+  searchPlaceholder,
   value,
   options,
   onChange,
   disabled = false,
-  emptyMessage = 'Không tìm thấy kết quả phù hợp',
+  emptyMessage,
   helperText,
   error,
 }) => {
+  const { t } = useTranslation('cartCheckout');
+  const resolvedPlaceholder = placeholder || t('checkout.select.defaultPlaceholder');
+  const resolvedSearchPlaceholder = searchPlaceholder || t('checkout.select.defaultSearchPlaceholder');
+  const resolvedEmptyMessage = emptyMessage || t('checkout.select.defaultEmpty');
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -202,7 +207,7 @@ export const SearchableAddressSelect: React.FC<SearchableAddressSelectProps> = (
               {selectedOption.fullName || selectedOption.name}
             </span>
           ) : (
-            <span className="text-[#8c827a]">{placeholder}</span>
+            <span className="text-[#8c827a]">{resolvedPlaceholder}</span>
           )}
         </span>
 
@@ -213,7 +218,8 @@ export const SearchableAddressSelect: React.FC<SearchableAddressSelectProps> = (
               tabIndex={-1}
               onClick={handleClear}
               className="p-1 rounded-full hover:bg-stone-100 text-[#8c827a] hover:text-[#3e5641] transition-colors"
-              title="Xóa lựa chọn"
+              title={t('checkout.select.clearAria')}
+              aria-label={t('checkout.select.clearAria')}
             >
               <X className="w-3.5 h-3.5" />
             </span>
@@ -253,7 +259,7 @@ export const SearchableAddressSelect: React.FC<SearchableAddressSelectProps> = (
                   setSearchQuery(e.target.value);
                   setFocusedIndex(-1);
                 }}
-                placeholder={searchPlaceholder}
+                placeholder={resolvedSearchPlaceholder}
                 className="w-full h-[36px] pl-9 pr-8 text-[13px] bg-white border border-[#d8d2c7] rounded-lg focus:outline-none focus:border-[#3e5641] focus:ring-1 focus:ring-[#3e5641] placeholder:text-[#a0998d]"
               />
               {searchQuery && (
@@ -279,7 +285,7 @@ export const SearchableAddressSelect: React.FC<SearchableAddressSelectProps> = (
           >
             {filteredOptions.length === 0 ? (
               <li className="px-4 py-6 text-center text-[13px] text-[#8c827a]">
-                {emptyMessage}
+                {resolvedEmptyMessage}
               </li>
             ) : (
               filteredOptions.map((opt, index) => {

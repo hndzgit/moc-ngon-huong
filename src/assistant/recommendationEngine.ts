@@ -10,6 +10,8 @@ import {
   FlavorProfileCategory,
 } from './types';
 import { CATALOG_FACTS } from './catalogKnowledge';
+import { CATALOG_FACTS_EN } from './englishNlp';
+import { formatVnd, type SupportedLocale } from '../lib/locale';
 
 export interface RecommendationResult {
   products: Product[];
@@ -21,12 +23,15 @@ export interface RecommendationResult {
 /**
  * Score each product according to current context (recipient, occasion, flavor, budget).
  */
-export function recommendProducts(context: ConversationContext): RecommendationResult {
-  const { recipient, occasion, flavorPreference, budgetMax, budgetMin, selectedProductId } = context;
+export function recommendProducts(
+  context: ConversationContext,
+  locale: SupportedLocale = 'vi'
+): RecommendationResult {
+  const { recipient, occasion, flavorPreference, budgetMax, budgetMin } = context;
 
   // Case 1: Cheaper alternative request
   if (context.lastIntent === 'CHEAPER_ALTERNATIVE') {
-    return handleCheaperAlternative(context);
+    return handleCheaperAlternative(context, locale);
   }
 
   // Filter out products strictly exceeding budgetMax
@@ -37,6 +42,14 @@ export function recommendProducts(context: ConversationContext): RecommendationR
     if (withinBudget.length > 0) {
       candidates = withinBudget;
     } else {
+      if (locale === 'en') {
+        const budgetFmt = formatVnd(budgetMax, 'en');
+        return {
+          products: [PRODUCTS[0]],
+          reason: `Currently our curated tea gift boxes are priced at **289,000 VND** (100g single-flavor gift boxes: An, Thương, Cảm, Nhớ) and **399,000 VND** (4-flavor "Tâm Ý" Gift Box). Your stated limit of ${budgetFmt} is below the listed gift box tiers, and complimentary nationwide shipping applies on every online order.`,
+          budgetNotice: 'Below current curated gift box tiers.',
+        };
+      }
       // If even 289k is too high, recommend loose tea if budget is around 75k
       if (budgetMax >= 75000 && budgetMax < 289000) {
         const topProduct = PRODUCTS[0]; // fallback representation
@@ -64,7 +77,6 @@ export function recommendProducts(context: ConversationContext): RecommendationR
   // Calculate scores for candidates
   const scored = candidates.map((product) => {
     let score = 10;
-    const fact = CATALOG_FACTS[product.id];
 
     // 1. Recipient Match
     if (recipient) {
@@ -147,7 +159,7 @@ export function recommendProducts(context: ConversationContext): RecommendationR
   const topMatches = scored.slice(0, 2).map((s) => s.product);
   const primaryProduct = topMatches[0];
 
-  const reason = composeRecommendationReason(primaryProduct, context);
+  const reason = composeRecommendationReason(primaryProduct, context, locale);
 
   return {
     products: topMatches,
@@ -156,18 +168,29 @@ export function recommendProducts(context: ConversationContext): RecommendationR
 }
 
 /**
- * Handle "Có loại rẻ hơn không?"
+ * Handle "Có loại rẻ hơn không?" / "Cheaper alternative?"
  */
-function handleCheaperAlternative(context: ConversationContext): RecommendationResult {
+function handleCheaperAlternative(
+  context: ConversationContext,
+  locale: SupportedLocale = 'vi'
+): RecommendationResult {
   const currentId = context.selectedProductId || (context.lastRecommendedProductIds && context.lastRecommendedProductIds[0]);
 
   if (currentId === 'hop-qua-tam-y') {
-    // Current is combo 399k -> suggest single boxes 289k
     const singleBoxes = PRODUCTS.filter((p) => p.id !== 'hop-qua-tam-y');
     let target = singleBoxes[0];
     if (context.flavorPreference === 'sweet') target = singleBoxes.find((p) => p.id === 'nhai-thuong') || target;
     if (context.flavorPreference === 'warm') target = singleBoxes.find((p) => p.id === 'soi-cam') || target;
     if (context.flavorPreference === 'nutty') target = singleBoxes.find((p) => p.id === 'com-nho') || target;
+
+    if (locale === 'en') {
+      const targetFact = CATALOG_FACTS_EN[target.id] || CATALOG_FACTS_EN['buoi-an'];
+      return {
+        products: [target],
+        reason: `For a more accessible option than the "Tâm Ý" Gift Box (399,000 VND), our **100g single-flavor gift boxes (${formatVnd(target.price, 'en')})** such as **${targetFact.name}** still include artisan peanut brittle, the wooden spoon, and our calligraphy QR card.`,
+        isCheaperAlternative: true,
+      };
+    }
 
     return {
       products: [target],
@@ -176,8 +199,16 @@ function handleCheaperAlternative(context: ConversationContext): RecommendationR
     };
   }
 
-  // Current is single box 289k -> suggest loose tea 75k
   const sampleLoose = PRODUCTS.find((p) => p.id === 'buoi-an') || PRODUCTS[0];
+  if (locale === 'en') {
+    const allSingleNames = PRODUCTS.filter((p) => !p.isSignature).map((p) => CATALOG_FACTS_EN[p.id]?.shortName || p.shortName).join(', ');
+    return {
+      products: [sampleLoose],
+      reason: `Our most accessible official gift boxes are the **100g single-flavor floral tea boxes at 289,000 VND** (${allSingleNames}), complete with peanut brittle, wooden spoon, and complimentary nationwide shipping.`,
+      isCheaperAlternative: true,
+    };
+  }
+
   return {
     products: [sampleLoose],
     reason: `Để có lựa chọn tiết kiệm nhất, Mộc Ngôn Hương có dòng **Trà rời 50g giá 75.000đ/hộp**, phù hợp tự thưởng hoặc mua kèm để thử nhiều vị trà La Bằng truyền thống.`,
@@ -186,11 +217,59 @@ function handleCheaperAlternative(context: ConversationContext): RecommendationR
 }
 
 /**
- * Compose grounded Vietnamese reason for recommendation
+ * Compose grounded reason for recommendation
  */
-function composeRecommendationReason(product: Product, context: ConversationContext): string {
-  const fact = CATALOG_FACTS[product.id];
+function composeRecommendationReason(
+  product: Product,
+  context: ConversationContext,
+  locale: SupportedLocale = 'vi'
+): string {
   const { recipient, flavorPreference, budgetMax } = context;
+
+  if (locale === 'en') {
+    const fact = CATALOG_FACTS_EN[product.id] || CATALOG_FACTS_EN['buoi-an'];
+    const priceFmt = formatVnd(product.price, 'en');
+    let reason = '';
+
+    if (product.id === 'buoi-an') {
+      if (recipient === 'mother' || recipient === 'parents' || recipient === 'grandparents') {
+        reason = `We recommend **${fact.name} (${priceFmt})** — cool early-spring pomelo blossom aroma with gentle briskness and a soothing sweet finish, ideal for older palates and heartfelt wishes of peace and wellness.`;
+      } else if (flavorPreference === 'gentle') {
+        reason = `**${fact.name} (${priceFmt})** is the ideal pick for anyone who enjoys a light, clean, airy floral tea without heavy bitterness.`;
+      } else {
+        reason = `**${fact.name} (${priceFmt})** embodies "AN — Peace & Gratitude", steeped traditionally with fresh pomelo blossoms from La Bằng.`;
+      }
+    } else if (product.id === 'nhai-thuong') {
+      if (recipient === 'partner') {
+        reason = `We suggest **${fact.name} (${priceFmt})** — infused with night-blooming fresh jasmine for a silky, lingering warmth that expresses tender affection.`;
+      } else if (flavorPreference === 'sweet') {
+        reason = `**${fact.name} (${priceFmt})** offers the naturally fragrant, delicately sweet floral finish you are looking for.`;
+      } else {
+        reason = `**${fact.name} (${priceFmt})** carries "THƯƠNG — Affection & Tenderness", gracefully perfumed with late-night jasmine blossoms.`;
+      }
+    } else if (product.id === 'soi-cam') {
+      if (recipient === 'teacher' || recipient === 'business') {
+        reason = `We recommend **${fact.name} (${priceFmt})** — rare highland chloranthus blossoms over rich Tan Cuong buds, delivering grounded herbal depth symbolizing sincere gratitude and respect.`;
+      } else {
+        reason = `**${fact.name} (${priceFmt})** represents "CẢM — Gratitude & Respect", bold yet clean across multiple infusions.`;
+      }
+    } else if (product.id === 'com-nho') {
+      if (recipient === 'friend') {
+        reason = `We suggest **${fact.name} (${priceFmt})** — nutty toasted young green rice over fine green tea, invoking Hanoi autumn memories and lasting friendship.`;
+      } else {
+        reason = `**${fact.name} (${priceFmt})** embodies "NHỚ — Nostalgia & Gentle Calm", smooth and comforting like an autumn breeze.`;
+      }
+    } else if (product.id === 'hop-qua-tam-y') {
+      reason = `**${fact.name} (${priceFmt})** is our signature complete gift collection combining all four flavors (Pomelo, Jasmine, Chloranthus, Young Green Rice), artisan peanut brittle, burlap tote, wooden spoon, and four QR keepsake cards.`;
+    } else {
+      reason = `${fact.name} listed at ${priceFmt} per our official catalog.`;
+    }
+
+    if (budgetMax) {
+      reason += ` (Fits cleanly within your budget up to ${formatVnd(budgetMax, 'en')}.)`;
+    }
+    return reason;
+  }
 
   let reason = '';
 

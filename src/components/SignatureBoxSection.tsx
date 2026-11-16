@@ -3,7 +3,10 @@ import { MotionImage } from '../motion/MotionImage';
 import { FigmaArtwork } from './FigmaArtwork';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PRODUCTS } from '../data/products';
+import { getLocalizedFigmaProductCopy, getLocalizedProduct } from '../data/localizedCatalog';
+import { formatVnd, normalizeLocale } from '../lib/locale';
 import { PageRoute, Product } from '../types';
 import './SignatureAtelier.css';
 
@@ -16,10 +19,10 @@ interface SignatureBoxSectionProps {
 }
 
 const GIFT_VIEWS = [
-  { src: '/source-assets/figma/combo-slide-1.png', node: '96:2989', title: 'Hộp quà Tâm Ý', caption: 'Một món quà, bốn sắc hương trà Việt.' },
-  { src: '/source-assets/figma/originals/gift-96-3129.jpg', node: '96:3129', title: 'Mở hộp quà', caption: 'Khám phá hộp quà qua ảnh chụp nguyên bản.' },
-  { src: '/source-assets/figma/originals/gift-96-3091.jpg', node: '96:3091', title: 'Những điều bên trong', caption: 'Các thức trà và phụ kiện trong cùng một món quà.' },
-  { src: '/source-assets/figma/originals/gift-96-3111.jpg', node: '96:3111', title: 'Bốn sắc hương', caption: 'Bưởi — AN, Nhài — THƯƠNG, Hoa Sói — CẢM, Cốm — NHỚ.' },
+  { src: '/source-assets/figma/combo-slide-1.png', node: '96:2989' },
+  { src: '/source-assets/figma/originals/gift-96-3129.jpg', node: '96:3129' },
+  { src: '/source-assets/figma/originals/gift-96-3091.jpg', node: '96:3091' },
+  { src: '/source-assets/figma/originals/gift-96-3111.jpg', node: '96:3111' },
 ] as const;
 
 export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
@@ -27,10 +30,26 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
   onAddToCart,
   onComposeGift,
 }) => {
-  const signatureProduct =
+  const { t, i18n } = useTranslation('home');
+  const locale = normalizeLocale(i18n.language);
+  const rawSignatureProduct =
     PRODUCTS.find((p) => p.id === 'hop-qua-tam-y') || PRODUCTS[4];
-  // Component 8 originals; product-detail galleries are a separate Figma slot.
-  const slides = GIFT_VIEWS;
+  const signatureProduct = getLocalizedProduct(rawSignatureProduct, locale);
+  const viewCopies = t('signatureBox.views', { returnObjects: true }) as ReadonlyArray<{
+    title: string;
+    caption: string;
+  }>;
+  const featureBoxes = t('signatureBox.features', { returnObjects: true }) as ReadonlyArray<{
+    title: string;
+    subtitle: string;
+  }>;
+  const comboFigmaCopy = getLocalizedFigmaProductCopy('hop-qua-tam-y', locale);
+
+  const slides = GIFT_VIEWS.map((view, idx) => ({
+    ...view,
+    title: viewCopies[idx]?.title || '',
+    caption: viewCopies[idx]?.caption || '',
+  }));
   const [slideIdx, setSlideIdx] = useState(0);
   const gesture = useRef<{ x: number; y: number } | null>(null);
   const suppressImageClick = useRef(false);
@@ -44,12 +63,12 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
       <div className="figma-container relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Image Carousel with Arrows & Dots (Figma Component 8 - 96:3135) */}
-          <div className="lg:col-span-6" role="region" aria-label="Hình ảnh Hộp Quà Tâm Ý" aria-roledescription="thư viện ảnh">
+          <div className="lg:col-span-6" role="region" aria-label={t('signatureBox.regionAria')} aria-roledescription={t('signatureBox.regionRoleDesc')}>
             <div className="relative rounded-[18px] overflow-hidden shadow-xl aspect-[16/10]">
               <button
                 type="button"
                 className="signature-photo-link"
-                aria-label="Xem chi tiết Hộp Quà Tâm Ý"
+                aria-label={t('signatureBox.photoLinkAria')}
                 onPointerDown={event => {
                   if (event.button !== 0) return;
                   gesture.current = { x: event.clientX, y: event.clientY };
@@ -75,7 +94,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
                 src={assetUrl(`/assets/optimized/gift-view-${slideIdx + 1}.webp`)}
                 data-original-asset={slides[slideIdx].src}
                 data-figma-node={slides[slideIdx].node}
-                alt={`${slides[slideIdx].title} — ảnh ${slideIdx + 1} trong 4`}
+                alt={`${slides[slideIdx].title} — ${t('signatureBox.altProgress', { idx: slideIdx + 1 })}`}
                 loading="lazy" decoding="async"
                 draggable={false}
                 className="w-full h-full object-cover cursor-pointer"
@@ -87,7 +106,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
                 type="button"
                 onClick={prevSlide}
                 className="absolute left-4 top-1/2 lg:top-[51.90114%] -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(140,131,131,0.2)] lg:backdrop-blur-[19.3px] shadow-[0_-3px_20px_rgba(0,0,0,0.04)] text-white flex items-center justify-center"
-                aria-label="Ảnh trước"
+                aria-label={t('signatureBox.prevSlideAria')}
               >
                 <FigmaIcon name="arrowLeft" />
               </button>
@@ -95,7 +114,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
                 type="button"
                 onClick={nextSlide}
                 className="absolute right-4 top-1/2 lg:top-[51.90114%] -translate-y-1/2 w-10 h-10 rounded-full bg-[rgba(140,131,131,0.2)] lg:backdrop-blur-[19.3px] shadow-[0_-3px_20px_rgba(0,0,0,0.04)] text-white flex items-center justify-center"
-                aria-label="Ảnh tiếp"
+                aria-label={t('signatureBox.nextSlideAria')}
               >
                 <FigmaIcon name="arrowRight" />
               </button>
@@ -104,7 +123,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
               <span>{String(slideIdx + 1).padStart(2, '0')} / 04</span>
               <p>{slides[slideIdx].caption}</p>
             </div>
-            <div className="signature-thumbnails" role="group" aria-label="Góc nhìn hộp quà">
+            <div className="signature-thumbnails" role="group" aria-label={t('signatureBox.viewsAria')}>
               {slides.map((slide, idx) => (
                 <button key={slide.node} type="button" aria-label={slide.title} aria-pressed={slideIdx === idx} onClick={() => setSlideIdx(idx)}>
                   <img src={assetUrl(`/assets/optimized/gift-thumb-${idx + 1}.webp`)} alt="" width={180} height={120} loading="lazy" decoding="async" />
@@ -125,7 +144,7 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
                       ? 'bg-[#8e6746]'
                       : 'bg-white'
                   }`}
-                  aria-label={`Slide ${idx + 1}`}
+                  aria-label={t('signatureBox.slideLabel', { idx: idx + 1 })}
                   aria-current={idx === slideIdx ? 'true' : undefined}
                 />
               ))}
@@ -135,78 +154,78 @@ export const SignatureBoxSection: React.FC<SignatureBoxSectionProps> = ({
           {/* Right Column: Badge, Title, Quote, 3 Feature Boxes, Price & 2 Buttons */}
           <div className="lg:col-span-6">
             <span className="inline-block px-3.5 py-1 rounded-full border border-[#c89f5d]/60 bg-[#c89f5d]/15 text-[#f7f4d5] text-[12px] font-medium mb-3">
-              Quà Tặng Signature Cao Cấp
+              {t('signatureBox.badge')}
             </span>
 
             <h2 id="signature-box-title" className="font-philosopher font-bold text-[28px] sm:text-[36px] lg:text-[42px] text-[#f7f4d5] leading-[1.15] mb-4">
-              Hộp Quà Trà Đa Hương — &ldquo;TÂM Ý&rdquo;
+              {t('signatureBox.title')}
             </h2>
 
             <blockquote className="border-l-[3px] border-[#c89f5d] pl-4 py-0.5 italic text-[14px] md:text-[15px] leading-[24px] text-[#f7f4d5]/90 mb-5">
-              Giải pháp quà tặng trọn vẹn dành cho các dịp lễ kỷ niệm, Ngày Nhà giáo 20/11 hay ra mắt gia đình. Một chiếc hộp chứa đựng cả 4 phong vị trà trứ danh cùng phụ kiện thủ công kỷ niệm.
+              {comboFigmaCopy.summary}
             </blockquote>
 
             {/* 3 Feature Highlight Boxes */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               <div className="rounded-[10px] border border-[#f7f4d5]/25 bg-white/5 px-3.5 py-2.5">
                 <p className="font-semibold text-[12.5px] text-[#f7f4d5]">
-                  <FigmaArtwork name="tea" /> 4 Hộp Trà Mộc
+                  <FigmaArtwork name="tea" /> {featureBoxes[0]?.title}
                 </p>
                 <p className="text-[11px] text-[#f7f4d5]/75 mt-0.5">
-                  Bưởi, Nhài, Sói, Cốm
+                  {featureBoxes[0]?.subtitle}
                 </p>
               </div>
               <div className="rounded-[10px] border border-[#f7f4d5]/25 bg-white/5 px-3.5 py-2.5">
                 <p className="font-semibold text-[12.5px] text-[#f7f4d5]">
-                  <FigmaArtwork name="spoon" /> Muỗng Gỗ
+                  <FigmaArtwork name="spoon" /> {featureBoxes[1]?.title}
                 </p>
                 <p className="text-[11px] text-[#f7f4d5]/75 mt-0.5">
-                  Phụ kiện thưởng trà
+                  {featureBoxes[1]?.subtitle}
                 </p>
               </div>
               <div className="rounded-[10px] border border-[#f7f4d5]/25 bg-white/5 px-3.5 py-2.5">
                 <p className="font-semibold text-[12.5px] text-[#f7f4d5]">
-                  <FigmaArtwork name="card" /> Thẻ Thông Điệp QR
+                  <FigmaArtwork name="card" /> {featureBoxes[2]?.title}
                 </p>
                 <p className="text-[11px] text-[#f7f4d5]/75 mt-0.5">
-                  Xem trước lời nhắn 2D
+                  {featureBoxes[2]?.subtitle}
                 </p>
               </div>
             </div>
 
             <div className="font-philosopher font-bold text-[28px] md:text-[32px] text-[#f7f4d5] mb-5">
-              {signatureProduct.price.toLocaleString('vi-VN')}đ
+              {formatVnd(rawSignatureProduct.price, locale, 'compact-vi')}
             </div>
 
             <details className="signature-inclusions">
-              <summary>Trong hộp quà có gì?</summary>
+              <summary>{t('signatureBox.inclusionsSummary')}</summary>
               <p>{signatureProduct.packaging}</p>
               <ul>
                 {signatureProduct.includedFlavors?.map(flavor => <li key={flavor.id}>{flavor.subtitle} · {flavor.title}</li>)}
               </ul>
             </details>
 
-            {onComposeGift && <button className="signature-compose" type="button" onClick={onComposeGift}>Viết lời nhắn cho món quà này <FigmaIcon name="arrowRight" /></button>}
+            {onComposeGift && <button className="signature-compose" type="button" onClick={onComposeGift}>{t('signatureBox.composeCta')} <FigmaIcon name="arrowRight" /></button>}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => onAddToCart(signatureProduct, 1)}
+                onClick={() => onAddToCart(rawSignatureProduct, 1)}
                 className="h-[46px] px-6 rounded-full bg-white text-[#203323] font-semibold text-[14.5px] hover:bg-[#f7f4d5] transition-colors flex items-center justify-center gap-2"
               >
                 <FigmaIcon name="giftBag" />
-                <span>Thêm Vào Giỏ Hàng</span>
+                <span>{t('signatureBox.addToCart')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  onAddToCart(signatureProduct, 1);
+                  onAddToCart(rawSignatureProduct, 1);
                   onNavigate('checkout');
                 }}
                 className="h-[46px] px-6 rounded-full bg-[#c89f5d] text-white font-semibold text-[14.5px] hover:bg-[#b58d4b] transition-colors shadow-md flex items-center justify-center gap-2"
               >
-                <FigmaIcon name="wallet" /><span>Mua Ngay</span>
+                <FigmaIcon name="wallet" /><span>{t('signatureBox.buyNow')}</span>
               </button>
             </div>
           </div>

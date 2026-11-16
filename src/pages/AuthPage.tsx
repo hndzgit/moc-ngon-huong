@@ -3,10 +3,16 @@ import { MotionDialog } from '../motion/MotionDialog';
 import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthStep, PageRoute, OrderRecord, OrderStatus, PaymentStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { findLegacyOrderProductVisual } from '../data/products';
 import { getOrderMedia } from '../data/figmaMedia';
+import { formatLocaleDateTime, formatVnd, normalizeLocale } from '../lib/locale';
+import {
+  getLocalizedEmotionName,
+  getLocalizedProductNameById,
+} from '../data/localizedCatalog';
 
 interface AuthPageProps {
   onLoginSuccess: (email: string) => void;
@@ -33,6 +39,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     updateProfileData,
     getIdToken,
   } = useAuth();
+
+  const { t, i18n } = useTranslation(['authAccount', 'common']);
+  const locale = normalizeLocale(i18n.language);
 
   const [step, setStep] = useState<AuthStep>(() => (user ? 'profile' : 'login'));
   const stateMotion = useChangeMotion<HTMLDivElement>(step, 'h1, form, .profile-card', 0.25);
@@ -82,7 +91,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     new URLSearchParams(window.location.search).has('figma-qa') ||
     (window.location.hash.includes('?') && new URLSearchParams(window.location.hash.split('?')[1]).has('figma-qa'))
   );
-  const activeUser = user || (isFigmaQa ? { email: 'khachhang.demo@mocngonhuong.com', displayName: 'Khách Hàng Trải Nghiệm', emailVerified: true } : null);
+  const activeUser = user || (isFigmaQa ? { email: 'khachhang.demo@mocngonhuong.com', displayName: locale === 'en' ? 'Demo Tea Guest' : 'Khách Hàng Trải Nghiệm', emailVerified: true } : null);
 
   // Auto switch to profile if user signs in, unless explicitly overridden in dev
   useEffect(() => {
@@ -107,7 +116,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         idToken = 'mock-token-user-a';
       }
       if (!idToken) {
-        setOrdersError('Chưa xác thực được phiên đăng nhập. Vui lòng đăng nhập lại.');
+        setOrdersError(t('errors.sessionUnauthenticated'));
         setOrdersLoading(false);
         return;
       }
@@ -149,12 +158,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       });
 
       if (response.status === 401) {
-        setOrdersError('Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang hoặc đăng nhập lại.');
+        setOrdersError(t('errors.sessionExpired'));
         setOrdersLoading(false);
         return;
       }
       if (response.status === 503) {
-        setOrdersError('Hệ thống cơ sở dữ liệu đang bảo trì. Vui lòng thử lại sau ít phút.');
+        setOrdersError(t('errors.dbMaintenance'));
         setOrdersLoading(false);
         return;
       }
@@ -162,10 +171,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       if (data.success && Array.isArray(data.orders)) {
         setUserOrders(data.orders);
       } else {
-        setOrdersError(data.error || 'Không thể tải lịch sử đơn hàng.');
+        setOrdersError(data.error || t('errors.loadOrdersFailed'));
       }
     } catch {
-      setOrdersError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.');
+      setOrdersError(t('errors.loadOrdersNetwork'));
     } finally {
       setOrdersLoading(false);
     }
@@ -196,11 +205,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             setEmail(recoveredEmail);
             setResetActionCode(oobCode);
             setStep('forgot-reset');
-            setInfoMsg(`Đang đặt lại mật khẩu cho tài khoản ${recoveredEmail}. Vui lòng nhập mật khẩu mới.`);
+            setInfoMsg(t('messages.resetActiveFor', { email: recoveredEmail }));
             setErrorMsg('');
           })
           .catch(() => {
-            setErrorMsg('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.');
+            setErrorMsg(t('errors.invalidResetLink'));
             setStep('forgot-email');
           })
           .finally(() => setLoading(false));
@@ -229,14 +238,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setInfoMsg('');
 
     if (!email.trim() || !password.trim()) {
-      setErrorMsg('Vui lòng nhập đầy đủ Email và Mật khẩu.');
+      setErrorMsg(t('errors.missingCredentials'));
       return;
     }
 
     setLoading(true);
     try {
       if (!isAuthAvailable) {
-        setErrorMsg('Hệ thống tài khoản đang được hoàn thiện kết nối. Vui lòng thử lại sau.');
+        setErrorMsg(t('errors.authUnavailable'));
         return;
       }
       const loggedUser = await login(email.trim(), password, rememberMe);
@@ -245,13 +254,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        setErrorMsg('Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.');
+        setErrorMsg(t('errors.invalidCredential'));
       } else if (code === 'auth/too-many-requests') {
-        setErrorMsg('Quá nhiều lần thử không thành công. Vui lòng thử lại sau ít phút.');
+        setErrorMsg(t('errors.tooManyRequests'));
       } else if (code === 'auth/invalid-email') {
-        setErrorMsg('Định dạng email không hợp lệ.');
+        setErrorMsg(t('errors.invalidEmail'));
       } else {
-        setErrorMsg(err.message || 'Không thể đăng nhập. Vui lòng kiểm tra thông tin và thử lại.');
+        setErrorMsg(err.message || t('errors.genericLogin'));
       }
     } finally {
       setLoading(false);
@@ -266,47 +275,47 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!fullName.trim() || !email.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ Họ và tên cùng địa chỉ Email.');
+      setErrorMsg(t('errors.missingRegisterFields'));
       return;
     }
     if (!emailRegex.test(email.trim())) {
-      setErrorMsg('Định dạng email không hợp lệ. Vui lòng kiểm tra lại.');
+      setErrorMsg(t('errors.invalidRegisterEmail'));
       return;
     }
     if (password.length < 8) {
-      setErrorMsg('Mật khẩu phải có tối thiểu 8 ký tự.');
+      setErrorMsg(t('errors.passwordTooShort'));
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMsg('Mật khẩu xác nhận không khớp.');
+      setErrorMsg(t('errors.passwordMismatch'));
       return;
     }
     if (!agreeAll) {
-      setErrorMsg('Vui lòng đồng ý với các điều khoản bảo mật và xử lý thông tin để tiếp tục.');
+      setErrorMsg(t('errors.mustAgreeTerms'));
       return;
     }
 
     setLoading(true);
     try {
       if (!isAuthAvailable) {
-        setErrorMsg('Dịch vụ tạo tài khoản đang được bảo trì. Vui lòng thử lại sau.');
+        setErrorMsg(t('errors.registerUnavailable'));
         return;
       }
       const newUser = await register(email.trim(), password, fullName.trim(), address.trim());
       onLoginSuccess(newUser.email || email.trim());
       setRegistrationSuccess(true);
       setInfoMsg(
-        'Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!'
+        t('messages.registerWelcome')
       );
       setStep('profile');
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/email-already-in-use') {
-        setErrorMsg('Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng chức năng Quên mật khẩu.');
+        setErrorMsg(t('errors.emailInUse'));
       } else if (code === 'auth/weak-password') {
-        setErrorMsg('Mật khẩu quá yếu. Vui lòng dùng mật khẩu có độ bảo mật cao hơn.');
+        setErrorMsg(t('errors.weakPassword'));
       } else {
-        setErrorMsg(err.message || 'Không thể tạo tài khoản. Vui lòng thử lại sau.');
+        setErrorMsg(err.message || t('errors.genericRegister'));
       }
     } finally {
       setLoading(false);
@@ -320,27 +329,27 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setInfoMsg('');
 
     if (!email.trim()) {
-      setErrorMsg('Vui lòng nhập địa chỉ email của bạn.');
+      setErrorMsg(t('errors.missingResetEmail'));
       return;
     }
 
     setLoading(true);
     try {
       if (!isAuthAvailable) {
-        setErrorMsg('Dịch vụ đặt lại mật khẩu chưa khả dụng.');
+        setErrorMsg(t('errors.resetUnavailable'));
         return;
       }
       await sendResetEmail(email.trim());
       setInfoMsg(
-        'Liên kết đặt lại mật khẩu bảo mật đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến (và thư mục Spam/Rác) và bấm vào liên kết để tạo mật khẩu mới.'
+        t('messages.resetSent')
       );
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/user-not-found') {
         // Generic response to avoid email enumeration
-        setInfoMsg('Nếu email đã được đăng ký, liên kết đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.');
+        setInfoMsg(t('messages.resetNonEnumerating'));
       } else {
-        setErrorMsg('Không thể gửi liên kết đặt lại mật khẩu. Vui lòng thử lại sau.');
+        setErrorMsg(t('errors.genericResetError'));
       }
     } finally {
       setLoading(false);
@@ -354,16 +363,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setInfoMsg('');
 
     if (password.length < 8) {
-      setErrorMsg('Mật khẩu mới phải có tối thiểu 8 ký tự.');
+      setErrorMsg(t('errors.passwordTooShort'));
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMsg('Mật khẩu xác nhận không khớp.');
+      setErrorMsg(t('errors.passwordMismatch'));
       return;
     }
 
     if (!resetActionCode) {
-      setErrorMsg('Không tìm thấy mã xác thực hợp lệ. Vui lòng mở lại liên kết từ email của bạn.');
+      setErrorMsg(t('errors.missingResetCode'));
       return;
     }
 
@@ -372,7 +381,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       await confirmReset(resetActionCode, password);
       setStep('forgot-success');
     } catch (err: any) {
-      setErrorMsg('Không thể đặt lại mật khẩu. Liên kết có thể đã hết hạn hoặc đã được sử dụng.');
+      setErrorMsg(t('errors.expiredResetCode'));
     } finally {
       setLoading(false);
     }
@@ -387,7 +396,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       phone: editPhone,
     });
     setIsEditingProfile(false);
-    setInfoMsg('Đã cập nhật thông tin tài khoản thành công.');
+    setInfoMsg(t('messages.profileSaved'));
   };
 
   const handleStartEditProfile = () => {
@@ -403,21 +412,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     step === 'forgot-success';
 
   // Date & Currency formatters
-  const formatVNDate = (isoStr: string) => {
-    try {
-      const date = new Date(isoStr);
-      return new Intl.DateTimeFormat('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        hour: '2-digit',
-        minute: '2-digit',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      }).format(date);
-    } catch {
-      return isoStr;
-    }
-  };
+  const formatVNDate = (isoStr: string) =>
+    formatLocaleDateTime(isoStr, locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
 
   const getItemImage = (item: { productId: string; image?: string }) => {
     const orderMedia = getOrderMedia(item.productId);
@@ -430,52 +432,52 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     switch (status) {
       case 'pending_confirmation':
         return {
-          label: 'Chờ xác nhận',
+          label: t('orderStatuses.pending_confirmation.label'),
           color: 'bg-amber-50 text-amber-800 border-amber-200',
           dot: 'bg-amber-500',
-          desc: 'Đơn hàng đã được lưu an toàn. Tiệm sẽ liên hệ xác nhận trong vòng 60 phút.',
+          desc: t('orderStatuses.pending_confirmation.desc'),
         };
       case 'confirmed':
         return {
-          label: 'Đã xác nhận',
+          label: t('orderStatuses.confirmed.label'),
           color: 'bg-blue-50 text-blue-800 border-blue-200',
           dot: 'bg-blue-500',
-          desc: 'Tiệm đã duyệt đơn và đang chuẩn bị đóng gói trà cẩn thận.',
+          desc: t('orderStatuses.confirmed.desc'),
         };
       case 'preparing':
         return {
-          label: 'Đang chuẩn bị',
+          label: t('orderStatuses.preparing.label'),
           color: 'bg-indigo-50 text-indigo-800 border-indigo-200',
           dot: 'bg-indigo-500',
-          desc: 'Đang hoàn tất đóng hộp quà trà và thiệp chúc.',
+          desc: t('orderStatuses.preparing.desc'),
         };
       case 'ready_for_pickup':
         return {
-          label: 'Chờ nhận tại tiệm',
+          label: t('orderStatuses.ready_for_pickup.label'),
           color: 'bg-teal-50 text-teal-800 border-teal-200',
           dot: 'bg-teal-500',
-          desc: 'Gói trà đã sẵn sàng tại tiệm để quý khách ghé nhận.',
+          desc: t('orderStatuses.ready_for_pickup.desc'),
         };
       case 'shipping':
         return {
-          label: 'Đang giao hàng',
+          label: t('orderStatuses.shipping.label'),
           color: 'bg-purple-50 text-purple-800 border-purple-200',
           dot: 'bg-purple-500',
-          desc: 'Đơn hàng đang trên đường vận chuyển đến địa chỉ của bạn.',
+          desc: t('orderStatuses.shipping.desc'),
         };
       case 'completed':
         return {
-          label: 'Đã giao hàng',
+          label: t('orderStatuses.completed.label'),
           color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
           dot: 'bg-emerald-500',
-          desc: 'Đơn hàng đã hoàn tất thành công. Mộc Ngôn Hương chân thành cảm ơn bạn.',
+          desc: t('orderStatuses.completed.desc'),
         };
       case 'cancelled':
         return {
-          label: 'Đã hủy',
+          label: t('orderStatuses.cancelled.label'),
           color: 'bg-rose-50 text-rose-800 border-rose-200',
           dot: 'bg-rose-500',
-          desc: 'Đơn hàng đã được hủy theo yêu cầu.',
+          desc: t('orderStatuses.cancelled.desc'),
         };
       default:
         return {
@@ -490,48 +492,48 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const getPaymentStatusBadge = (status: PaymentStatus | string, method: 'cod' | 'bank') => {
     if (status === 'paid' || status === 'completed') {
       return {
-        label: 'Đã thanh toán',
+        label: t('paymentStatuses.paid'),
         color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       };
     }
     if (status === 'customer_reported_paid') {
       return {
-        label: 'Đã báo chuyển khoản • Chờ xác nhận',
+        label: t('paymentStatuses.customer_reported_paid'),
         color: 'bg-blue-50 text-blue-800 border-blue-200',
       };
     }
     if (status === 'payment_review') {
       return {
-        label: 'Đang kiểm tra giao dịch',
+        label: t('paymentStatuses.payment_review'),
         color: 'bg-purple-50 text-purple-800 border-purple-200',
       };
     }
     if (status === 'cancelled') {
       return {
-        label: 'Đã hủy thanh toán',
+        label: t('paymentStatuses.cancelled'),
         color: 'bg-rose-50 text-rose-700 border-rose-200',
       };
     }
     if (status === 'failed') {
       return {
-        label: 'Thanh toán lỗi',
+        label: t('paymentStatuses.failed'),
         color: 'bg-rose-50 text-rose-700 border-rose-200',
       };
     }
     if (status === 'refunded') {
       return {
-        label: 'Đã hoàn tiền',
+        label: t('paymentStatuses.refunded'),
         color: 'bg-gray-50 text-gray-700 border-gray-200',
       };
     }
     if (method === 'cod') {
       return {
-        label: 'Thanh toán COD khi nhận hàng',
+        label: t('paymentStatuses.cod'),
         color: 'bg-[#3e5641]/10 text-[#3e5641] border-[#3e5641]/20',
       };
     }
     return {
-      label: 'Chờ thanh toán chuyển khoản',
+      label: t('paymentStatuses.pendingBank'),
       color: 'bg-amber-50 text-amber-800 border-amber-200',
     };
   };
@@ -563,14 +565,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         {/* Quick Figma State Switcher for QA Inspection in DEV */}
         {import.meta.env.DEV && isFigmaQa && (
           <div className="qa-state-switcher mb-8 pb-4 border-b border-gray-100 flex flex-wrap items-center gap-2 text-[12px]">
-            <span className="text-[#888888] font-medium mr-1">Luồng tài khoản:</span>
+            <span className="text-[#888888] font-medium mr-1">{t('qaBar.label')}</span>
             {[
-              { id: 'login' as AuthStep, label: 'Đăng nhập (127:11104)' },
-              { id: 'register' as AuthStep, label: 'Đăng ký (127:12046)' },
-              { id: 'forgot-email' as AuthStep, label: 'Quên MK (127:10877)' },
-              { id: 'forgot-reset' as AuthStep, label: 'Tạo MK mới (127:11753)' },
-              { id: 'forgot-success' as AuthStep, label: 'Hoàn tất (127:11871)' },
-              { id: 'profile' as AuthStep, label: 'Hồ sơ khách hàng' },
+              { id: 'login' as AuthStep, label: t('qaBar.login') },
+              { id: 'register' as AuthStep, label: t('qaBar.register') },
+              { id: 'forgot-email' as AuthStep, label: t('qaBar.forgotEmail') },
+              { id: 'forgot-reset' as AuthStep, label: t('qaBar.forgotReset') },
+              { id: 'forgot-success' as AuthStep, label: t('qaBar.forgotSuccess') },
+              { id: 'profile' as AuthStep, label: t('qaBar.profile') },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -601,7 +603,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   </div>
                   <div className="min-w-0 flex-1">
                     <h1 className="font-philosopher font-bold text-[22px] sm:text-[36px] text-[#203323] leading-tight truncate">
-                      {profile?.fullName || activeUser.displayName || 'Khách hàng thân thiết'}
+                      {profile?.fullName || activeUser.displayName || t('profile.fallbackGreeting')}
                     </h1>
                     <p className="text-[13px] sm:text-[14px] text-[#666666] truncate">{activeUser.email}</p>
                   </div>
@@ -612,7 +614,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     <svg className="w-4 h-4 text-[#3e5641]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    Thành viên thân thiết
+                    {t('profile.memberBadge')}
                   </span>
 
                   <button
@@ -620,7 +622,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     onClick={logout}
                     className="px-4 py-2 rounded-full border border-red-300 text-red-700 text-[13.5px] font-medium hover:bg-red-50 transition-colors ml-auto sm:ml-0"
                   >
-                    Đăng xuất
+                    {t('profile.logout')}
                   </button>
                 </div>
               </div>
@@ -634,17 +636,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-philosopher font-bold text-[18px] text-[#203323] mb-1">
-                      Đăng ký tài khoản thành công!
+                      {t('profile.registerSuccessTitle')}
                     </h3>
                     <p className="text-[14px] leading-relaxed text-[#4a554d]">
-                      Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!
+                      {t('profile.registerSuccessDesc')}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setRegistrationSuccess(false)}
                     className="text-gray-400 hover:text-gray-600 text-[20px] leading-none p-1"
-                    aria-label="Đóng thông báo"
+                    aria-label={t('profile.closeNoticeAria')}
                   >
                     ×
                   </button>
@@ -675,7 +677,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         : 'text-[#888888] hover:text-[#222222]'
                     }`}
                   >
-                    Đơn hàng của tôi
+                    {t('profile.tabs.orders')}
                     {userOrders.length > 0 && (
                       <span className="ml-2.5 px-2.5 py-0.5 rounded-full bg-[#3e5641] text-[#f7f4d5] text-[12px] font-mono font-medium">
                         {userOrders.length}
@@ -692,7 +694,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         : 'text-[#888888] hover:text-[#222222]'
                     }`}
                   >
-                    Thông tin giao nhận
+                    {t('profile.tabs.info')}
                   </button>
                 </div>
 
@@ -716,7 +718,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                       />
                     </svg>
-                    Làm mới đơn hàng
+                    {t('profile.refreshOrders')}
                   </button>
                 )}
               </div>
@@ -730,11 +732,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   {userOrders.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 pb-2">
                       {[
-                        { key: 'ALL', label: `Tất cả (${userOrders.length})` },
-                        { key: 'pending_confirmation', label: 'Chờ xác nhận' },
-                        { key: 'confirmed', label: 'Đã xác nhận' },
-                        { key: 'shipping', label: 'Đang giao' },
-                        { key: 'completed', label: 'Đã hoàn tất' },
+                        { key: 'ALL', label: t('profile.filters.all', { count: userOrders.length }) },
+                        { key: 'pending_confirmation', label: t('profile.filters.pending') },
+                        { key: 'confirmed', label: t('profile.filters.confirmed') },
+                        { key: 'shipping', label: t('profile.filters.shipping') },
+                        { key: 'completed', label: t('profile.filters.completed') },
                       ].map((chip) => (
                         <button
                           key={chip.key}
@@ -797,7 +799,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         onClick={() => loadUserOrders()}
                         className="px-5 py-2 rounded-full bg-red-600 text-white font-medium text-[13px] hover:bg-red-700 transition-colors shadow-xs"
                       >
-                        Thử Lại
+                        {t('common:actions.retry')}
                       </button>
                     </div>
                   )}
@@ -811,17 +813,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         </svg>
                       </div>
                       <h3 className="font-philosopher font-bold text-[24px] sm:text-[28px] text-[#203323] mb-3">
-                        Bạn chưa có đơn hàng nào
+                        {t('profile.emptyOrdersTitle')}
                       </h3>
                       <p className="text-[#666666] text-[14.5px] leading-relaxed max-w-[460px] mx-auto mb-8">
-                        Hãy khám phá các thức trà ướp hoa tự nhiên hoặc lựa chọn hộp quà tặng tinh tế để trao gửi tâm tình.
+                        {t('profile.emptyOrdersDesc')}
                       </p>
                       <button
                         type="button"
                         onClick={() => onNavigate('products')}
                         className="px-8 py-3.5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-all shadow-md hover:shadow-lg"
                       >
-                        Khám Phá Các Vị Trà
+                        {t('profile.exploreTeasCta')}
                       </button>
                     </div>
                   )}
@@ -869,32 +871,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                   <img
                                     src={getItemImage(item)}
                                     style={{ objectPosition: getOrderMedia(item.productId)?.position }}
-                                    alt={item.productName}
+                                    alt={getLocalizedProductNameById(item.productId, item.productName, locale)}
                                     className="w-14 h-14 sm:w-16 sm:h-16 rounded-[12px] object-cover border border-black/5 shrink-0 bg-[#faf7f2]"
                                   />
                                   <div className="min-w-0 flex-1">
                                     <h4 className="font-philosopher font-bold text-[16px] sm:text-[17px] text-[#222222] truncate">
-                                      {item.productName}
+                                      {getLocalizedProductNameById(item.productId, item.productName, locale)}
                                     </h4>
                                     <p className="text-[13px] text-[#777777] mt-0.5">
-                                      Số lượng: <span className="font-medium text-[#222222]">{item.quantity}</span> • Đơn giá:{' '}
-                                      <span className="font-medium text-[#222222]">{item.price?.toLocaleString('vi-VN')} đ</span>
+                                      {t('profile.orderCard.qtyLabel')} <span className="font-medium text-[#222222]">{item.quantity}</span> • {t('profile.orderCard.unitPriceLabel')}{' '}
+                                      <span className="font-medium text-[#222222]">{formatVnd(item.price, locale, 'spaced-vi')}</span>
                                       {item.sku && (
                                         <span className="font-mono text-[#555555] whitespace-nowrap">
-                                          {' • Mã sản phẩm: '}
+                                          {t('profile.orderCard.skuLabel')}
                                           {item.sku}
                                         </span>
                                       )}
                                     </p>
                                     {item.giftConfiguration && (
                                       <span className="inline-block mt-1 text-[11px] font-medium text-[#8e6746] bg-[#f8f5ee] px-2 py-0.5 rounded-md">
-                                        Kèm thiệp & lời chúc cá nhân
+                                        {t('profile.orderCard.giftTag')}
                                       </span>
                                     )}
                                   </div>
                                   <div className="text-right shrink-0">
                                     <span className="font-semibold text-[15px] sm:text-[16px] text-[#222222]">
-                                      {((item.price || 0) * (item.quantity || 1)).toLocaleString('vi-VN')} đ
+                                      {formatVnd((item.price || 0) * (item.quantity || 1), locale, 'spaced-vi')}
                                     </span>
                                   </div>
                                 </div>
@@ -902,7 +904,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                               {additionalItemsCount > 1 && (
                                 <p className="text-[12.5px] text-[#888888] pt-1">
-                                  + và {additionalItemsCount - 1} sản phẩm khác trong đơn hàng
+                                  {t('profile.orderCard.moreItems', { count: additionalItemsCount - 1 })}
                                 </p>
                               )}
                             </div>
@@ -910,10 +912,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                             {/* Card Footer: Summary & Action */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-gray-100">
                               <div className="text-[13px] text-[#666666]">
-                                <span className="text-[#888888]">Giao đến:</span>{' '}
+                                <span className="text-[#888888]">{t('profile.orderCard.deliverTo')}</span>{' '}
                                 <strong className="text-[#333333]">
                                   {order.customer?.shippingMode === 'pickup'
-                                    ? 'Nhận tại tiệm (42 Phố Hàng Điếu, Hà Nội)'
+                                    ? t('profile.orderCard.pickupSaved')
                                     : (order.customer?.formattedAddress ||
                                         (order.customer?.communeName
                                           ? [
@@ -930,15 +932,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                               order.customer?.city,
                                             ]
                                               .filter(Boolean)
-                                              .join(', ') || 'Địa chỉ đã lưu'))}
+                                              .join(', ') || t('profile.orderCard.savedAddressFallback')))}
                                 </strong>
                               </div>
 
                               <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-5">
                                 <div className="text-right">
-                                  <span className="text-[12px] text-[#888888] block">Tổng thanh toán</span>
+                                  <span className="text-[12px] text-[#888888] block">{t('profile.orderCard.totalLabel')}</span>
                                   <span className="font-bold text-[#3e5641] text-[18px] sm:text-[20px]">
-                                    {order.total?.toLocaleString('vi-VN')} đ
+                                    {formatVnd(order.total, locale, 'spaced-vi')}
                                   </span>
                                 </div>
 
@@ -955,8 +957,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                         className="px-4 py-2.5 rounded-full bg-[#c89f5d] text-[#203323] font-bold text-[13px] hover:bg-[#b58c4b] transition-colors shadow-xs cursor-pointer"
                                       >
                                         {order.paymentStatus === 'customer_reported_paid'
-                                          ? 'Xem mã VietQR'
-                                          : 'Tiếp tục thanh toán'}
+                                          ? t('profile.orderCard.viewVietQr')
+                                          : t('profile.orderCard.continuePayment')}
                                       </button>
                                     )}
 
@@ -965,7 +967,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                     onClick={() => setSelectedOrder(order)}
                                     className="px-5 py-2.5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[13.5px] hover:bg-[#203323] transition-colors shadow-xs cursor-pointer"
                                   >
-                                    Xem chi tiết
+                                    {t('profile.orderCard.viewDetails')}
                                   </button>
                                 </div>
                               </div>
@@ -985,10 +987,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         disabled={orderPage === 1}
                         className="px-4 py-2 rounded-full border border-[#e5dfd5] bg-white text-[13px] font-medium text-[#444] disabled:opacity-40 hover:bg-[#faf7f2] transition-colors"
                       >
-                        Trang trước
+                        {t('profile.pagination.prev')}
                       </button>
                       <span className="text-[13.5px] font-medium text-[#666]">
-                        Trang {orderPage} / {totalPages}
+                        {t('profile.pagination.info', { page: orderPage, total: totalPages })}
                       </span>
                       <button
                         type="button"
@@ -996,7 +998,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         disabled={orderPage === totalPages}
                         className="px-4 py-2 rounded-full border border-[#e5dfd5] bg-white text-[13px] font-medium text-[#444] disabled:opacity-40 hover:bg-[#faf7f2] transition-colors"
                       >
-                        Trang sau
+                        {t('profile.pagination.next')}
                       </button>
                     </div>
                   )}
@@ -1010,7 +1012,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <div className="profile-details-tab">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-philosopher text-[22px] font-bold text-[#3e5641]">
-                      Địa chỉ nhận hàng mặc định
+                      {t('profile.addressSection.heading')}
                     </h2>
                     {!isEditingProfile && (
                       <button
@@ -1018,7 +1020,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         onClick={handleStartEditProfile}
                         className="text-[13.5px] text-[#3e5641] font-semibold hover:underline"
                       >
-                        Chỉnh sửa
+                        {t('profile.addressSection.editBtn')}
                       </button>
                     )}
                   </div>
@@ -1026,7 +1028,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   {isEditingProfile ? (
                     <form onSubmit={handleSaveProfile} className="space-y-4 max-w-[600px] bg-white p-6 rounded-[16px] border border-gray-200 shadow-xs">
                       <div>
-                        <label className="block text-[13px] font-medium text-[#444] mb-1">Họ và tên người nhận</label>
+                        <label className="block text-[13px] font-medium text-[#444] mb-1">{t('profile.addressSection.fullNameLabel')}</label>
                         <input
                           type="text"
                           value={editFullName}
@@ -1036,22 +1038,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-[13px] font-medium text-[#444] mb-1">Số điện thoại</label>
+                        <label className="block text-[13px] font-medium text-[#444] mb-1">{t('profile.addressSection.phoneLabel')}</label>
                         <input
                           type="tel"
                           value={editPhone}
                           onChange={(e) => setEditPhone(e.target.value)}
-                          placeholder="Ví dụ: 0912 345 678"
+                          placeholder={t('profile.addressSection.phonePlaceholder')}
                           className="w-full h-[42px] px-3.5 rounded-[8px] border border-gray-300 text-[14px] focus:outline-none focus:border-[#3e5641]"
                         />
                       </div>
                       <div>
-                        <label className="block text-[13px] font-medium text-[#444] mb-1">Địa chỉ giao hàng</label>
+                        <label className="block text-[13px] font-medium text-[#444] mb-1">{t('profile.addressSection.addressLabel')}</label>
                         <input
                           type="text"
                           value={editAddress}
                           onChange={(e) => setEditAddress(e.target.value)}
-                          placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
+                          placeholder={t('profile.addressSection.addressPlaceholder')}
                           className="w-full h-[42px] px-3.5 rounded-[8px] border border-gray-300 text-[14px] focus:outline-none focus:border-[#3e5641]"
                         />
                       </div>
@@ -1060,30 +1062,30 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           type="submit"
                           className="px-5 py-2 rounded-full bg-[#3e5641] text-[#f7f4d5] text-[13.5px] font-semibold hover:bg-[#203323]"
                         >
-                          Lưu Thay Đổi
+                          {t('profile.addressSection.saveBtn')}
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsEditingProfile(false)}
                           className="px-5 py-2 rounded-full border border-gray-300 text-gray-700 text-[13.5px]"
                         >
-                          Hủy
+                          {t('profile.addressSection.cancelBtn')}
                         </button>
                       </div>
                     </form>
                   ) : (
                     <div className="bg-white rounded-[16px] p-6 border border-[#e5dfd5] grid grid-cols-1 sm:grid-cols-3 gap-5 text-[14px] shadow-xs">
                       <div>
-                        <span className="text-[#888] block text-[12px] uppercase tracking-wider mb-1">Họ và tên</span>
-                        <p className="font-medium text-[#222]">{profile?.fullName || activeUser.displayName || 'Chưa cập nhật'}</p>
+                        <span className="text-[#888] block text-[12px] uppercase tracking-wider mb-1">{t('profile.addressSection.fieldName')}</span>
+                        <p className="font-medium text-[#222]">{profile?.fullName || activeUser.displayName || t('profile.addressSection.notUpdated')}</p>
                       </div>
                       <div>
-                        <span className="text-[#888] block text-[12px] uppercase tracking-wider mb-1">Số điện thoại</span>
-                        <p className="font-medium text-[#222]">{profile?.phone || 'Chưa cập nhật'}</p>
+                        <span className="text-[#888] block text-[12px] uppercase tracking-wider mb-1">{t('profile.addressSection.fieldPhone')}</span>
+                        <p className="font-medium text-[#222]">{profile?.phone || t('profile.addressSection.notUpdated')}</p>
                       </div>
                       <div>
-                        <span className="text-[#888] block text-[12px] uppercase tracking-wider mb-1">Địa chỉ nhận hàng</span>
-                        <p className="font-medium text-[#222]">{profile?.address || 'Chưa có địa chỉ mặc định'}</p>
+                        <span className="text-[#888] block text-[12px] uppercase tracking-wider mb-1">{t('profile.addressSection.fieldAddress')}</span>
+                        <p className="font-medium text-[#222]">{profile?.address || t('profile.addressSection.noDefaultAddress')}</p>
                       </div>
                     </div>
                   )}
@@ -1096,7 +1098,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   onClick={() => onNavigate('home')}
                   className="rounded-full bg-[#3e5641] text-[#f7f4d5] px-8 py-3 font-semibold text-[14.5px] hover:bg-[#203323] transition-colors shadow-sm"
                 >
-                  Quay Về Trang Chủ
+                  {t('profile.backHomeBtn')}
                 </button>
               </div>
             </div>
@@ -1106,9 +1108,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         {/* Prompt when profile is visited while unauthenticated */}
         {step === 'profile' && !activeUser && (
           <div className="max-w-[600px] mx-auto text-center py-16 px-6 bg-[#faf8f3] rounded-[24px] border border-[#e5dfd5] my-8 shadow-sm">
-            <h2 className="font-philosopher text-[28px] font-bold text-[#203323] mb-3">Tài Khoản Mộc Ngôn Hương</h2>
+            <h2 className="font-philosopher text-[28px] font-bold text-[#203323] mb-3">
+              {t('unauthPrompt.title')}
+            </h2>
             <p className="text-[15px] text-[#666666] mb-8 leading-relaxed">
-              Vui lòng đăng nhập hoặc đăng ký tài khoản để xem thông tin cá nhân và quản lý lịch sử đơn hàng của quý khách.
+              {t('unauthPrompt.desc')}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <button
@@ -1116,14 +1120,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 onClick={() => switchStep('login')}
                 className="px-8 py-3 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[14px] hover:bg-[#203323] transition-colors shadow-sm"
               >
-                Đăng Nhập
+                {t('unauthPrompt.loginBtn')}
               </button>
               <button
                 type="button"
                 onClick={() => switchStep('register')}
                 className="px-8 py-3 rounded-full border border-[#3e5641] text-[#3e5641] font-semibold text-[14px] hover:bg-[#3e5641]/10 transition-colors"
               >
-                Tạo Tài Khoản
+                {t('unauthPrompt.registerBtn')}
               </button>
             </div>
           </div>
@@ -1138,17 +1142,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {/* Left Form */}
               <div className="lg:col-span-5">
                 <h1 className="font-philosopher font-bold text-[34px] sm:text-[42px] text-[#222222] mb-6">
-                  Tạo tài khoản
+                  {t('register.title')}
                 </h1>
                 <p className="register-intro text-[#666] leading-relaxed mb-1">
-                  Với tạo tài khoản, bạn có thể nhận các dịch vụ dành cho khách hàng thân thiết của chúng tôi, truy cập giỏ hàng của bạn từ bất kỳ thiết bị nào và xem lịch sử đơn hàng của mình.
+                  {t('register.intro')}
                 </p>
                 <button
                   type="button"
                   onClick={() => switchStep('login')}
                   className="register-login-link text-[#3e5641] border-b border-current mb-6"
                 >
-                  Đăng nhập
+                  {t('register.loginLink')}
                 </button>
 
                 {errorMsg && (
@@ -1160,13 +1164,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <form onSubmit={handleRegister} className="space-y-4" noValidate>
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                      Họ và tên <span className="text-red-500">*</span>
+                      {t('register.fullNameLabel')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Nhập họ và tên của bạn"
+                      placeholder={t('register.fullNamePlaceholder')}
                       className="w-full h-[46px] px-4 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                       required
                     />
@@ -1174,13 +1178,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                      Email <span className="text-red-500">*</span>
+                      {t('login.emailLabel')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Nhập địa chỉ email của bạn"
+                      placeholder={t('login.emailPlaceholder')}
                       className="w-full h-[46px] px-4 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                       required
                     />
@@ -1188,14 +1192,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                      Mật khẩu <span className="text-red-500">*</span>
+                      {t('login.passwordLabel')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type={showPass ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Tạo mật khẩu (tối thiểu 8 ký tự)"
+                        placeholder={t('register.passwordPlaceholder')}
                         className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                         required
                       />
@@ -1204,21 +1208,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         onClick={() => setShowPass(!showPass)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
                       >
-                        {showPass ? 'Ẩn' : 'Hiện'}
+                        {showPass ? t('login.hidePass') : t('login.showPass')}
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                      Xác nhận mật khẩu <span className="text-red-500">*</span>
+                      {t('register.confirmPasswordLabel')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type={showConfirmPass ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Nhập lại mật khẩu"
+                        placeholder={t('register.confirmPasswordPlaceholder')}
                         className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                         required
                       />
@@ -1227,20 +1231,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         onClick={() => setShowConfirmPass(!showConfirmPass)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
                       >
-                        {showConfirmPass ? 'Ẩn' : 'Hiện'}
+                        {showConfirmPass ? t('login.hidePass') : t('login.showPass')}
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                      Địa chỉ nhận trà
+                      {t('register.addressLabel')}
                     </label>
                     <input
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Nhập địa chỉ nhận trà của bạn (tùy chọn)"
+                      placeholder={t('register.addressPlaceholder')}
                       className="w-full h-[46px] px-4 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                     />
                   </div>
@@ -1252,7 +1256,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       onChange={(e) => setAgreeAll(e.target.checked)}
                       className="w-4 h-4 rounded accent-[#3e5641]"
                     />
-                    <span>Đồng ý tất cả các điều khoản</span>
+                    <span>{t('register.agreeAll')}</span>
                   </label>
 
                   <button
@@ -1260,7 +1264,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     disabled={loading}
                     className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm disabled:opacity-60 mt-2"
                   >
-                    {loading ? 'Đang tạo tài khoản...' : 'Đăng Ký Tài Khoản'}
+                    {loading ? t('register.submitting') : t('register.submit')}
                   </button>
                 </form>
               </div>
@@ -1268,18 +1272,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {/* Exact consent copy from 127:12099 */}
               <div className="register-policy lg:col-span-7 text-[#666] text-[14px] leading-relaxed">
                 <p>
-                  Bằng việc cung cấp thông tin cá nhân ở trên, tôi đồng ý cho phép Thương Hiệu và các đối tác liên kết được phép xử lý tên, email, số điện thoại và các thông tin khác của tôi cho các mục đích sau:
+                  {t('register.policyLead')}
                 </p>
                 <ol className="list-decimal pl-[30px] my-3 space-y-1">
-                  <li>Giao tiếp và Chăm sóc Khách hàng: Liên hệ để xác nhận đơn hàng, hỗ trợ và cung cấp các dịch vụ liên quan.</li>
-                  <li>Tiếp thị Cá nhân hóa: Gửi thông tin về các sản phẩm mới, bộ sưu tập độc quyền, chương trình ưu đãi, sự kiện đặc biệt và các nội dung tiếp thị khác phù hợp với sở thích của tôi.</li>
-                  <li>Nghiên cứu &amp; Cải tiến Dịch vụ: Sử dụng dữ liệu tổng hợp để phân tích thị trường và nâng cao trải nghiệm khách hàng.</li>
+                  {(t('register.policyItems', { returnObjects: true }) as string[]).map((policy, idx) => (
+                    <li key={idx}>{policy}</li>
+                  ))}
                 </ol>
                 <p className="mb-2">
-                  Chúng tôi cam kết bảo vệ thông tin cá nhân của bạn và chỉ chia sẻ với các đối tác tin cậy để hoàn tất đơn hàng.
+                  {t('register.policyCommitment')}
                 </p>
                 <p>
-                  Để biết thêm chi tiết về cách chúng tôi bảo vệ dữ liệu của bạn, vui lòng tham khảo Chính sách bảo mật thông tin khách hàng của Mộc Ngôn Hương.
+                  {t('register.policyPrivacyNote')}
                 </p>
               </div>
             </div>
@@ -1288,7 +1292,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <div className="mt-12 rounded-[20px] overflow-hidden h-[240px] sm:h-[320px] shadow-md">
               <img
                 src={assetUrl('/assets/optimized/auth-tea-banner.webp')}
-                alt="Không gian trà Mộc Ngôn Hương"
+                alt={t('register.bannerAlt')}
                 loading="lazy"
                 decoding="async"
                 width={1280}
@@ -1310,10 +1314,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {step === 'login' && (
                 <div>
                   <h1 className="font-philosopher font-bold text-[34px] sm:text-[42px] text-[#222222] mb-2">
-                    Đăng Nhập
+                    {t('login.title')}
                   </h1>
                   <p className="text-[14.5px] leading-[22px] text-[#555555] mb-6">
-                    Với tài khoản Mộc Ngôn Hương, bạn có thể lưu trữ giỏ hàng, theo dõi đơn hàng và nhận những đặc quyền dành cho khách hàng thân thiết.
+                    {t('login.subtitle')}
                   </p>
 
                   {errorMsg && (
@@ -1330,13 +1334,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <form onSubmit={handleLogin} className="space-y-4" noValidate>
                     <div>
                       <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Email <span className="text-red-500">*</span>
+                        {t('login.emailLabel')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Nhập địa chỉ email của bạn"
+                        placeholder={t('login.emailPlaceholder')}
                         className="w-full h-[46px] px-4 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                         required
                       />
@@ -1344,14 +1348,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                     <div>
                       <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Mật khẩu <span className="text-red-500">*</span>
+                        {t('login.passwordLabel')} <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
                           type={showPass ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Nhập mật khẩu"
+                          placeholder={t('login.passwordPlaceholder')}
                           className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                           required
                         />
@@ -1360,7 +1364,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           onClick={() => setShowPass(!showPass)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[13px]"
                         >
-                          {showPass ? 'Ẩn' : 'Hiện'}
+                          {showPass ? t('login.hidePass') : t('login.showPass')}
                         </button>
                       </div>
                       <div className="text-right mt-1.5">
@@ -1369,7 +1373,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           onClick={() => switchStep('forgot-email')}
                           className="text-[12.5px] text-[#555555] hover:text-[#3e5641]"
                         >
-                          Quên mật khẩu?
+                          {t('login.forgotLink')}
                         </button>
                       </div>
                     </div>
@@ -1381,7 +1385,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         onChange={(e) => setRememberMe(e.target.checked)}
                         className="w-4 h-4 rounded accent-[#3e5641]"
                       />
-                      <span>Ghi nhớ đăng nhập</span>
+                      <span>{t('login.rememberMe')}</span>
                     </label>
 
                     <button
@@ -1389,18 +1393,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       disabled={loading}
                       className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm disabled:opacity-60"
                     >
-                      {loading ? 'Đang xác thực...' : 'Đăng Nhập'}
+                      {loading ? t('login.submitting') : t('login.submit')}
                     </button>
                   </form>
 
                   <p className="mt-5 text-center text-[14px] text-[#555555]">
-                    Chưa có tài khoản?{' '}
+                    {t('login.noAccountPrompt')}{' '}
                     <button
                       type="button"
                       onClick={() => switchStep('register')}
                       className="font-semibold text-[#3e5641] hover:underline"
                     >
-                      Đăng ký ngay
+                      {t('login.registerLink')}
                     </button>
                   </p>
                 </div>
@@ -1410,10 +1414,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {step === 'forgot-email' && (
                 <div>
                   <h1 className="font-philosopher font-bold text-[34px] sm:text-[42px] text-[#222222] mb-2">
-                    Quên Mật Khẩu
+                    {t('forgot.title')}
                   </h1>
                   <p className="text-[14.5px] leading-[22px] text-[#555555] mb-6">
-                    Vui lòng nhập email đã đăng ký. Mộc Ngôn Hương sẽ gửi liên kết bảo mật để bạn thiết lập lại mật khẩu mới.
+                    {t('forgot.subtitle')}
                   </p>
 
                   {errorMsg && (
@@ -1431,13 +1435,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <form onSubmit={handleSendResetLink} className="space-y-5" noValidate>
                     <div>
                       <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Email <span className="text-red-500">*</span>
+                        {t('login.emailLabel')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Nhập địa chỉ email của bạn"
+                        placeholder={t('login.emailPlaceholder')}
                         className="w-full h-[46px] px-4 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                         required
                       />
@@ -1448,18 +1452,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       disabled={loading}
                       className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm disabled:opacity-60"
                     >
-                      {loading ? 'Đang gửi...' : 'Gửi Liên Kết Đặt Lại'}
+                      {loading ? t('forgot.submitting') : t('forgot.submit')}
                     </button>
                   </form>
 
                   <p className="mt-5 text-center text-[14px] text-[#555555]">
-                    Nhớ mật khẩu?{' '}
+                    {t('forgot.rememberPrompt')}{' '}
                     <button
                       type="button"
                       onClick={() => switchStep('login')}
                       className="font-semibold text-[#3e5641] hover:underline"
                     >
-                      Đăng nhập
+                      {t('forgot.backToLogin')}
                     </button>
                   </p>
                 </div>
@@ -1469,10 +1473,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {(step === 'forgot-reset' || step === 'forgot-success') && (
                 <div>
                   <h1 className="font-philosopher font-bold text-[34px] sm:text-[42px] text-[#222222] mb-2">
-                    Tạo Mật Khẩu Mới
+                    {t('reset.title')}
                   </h1>
                   <p className="text-[14.5px] leading-[22px] text-[#555555] mb-6">
-                    Mật khẩu mới của bạn phải có tối thiểu 8 ký tự và khác với mật khẩu đã sử dụng trước đó.
+                    {t('reset.subtitle')}
                   </p>
 
                   {errorMsg && step === 'forgot-reset' && (
@@ -1489,14 +1493,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
                     <div>
                       <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Mật khẩu mới <span className="text-red-500">*</span>
+                        {t('reset.newPasswordLabel')} <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
                           type={showPass ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Nhập mật khẩu mới"
+                          placeholder={t('reset.newPasswordPlaceholder')}
                           className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                           required
                         />
@@ -1505,21 +1509,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           onClick={() => setShowPass(!showPass)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
                         >
-                          {showPass ? 'Ẩn' : 'Hiện'}
+                          {showPass ? t('login.hidePass') : t('login.showPass')}
                         </button>
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-[14px] font-medium text-[#222222] mb-1.5">
-                        Xác nhận mật khẩu <span className="text-red-500">*</span>
+                        {t('register.confirmPasswordLabel')} <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
                           type={showConfirmPass ? 'text' : 'password'}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Nhập lại mật khẩu mới"
+                          placeholder={t('reset.confirmPlaceholder')}
                           className="w-full h-[46px] pl-4 pr-10 rounded-[8px] border border-gray-300 text-[14px] text-[#222222] focus:outline-none focus:border-[#3e5641]"
                           required
                         />
@@ -1528,7 +1532,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           onClick={() => setShowConfirmPass(!showConfirmPass)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[13px]"
                         >
-                          {showConfirmPass ? 'Ẩn' : 'Hiện'}
+                          {showConfirmPass ? t('login.hidePass') : t('login.showPass')}
                         </button>
                       </div>
                     </div>
@@ -1538,7 +1542,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       disabled={loading}
                       className="w-full h-[48px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors shadow-sm disabled:opacity-60"
                     >
-                      {loading ? 'Đang cập nhật...' : 'Đặt Lại Mật Khẩu'}
+                      {loading ? t('reset.submitting') : t('reset.submit')}
                     </button>
                   </form>
                 </div>
@@ -1573,24 +1577,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Cập nhật mật khẩu thành công"
+            aria-label={t('reset.successAria')}
             className="auth-modal relative bg-[#faf7f2] rounded-[24px] max-w-[460px] w-full p-8 text-center shadow-2xl"
           >
             <div className="flex items-center justify-center mx-auto mb-6">
               <FigmaIcon name="success" />
             </div>
             <h2 className="font-philosopher font-bold text-[28px] text-[#222222] mb-2">
-              Thành Công
+              {t('reset.successTitle')}
             </h2>
             <p className="text-[14.5px] leading-[22px] text-[#555555] mb-6">
-              Mật khẩu của bạn đã được cập nhật thành công. Hãy đăng nhập để tiếp tục khám phá hương vị trà Mộc Ngôn Hương nhé.
+              {t('reset.successDesc')}
             </p>
             <button
               type="button"
               onClick={() => switchStep('login')}
               className="w-full h-[46px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[15px] hover:bg-[#203323] transition-colors"
             >
-              Đăng Nhập Ngay
+              {t('reset.successCta')}
             </button>
           </div>
         </div>
@@ -1603,14 +1607,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="Chi tiết đơn hàng"
+              aria-label={t('orderDetailModal.ariaLabel')}
               className="relative bg-[#faf7f2] rounded-[24px] max-w-[760px] w-full p-6 sm:p-8 my-8 shadow-2xl border border-[#e5dfd5] text-left max-h-[92vh] overflow-y-auto"
             >
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setSelectedOrder(null)}
-                aria-label="Đóng chi tiết đơn hàng"
+                aria-label={t('orderDetailModal.closeAria')}
                 className="absolute right-5 top-5 w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1621,20 +1625,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {/* Header: Reference and Timestamp */}
               <div className="pr-10 pb-4 border-b border-[#e5dfd5]">
                 <span className="text-[#8e6746] font-serif text-[12px] tracking-[.15em] uppercase font-bold block mb-1">
-                  Mộc Ngôn Hương • Đơn hàng
+                  {t('orderDetailModal.brandOrderKicker')}
                 </span>
                 <h2 className="font-philosopher font-bold text-[24px] sm:text-[30px] text-[#203323] leading-tight">
                   #{selectedOrder.orderCode}
                 </h2>
                 <p className="text-[13px] text-[#777777] mt-1">
-                  Thời gian đặt: {formatVNDate(selectedOrder.createdAt)}
+                  {t('orderDetailModal.orderedAt', { time: formatVNDate(selectedOrder.createdAt) })}
                 </p>
               </div>
 
               {/* Status Banner */}
               <div className="my-5 p-4 rounded-[16px] bg-white border border-[#e5dfd5] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div>
-                  <span className="text-[12px] text-[#888888] block mb-1">Trạng thái vận hành</span>
+                  <span className="text-[12px] text-[#888888] block mb-1">{t('orderDetailModal.operationalStatus')}</span>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-semibold border ${getOrderStatusBadge(selectedOrder.orderStatus).color}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${getOrderStatusBadge(selectedOrder.orderStatus).dot}`}></span>
@@ -1650,9 +1654,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 </div>
 
                 <div className="text-left sm:text-right shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-                  <span className="text-[12px] text-[#888888] block">Phương thức</span>
+                  <span className="text-[12px] text-[#888888] block">{t('orderDetailModal.methodLabel')}</span>
                   <span className="text-[13.5px] font-medium text-[#222222]">
-                    {selectedOrder.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng'}
+                    {selectedOrder.paymentMethod === 'cod' ? t('orderDetailModal.methodCod') : t('orderDetailModal.methodBank')}
                   </span>
                 </div>
               </div>
@@ -1660,7 +1664,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {/* Product Items Table / List */}
               <div className="space-y-4 mb-6">
                 <h3 className="font-philosopher text-[18px] font-bold text-[#3e5641]">
-                  Danh sách sản phẩm ({selectedOrder.items?.length || 0})
+                  {t('orderDetailModal.itemsHeading', { count: selectedOrder.items?.length || 0 })}
                 </h3>
                 <div className="bg-white rounded-[18px] p-4 sm:p-5 border border-[#e5dfd5] divide-y divide-gray-100 shadow-2xs">
                   {selectedOrder.items?.map((item, idx) => (
@@ -1668,18 +1672,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       <img
                         src={getItemImage(item)}
                         style={{ objectPosition: getOrderMedia(item.productId)?.position }}
-                        alt={item.productName}
+                        alt={getLocalizedProductNameById(item.productId, item.productName, locale)}
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-[14px] object-cover border border-black/5 shrink-0 bg-[#faf7f2]"
                       />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-philosopher font-bold text-[17px] sm:text-[18px] text-[#222222]">
-                          {item.productName}
+                          {getLocalizedProductNameById(item.productId, item.productName, locale)}
                         </h4>
                         <p className="text-[13px] text-[#777777] mt-1">
-                          Đơn giá xác thực: <span className="font-medium text-[#222222]">{item.price?.toLocaleString('vi-VN')} đ</span> • Số lượng: <span className="font-bold text-[#3e5641]">x{item.quantity}</span>
+                          {t('orderDetailModal.verifiedUnitPrice')} <span className="font-medium text-[#222222]">{formatVnd(item.price, locale, 'spaced-vi')}</span> • {t('orderDetailModal.qtyShort')} <span className="font-bold text-[#3e5641]">x{item.quantity}</span>
                           {item.sku && (
                             <span className="font-mono text-[#555555] whitespace-nowrap">
-                              {' • Mã sản phẩm: '}
+                              {t('profile.orderCard.skuLabel')}
                               {item.sku}
                             </span>
                           )}
@@ -1687,7 +1691,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         {item.giftConfiguration && (
                           <div className="mt-2.5 p-3 rounded-[12px] bg-[#f8f5ee] border border-[#e8e2d5] text-[12.5px] text-[#555555] space-y-1">
                             <p className="font-semibold text-[#8e6746]">
-                              Hộp quà trao tặng: {item.giftConfiguration.recipient || 'Người thương'} ({item.giftConfiguration.emotion})
+                              {t('orderDetailModal.giftHeading', { recipient: item.giftConfiguration.recipient || t('orderDetailModal.defaultGiftRecipient'), emotion: ['AN', 'THUONG', 'CAM', 'NHO'].includes(item.giftConfiguration.emotion) ? getLocalizedEmotionName(item.giftConfiguration.emotion as any, locale) : item.giftConfiguration.emotion })}
                             </p>
                             {item.giftConfiguration.message && (
                               <p className="italic text-[#666666]">
@@ -1699,7 +1703,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       </div>
                       <div className="text-right shrink-0">
                         <span className="font-bold text-[16px] sm:text-[17px] text-[#3e5641]">
-                          {((item.price || 0) * (item.quantity || 1)).toLocaleString('vi-VN')} đ
+                          {formatVnd((item.price || 0) * (item.quantity || 1), locale, 'spaced-vi')}
                         </span>
                       </div>
                     </div>
@@ -1710,32 +1714,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {/* Delivery Information */}
               <div className="mb-6">
                 <h3 className="font-philosopher text-[18px] font-bold text-[#3e5641] mb-2.5">
-                  Thông tin giao nhận
+                  {t('orderDetailModal.deliveryHeading')}
                 </h3>
                 <div className="bg-white rounded-[18px] p-5 border border-[#e5dfd5] text-[13.5px] space-y-2 shadow-2xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <span className="text-[#888888]">Người nhận:</span>
+                    <span className="text-[#888888]">{t('orderDetailModal.recipientLabel')}</span>
                     <strong className="text-[#222222]">
                       {selectedOrder.customer?.fullName} • {selectedOrder.customer?.phone}
                     </strong>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <span className="text-[#888888]">Email xác nhận:</span>
+                    <span className="text-[#888888]">{t('orderDetailModal.confirmEmailLabel')}</span>
                     <span className="text-[#333333] font-mono">{selectedOrder.customer?.email}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1 border-t border-gray-100">
-                    <span className="text-[#888888]">Phương thức nhận:</span>
+                    <span className="text-[#888888]">{t('orderDetailModal.receiveMethodLabel')}</span>
                     <span className="font-medium text-[#222222]">
                       {selectedOrder.customer?.shippingMode === 'pickup'
-                        ? 'Nhận trực tiếp tại tiệm'
-                        : 'Giao hàng tận nơi'}
+                        ? t('orderDetailModal.receivePickup')
+                        : t('orderDetailModal.receiveDelivery')}
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 pt-1 border-t border-gray-100">
-                    <span className="text-[#888888] shrink-0">Địa chỉ / Điểm hẹn:</span>
+                    <span className="text-[#888888] shrink-0">{t('orderDetailModal.addressLabel')}</span>
                     <span className="text-right text-[#222222] font-medium">
                       {selectedOrder.customer?.shippingMode === 'pickup'
-                        ? selectedOrder.customer?.pickupStore || '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội'
+                        ? selectedOrder.customer?.pickupStore || (locale === 'en' ? '42 Hang Dieu St, Hoan Kiem District, Hanoi' : '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội')
                         : (selectedOrder.customer?.formattedAddress ||
                             (selectedOrder.customer?.communeName
                               ? [
@@ -1757,7 +1761,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   </div>
                   {selectedOrder.customer?.note && (
                     <div className="pt-2 border-t border-gray-100">
-                      <span className="text-[#888888] block mb-0.5">Lời nhắn / Ghi chú đơn:</span>
+                      <span className="text-[#888888] block mb-0.5">{t('orderDetailModal.noteLabel')}</span>
                       <p className="text-[#555555] bg-[#faf7f2] p-2.5 rounded-[10px] text-[13px] italic">
                         {selectedOrder.customer.note}
                       </p>
@@ -1774,14 +1778,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <div className="mb-6 p-5 rounded-[18px] bg-[#f8f5ee] border border-[#e5dfd5] text-[13.5px] space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h4 className="font-philosopher font-bold text-[18px] text-[#3e5641]">
-                        Thanh toán chuyển khoản VietQR (BIDV • NAPAS 247)
+                        {t('orderDetailModal.vietQrHeading')}
                       </h4>
                       <button
                         type="button"
                         onClick={() => handleContinueVietQrPayment(selectedOrder)}
                         className="px-4 py-2 rounded-full bg-[#3e5641] text-[#f7f4d5] text-[12.5px] font-semibold hover:bg-[#203323] transition-colors cursor-pointer"
                       >
-                        Mở trang thanh toán VietQR →
+                        {t('orderDetailModal.openVietQrPage')}
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-white p-4 rounded-[14px] border border-[#e8e2d5]">
@@ -1802,31 +1806,31 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         } space-y-1.5 text-[13px]`}
                       >
                         <p>
-                          <span className="text-[#888]">Ngân hàng:</span>{' '}
+                          <span className="text-[#888]">{t('orderDetailModal.bankLabel')}</span>{' '}
                           <strong className="text-[#222]">
-                            BIDV — Ngân hàng TMCP Đầu tư &amp; Phát triển Việt Nam (970418)
+                            {t('orderDetailModal.bankFullValue')}
                           </strong>
                         </p>
                         <p>
-                          <span className="text-[#888]">Chủ tài khoản:</span>{' '}
+                          <span className="text-[#888]">{t('orderDetailModal.accountOwnerLabel')}</span>{' '}
                           <strong className="text-[#222]">
                             {selectedOrder.paymentInstructions?.accountName || 'NGUYEN THI VAN ANH'}
                           </strong>
                         </p>
                         <p>
-                          <span className="text-[#888]">Số tài khoản:</span>{' '}
+                          <span className="text-[#888]">{t('orderDetailModal.accountNoLabel')}</span>{' '}
                           <strong className="font-mono text-[#3e5641] text-[14.5px]">
                             {selectedOrder.paymentInstructions?.accountNo || '8960826751'}
                           </strong>
                         </p>
                         <p>
-                          <span className="text-[#888]">Số tiền thanh toán:</span>{' '}
+                          <span className="text-[#888]">{t('orderDetailModal.amountLabel')}</span>{' '}
                           <strong className="text-[#3e5641] text-[14.5px]">
-                            {selectedOrder.total?.toLocaleString('vi-VN')} đ
+                            {formatVnd(selectedOrder.total, locale, 'spaced-vi')}
                           </strong>
                         </p>
                         <p>
-                          <span className="text-[#888]">Nội dung chuyển khoản:</span>{' '}
+                          <span className="text-[#888]">{t('orderDetailModal.transferContentLabel')}</span>{' '}
                           <strong className="font-mono text-[#8e6746] text-[14.5px]">
                             {selectedOrder.orderCode}
                           </strong>
@@ -1839,29 +1843,29 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               {/* Financial Breakdown */}
               <div className="bg-white rounded-[18px] p-5 border border-[#e5dfd5] text-[14px] space-y-2.5 mb-6 shadow-2xs">
                 <div className="flex justify-between text-[#666666]">
-                  <span>Tạm tính sản phẩm</span>
+                  <span>{t('orderDetailModal.subtotalLabel')}</span>
                   <span className="font-medium text-[#222222]">
-                    {selectedOrder.subtotal?.toLocaleString('vi-VN')} đ
+                    {formatVnd(selectedOrder.subtotal, locale, 'spaced-vi')}
                   </span>
                 </div>
                 <div className="flex justify-between text-[#666666]">
-                  <span>Phí giao hàng</span>
+                  <span>{t('orderDetailModal.shippingLabel')}</span>
                   <span className="font-medium text-[#3e5641]">
-                    {selectedOrder.shippingFee === 0 ? 'Miễn phí' : `${selectedOrder.shippingFee?.toLocaleString('vi-VN')} đ`}
+                    {selectedOrder.shippingFee === 0 ? t('orderDetailModal.freeShipping') : formatVnd(selectedOrder.shippingFee, locale, 'spaced-vi')}
                   </span>
                 </div>
                 {selectedOrder.discount > 0 && (
                   <div className="flex justify-between text-[#666666]">
-                    <span>Ưu đãi</span>
+                    <span>{t('orderDetailModal.discountLabel')}</span>
                     <span className="font-medium text-[#222222]">
-                      -{selectedOrder.discount?.toLocaleString('vi-VN')} đ
+                      -{formatVnd(selectedOrder.discount, locale, 'spaced-vi')}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-3 border-t border-gray-100 text-[18px] sm:text-[20px] font-bold text-[#222222]">
-                  <span className="font-philosopher">Tổng cộng thanh toán</span>
+                  <span className="font-philosopher">{t('orderDetailModal.totalLabel')}</span>
                   <span className="text-[#3e5641]">
-                    {selectedOrder.total?.toLocaleString('vi-VN')} đ
+                    {formatVnd(selectedOrder.total, locale, 'spaced-vi')}
                   </span>
                 </div>
               </div>
@@ -1873,7 +1877,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   onClick={() => setSelectedOrder(null)}
                   className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[14.5px] hover:bg-[#203323] transition-colors shadow-xs cursor-pointer"
                 >
-                  Đóng Chi Tiết
+                  {t('orderDetailModal.closeBtn')}
                 </button>
               </div>
             </div>

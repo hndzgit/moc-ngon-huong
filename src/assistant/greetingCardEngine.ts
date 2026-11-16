@@ -7,6 +7,8 @@ import {
   CardSuggestionItem,
 } from './types';
 import { TeaEmotion, GiftDraft } from '../types';
+import { EN_RECIPIENT_DISPLAY_NAMES, EN_TEMPLATES } from './englishNlp';
+import type { SupportedLocale } from '../lib/locale';
 
 export interface CardGenerationInput {
   recipientCategory?: RecipientCategory;
@@ -204,17 +206,23 @@ const TEMPLATES: Record<
 /**
  * Generate 3 curated styles of greeting card messages (warm, formal, short), strictly <= 280 chars.
  */
-export function generateCardSuggestions(input: CardGenerationInput): {
+export function generateCardSuggestions(
+  input: CardGenerationInput,
+  locale: SupportedLocale = 'vi'
+): {
   suggestions: CardSuggestionItem[];
   recommendedEmotion: TeaEmotion;
   intentionId: 'peace' | 'love' | 'thanks' | 'memory';
 } {
   const category = input.recipientCategory || 'general';
-  const recipientName = input.recipientRaw
-    ? input.recipientRaw.charAt(0).toUpperCase() + input.recipientRaw.slice(1)
-    : RECIPIENT_DISPLAY_NAMES[category];
+  const displayMap = locale === 'en' ? EN_RECIPIENT_DISPLAY_NAMES : RECIPIENT_DISPLAY_NAMES;
+  const rawRecipient = input.recipientRaw?.trim();
+  const recipientName = rawRecipient
+    ? rawRecipient.charAt(0).toUpperCase() + rawRecipient.slice(1)
+    : displayMap[category];
 
-  const templateSet = TEMPLATES[category] || TEMPLATES.general;
+  const templateMap = locale === 'en' ? EN_TEMPLATES : TEMPLATES;
+  const templateSet = templateMap[category] || templateMap.general;
   const emotion = input.emotion || templateSet.recommendedEmotion;
 
   const warmText = templateSet.warm[0];
@@ -225,7 +233,7 @@ export function generateCardSuggestions(input: CardGenerationInput): {
     {
       id: `warm-${category}`,
       style: 'warm',
-      styleLabel: 'Ấm áp & Gần gũi',
+      styleLabel: locale === 'en' ? 'Warm & Heartfelt' : 'Ấm áp & Gần gũi',
       recipient: recipientName,
       text: warmText.slice(0, 280),
       charCount: warmText.length,
@@ -233,7 +241,7 @@ export function generateCardSuggestions(input: CardGenerationInput): {
     {
       id: `formal-${category}`,
       style: 'formal',
-      styleLabel: 'Trang trọng & Kính cẩn',
+      styleLabel: locale === 'en' ? 'Formal & Gracious' : 'Trang trọng & Kính cẩn',
       recipient: recipientName,
       text: formalText.slice(0, 280),
       charCount: formalText.length,
@@ -241,7 +249,7 @@ export function generateCardSuggestions(input: CardGenerationInput): {
     {
       id: `short-${category}`,
       style: 'short',
-      styleLabel: 'Ngắn gọn & Súc tích',
+      styleLabel: locale === 'en' ? 'Brief & Sweet' : 'Ngắn gọn & Súc tích',
       recipient: recipientName,
       text: shortText.slice(0, 280),
       charCount: shortText.length,

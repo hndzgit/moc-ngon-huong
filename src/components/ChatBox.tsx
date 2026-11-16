@@ -2,6 +2,9 @@
 // Mộc Ngôn Hương — Smart Local Tea Assistant (Zero AI API Cost)
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatVnd, normalizeLocale } from '../lib/locale';
+import { getLocalizedProduct } from '../data/localizedCatalog';
 import { assetUrl } from '../lib/assets';
 import { usePresenceMotion, scrollBehavior } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
@@ -34,13 +37,6 @@ interface ChatBoxProps {
   cartSummary?: { totalQuantity: number; subtotal: number };
 }
 
-const INITIAL_QUICK_REPLIES = [
-  'Tư vấn quà tặng mẹ',
-  'Trà hương nhẹ nhàng',
-  'Combo Tâm Ý 4 vị',
-  'Chính sách giao hàng',
-];
-
 function renderFormattedText(text: string): React.ReactNode {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, idx) =>
     part.startsWith('**') && part.endsWith('**') ? (
@@ -59,6 +55,11 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
   onOpenGiftJourney,
   cartSummary,
 }) => {
+  const { t, i18n } = useTranslation('assistant');
+  const locale = normalizeLocale(i18n.language);
+  const initialQuickReplies = t('chrome.initialQuickReplies', {
+    returnObjects: true,
+  }) as string[];
   const [isOpen, setIsOpen] = useState(false);
   const panel = usePresenceMotion<HTMLDivElement>(isOpen, 'chat');
   const [input, setInput] = useState('');
@@ -72,11 +73,28 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
     {
       id: 'welcome-1',
       sender: 'bot',
-      text: 'Dạ chào bạn! Mình là trợ lý tư vấn trà Mộc Ngôn Hương. Hôm nay bạn đang tìm thức trà thưởng thức cho riêng mình hay muốn chọn món quà trao gửi người thương ạ?',
-      time: 'Vừa xong',
-      quickReplies: INITIAL_QUICK_REPLIES,
+      text: t('chrome.welcomeMessage'),
+      time: t('chrome.justNow'),
+      quickReplies: initialQuickReplies,
     },
   ]);
+
+  // Sync untouched welcome bubble if user switches language before chatting
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === 'welcome-1') {
+        return [
+          {
+            ...prev[0],
+            text: t('chrome.welcomeMessage'),
+            time: t('chrome.justNow'),
+            quickReplies: t('chrome.initialQuickReplies', { returnObjects: true }) as string[],
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [locale, t]);
 
   const streamRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -112,9 +130,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
       {
         id: `bot-${++sequence.current}`,
         sender: 'bot',
-        text: 'Dạ, mình đã làm mới phiên trò chuyện rồi ạ! Bạn muốn mình tư vấn chọn vị trà hay giải đáp thắc mắc nào khác không?',
-        time: 'Vừa xong',
-        quickReplies: INITIAL_QUICK_REPLIES,
+        text: t('chrome.resetMessage'),
+        time: t('chrome.justNow'),
+        quickReplies: initialQuickReplies,
       },
     ]);
   };
@@ -127,7 +145,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
       id: `user-${++sequence.current}`,
       sender: 'user',
       text: trimmed,
-      time: 'Vừa xong',
+      time: t('chrome.justNow'),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -136,14 +154,14 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
 
     // Subtle 350ms micro-delay for natural conversational typing feel
     setTimeout(() => {
-      const { reply, nextContext } = processUserMessage(trimmed, context, cartSummary);
+      const { reply, nextContext } = processUserMessage(trimmed, context, cartSummary, locale);
       setContext(nextContext);
 
       const botMsg: ChatMessage = {
         id: `bot-${++sequence.current}`,
         sender: 'bot',
         text: reply.text,
-        time: 'Vừa xong',
+        time: t('chrome.justNow'),
         products: reply.products,
         cardSuggestions: reply.cardSuggestions,
         quickReplies: reply.suggestedQuickReplies,
@@ -186,7 +204,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
           ref={panel.ref}
           id="chat-panel"
           role="region"
-          aria-label="Tư vấn Mộc Ngôn Hương"
+          aria-label={t('chrome.regionAria')}
           data-motion-phase={panel.phase}
           inert={!isOpen}
           className="chat-panel bg-paper-texture mb-3 w-[340px] sm:w-[410px] h-[520px] sm:h-[580px] bg-[#FAF8F3] rounded-[20px] shadow-[0_20px_60px_rgba(32,51,35,0.28)] border border-[#3E5641]/20 flex flex-col overflow-hidden"
@@ -201,7 +219,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                 </h3>
                 <p className="text-[11.5px] text-[#FAF8F3]/85 flex items-center gap-1.5 mt-0.5">
                   <span className="w-2 h-2 rounded-full bg-[#85E396] inline-block animate-pulse" />
-                  Trợ lý tư vấn trà trực tuyến
+                  {t('chrome.onlineStatus')}
                 </p>
               </div>
             </div>
@@ -210,8 +228,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
               <button
                 type="button"
                 onClick={handleResetConversation}
-                title="Làm mới trò chuyện"
-                aria-label="Làm mới cuộc trò chuyện"
+                title={t('chrome.resetTitle')}
+                aria-label={t('chrome.resetAria')}
                 className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-[#FAF8F3] transition-colors text-[13px]"
               >
                 <span className="text-[16px]">↺</span>
@@ -223,7 +241,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                   launcherRef.current?.focus({ preventScroll: true });
                 }}
                 className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-[#FAF8F3] transition-colors text-[18px]"
-                aria-label="Đóng khung chat"
+                aria-label={t('chrome.closeAria')}
               >
                 <FigmaIcon name="closeChat" />
               </button>
@@ -247,7 +265,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                 {msg.sender === 'bot' && (
                   <img
                     src={assetUrl('/assets/figma/logo-header.png')}
-                    alt="Bot"
+                    alt={t('chrome.botAlt')}
                     className="w-7 h-7 rounded-full object-cover shrink-0 mt-1 border border-[#3E5641]/20"
                   />
                 )}
@@ -275,18 +293,18 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                           <div className="flex gap-2.5 items-center">
                             <img
                               src={assetUrl(p.image)}
-                              alt={p.name}
+                              alt={getLocalizedProduct(p, locale).name}
                               className="w-14 h-14 rounded-[8px] object-cover shrink-0 border border-black/5"
                             />
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-[13px] text-[#222222] truncate">
-                                {p.name}
+                                {getLocalizedProduct(p, locale).name}
                               </h4>
                               <p className="text-[11px] text-[#3E5641] font-medium">
-                                {p.emotionLabel}
+                                {getLocalizedProduct(p, locale).emotionLabel}
                               </p>
                               <p className="text-[12.5px] font-bold text-[#8E6746]">
-                                {p.price.toLocaleString('vi-VN')} đ
+                                {formatVnd(p.price, locale, 'spaced-vi')}
                               </p>
                             </div>
                           </div>
@@ -300,7 +318,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                               }}
                               className="flex-1 py-1.5 px-2 rounded-[6px] bg-white border border-[#3E5641]/20 hover:bg-[#3E5641] hover:text-white text-[#3E5641] font-medium text-[11px] transition-colors text-center"
                             >
-                              Xem chi tiết
+                              {t('chrome.viewDetails')}
                             </button>
 
                             {onAddToCart && (
@@ -309,7 +327,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                                 onClick={() => onAddToCart(p, 1)}
                                 className="flex-1 py-1.5 px-2 rounded-[6px] bg-[#3E5641] hover:bg-[#203323] text-white font-medium text-[11px] transition-colors text-center shadow-xs"
                               >
-                                + Thêm giỏ
+                                {t('chrome.addToCart')}
                               </button>
                             )}
 
@@ -324,9 +342,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                                   setIsOpen(false);
                                 }}
                                 className="py-1.5 px-2 rounded-[6px] bg-[#C89F5D]/20 hover:bg-[#C89F5D] text-[#8E6746] hover:text-white font-medium text-[11px] transition-colors text-center"
-                                title="Tùy biến quà tặng"
+                                title={t('chrome.chooseGiftTitle')}
                               >
-                                Chọn làm quà
+                                {t('chrome.chooseGift')}
                               </button>
                             )}
                           </div>
@@ -339,7 +357,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                   {msg.cardSuggestions && msg.cardSuggestions.length > 0 && (
                     <div className="mt-3 space-y-2.5">
                       <p className="text-[11px] font-semibold text-[#8E6746] uppercase tracking-wider">
-                        Gợi ý thông điệp thiệp quà:
+                        {t('chrome.cardHeading')}
                       </p>
                       {msg.cardSuggestions.map((card) => (
                         <div
@@ -351,7 +369,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                               {card.styleLabel}
                             </span>
                             <span className="text-[10px] text-gray-500">
-                              {card.charCount}/280 ký tự
+                              {t('chrome.cardChars', { count: card.charCount })}
                             </span>
                           </div>
                           <p className="text-[#333333] italic leading-[17px]">
@@ -363,7 +381,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                               onClick={() => handleCopyCard(card)}
                               className="text-[11px] text-[#3E5641] hover:underline font-medium"
                             >
-                              {copiedCardId === card.id ? '✓ Đã sao chép' : 'Sao chép'}
+                              {copiedCardId === card.id ? t('chrome.copied') : t('chrome.copy')}
                             </button>
                             <span className="text-gray-300">|</span>
                             <button
@@ -371,7 +389,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                               onClick={() => handleTransferToGiftJourney(card)}
                               className="text-[11px] text-[#8E6746] hover:underline font-semibold"
                             >
-                              Dùng cho thiệp quà →
+                              {t('chrome.useOnCard')}
                             </button>
                           </div>
                         </div>
@@ -403,7 +421,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
               <div className="chat-message flex items-start gap-2.5 justify-start">
                 <img
                   src={assetUrl('/assets/figma/logo-header.png')}
-                  alt="Bot"
+                  alt={t('chrome.botAlt')}
                   className="w-7 h-7 rounded-full object-cover shrink-0 mt-1 border border-[#3E5641]/20"
                 />
                 <div className="bg-white rounded-[14px] px-4 py-3 border border-black/5 shadow-xs flex items-center gap-1.5">
@@ -427,7 +445,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi của bạn (vd: tư vấn quà tặng mẹ)..."
+              placeholder={t('chrome.inputPlaceholder')}
               className="flex-1 h-10 px-4 rounded-full bg-[#FAF8F3] text-[13px] text-[#222222] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#3E5641]"
             />
             <button
@@ -438,7 +456,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                   ? 'bg-[#3E5641] text-[#FAF8F3] hover:bg-[#203323]'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
-              aria-label="Gửi tin nhắn"
+              aria-label={t('chrome.sendAria')}
             >
               <FigmaIcon name="send" />
             </button>
@@ -452,16 +470,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-[60px] h-[60px] md:w-[76px] md:h-[76px] rounded-full bg-[#3E5641] text-[#FAF8F3] shadow-[0_8px_28px_rgba(32,51,35,0.35)] hover:bg-[#203323] hover:scale-105 active:scale-95 transition-all flex items-center justify-center ml-auto relative"
-        aria-label="Mở trợ lý tư vấn trà trực tuyến"
+        aria-label={t('chrome.launcherAria')}
         aria-expanded={isOpen}
         aria-controls="chat-panel"
       >
         <img
           src={assetUrl('/assets/figma/icon-chat.svg')}
-          alt="Trợ lý trà"
+          alt={t('chrome.launcherAlt')}
           className="w-[36px] h-[36px]"
         />
-        <span className="sr-only">Trợ lý Mộc Ngôn Hương</span>
+        <span className="sr-only">{t('chrome.launcherSrOnly')}</span>
       </button>
     </div>
   );

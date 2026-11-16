@@ -2,7 +2,10 @@ import { assetUrl } from '../lib/assets';
 import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Product } from '../types';
+import { getLocalizedProduct } from '../data/localizedCatalog';
+import { formatVnd, normalizeLocale } from '../lib/locale';
 
 interface ProductCardProps {
   product: Product;
@@ -29,6 +32,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   displayDescription,
   displayNote,
 }) => {
+  const { t, i18n } = useTranslation(['products', 'common']);
+  const locale = normalizeLocale(i18n.language);
+  const localizedProduct = getLocalizedProduct(product, locale);
   const quantityMotion = useChangeMotion<HTMLSpanElement>(quantity, undefined, .18);
   const detailId = product.id.endsWith('-le')
     ? product.id === 'combo-tam-y-le'
@@ -45,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Thumbnail */}
       <button
         type="button"
-        aria-label={`Xem ${product.name}`}
+        aria-label={t('products:card.viewProductAria', { name: localizedProduct.name })}
         onClick={() => onSelect(detailId)}
         className={`relative w-full ${
           large ? 'aspect-[16/10]' : 'aspect-[4/3]'
@@ -53,7 +59,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       >
         <img
           src={assetUrl(imageSrc || product.image)}
-          alt={product.shortName || product.name}
+          alt={localizedProduct.shortName || localizedProduct.name}
           className="w-full h-full object-cover"
           loading="lazy" decoding="async"
         />
@@ -71,8 +77,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 : 'text-[18px] md:text-[19px]'
             } text-[#222222] group-hover:text-[#3e5641] transition-colors cursor-pointer`}
           >
-            <button type="button" onClick={()=>onSelect(detailId)} className="w-full text-left" aria-label={`Chi tiết ${product.name}`}>
-              {displayTitle || (large ? product.name : product.shortName || product.name)}
+            <button type="button" onClick={()=>onSelect(detailId)} className="w-full text-left" aria-label={t('products:card.detailAria', { name: localizedProduct.name })}>
+              {displayTitle || (large ? localizedProduct.name : localizedProduct.shortName || localizedProduct.name)}
             </button>
           </h3>
           {(!compact || displayDescription) && (
@@ -81,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 large ? 'text-[14px] leading-[22px] mt-1.5' : 'text-[12.5px] leading-[18px] mt-1'
               } text-[#666666] ${displayDescription ? '' : 'line-clamp-2'}`}
             >
-              {displayDescription || product.shortDesc}
+              {displayDescription || localizedProduct.shortDesc}
             </p>
           )}
           {displayNote && <p className="product-card-note">{displayNote}</p>}
@@ -96,7 +102,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               large ? 'text-[20px] md:text-[22px]' : 'text-[15px] md:text-[16px]'
             } text-[#222222] hover:text-[#3e5641] transition-colors text-left`}
           >
-            {product.price.toLocaleString('en-US')}đ
+            {formatVnd(product.price, locale, 'compact-en')}
           </button>
 
           <div
@@ -108,7 +114,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               onClick={() => onUpdateQuantity(product, -1)}
               disabled={quantity <= 0}
               className="w-5 h-5 rounded-full flex items-center justify-center text-[#222222] hover:bg-white disabled:opacity-35 transition-colors font-semibold text-[14px] leading-none"
-              aria-label="Giảm số lượng"
+              aria-label={t('common:actions.decreaseQty')}
             >
               <FigmaIcon name={large ? 'minusLarge' : 'minus'} />
             </button>
@@ -120,7 +126,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               onClick={() => onUpdateQuantity(product, 1)}
               disabled={quantity >= Math.min(99, product.stock)}
               className="w-5 h-5 rounded-full flex items-center justify-center text-[#222222] hover:bg-white disabled:opacity-35 transition-colors font-semibold text-[14px] leading-none"
-              aria-label="Tăng số lượng"
+              aria-label={t('common:actions.increaseQty')}
             >
               <FigmaIcon name={large ? 'plusLarge' : 'plus'} />
             </button>

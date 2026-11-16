@@ -1,0 +1,35 @@
+export const assistant = {
+  chrome: {
+    regionAria: 'Mộc Ngôn Hương Tea Advisor',
+    onlineStatus: 'Online Tea & Gift Assistant',
+    resetTitle: 'Start fresh conversation',
+    resetAria: 'Reset conversation',
+    closeAria: 'Close chat window',
+    justNow: 'Just now',
+    botAlt: 'Bot',
+    viewDetails: 'View details',
+    addToCart: '+ Add to Cart',
+    chooseGift: 'Gift Card',
+    chooseGiftTitle: 'Personalize as a gift',
+    cardHeading: 'Gift card message suggestions:',
+    cardChars: '{{count}}/280 chars',
+    copied: '✓ Copied',
+    copy: 'Copy',
+    useOnCard: 'Use in Gift Card →',
+    inputPlaceholder: 'Ask about gifts, tea notes, shipping (e.g., gift for mom)...',
+    sendAria: 'Send message',
+    launcherAria: 'Open Mộc Ngôn Hương online tea advisor',
+    launcherAlt: 'Tea assistant',
+    launcherSrOnly: 'Mộc Ngôn Hương Assistant',
+    welcomeMessage:
+      'Hello! I am the Mộc Ngôn Hương tea concierge. Are you choosing an aromatic tea for your own quiet moments today, or curating a meaningful gift for someone special?',
+    resetMessage:
+      'Fresh conversation started! How may I help you pick the right floral tea or gift box today?',
+    initialQuickReplies: [
+      'Tea gift for Mom',
+      'Light gentle floral tea',
+      'Tam Y 4-flavor gift box',
+      'Shipping & VietQR guide',
+    ],
+  },
+} as const;

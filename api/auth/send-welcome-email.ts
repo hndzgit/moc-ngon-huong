@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { getAdminAuth, getFirestoreDb, verifyAuthToken, getIsProduction } from '../_lib/firebaseAdmin.js';
 import { dispatchResendEmail } from '../_lib/notifications.js';
-import { renderWelcomeEmail, sanitizeCustomerName } from '../_lib/authEmailTemplates.js';
+import { renderWelcomeEmail, sanitizeCustomerName, normalizeEmailLocale } from '../_lib/authEmailTemplates.js';
 
 interface VercelRequest extends IncomingMessage {
   query?: Record<string, string | string[]>;
@@ -206,6 +206,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 2. Parse request body safely
   const body = await parseRequestBody(req);
   const forceRecovery = body.forceRecovery === true;
+  const locale = normalizeEmailLocale(body.locale);
 
   // Extract and sanitize Customer Name
   let rawName = '';
@@ -229,7 +230,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     rawName = targetEmail.split('@')[0];
   }
 
-  const customerName = sanitizeCustomerName(rawName, 'Quý khách');
+  const customerName = sanitizeCustomerName(rawName, locale === 'en' ? 'Valued Guest' : 'Quý khách');
 
   // 3. Concurrency-Safe Idempotency via Firestore Transaction
   const db = getFirestoreDb();
@@ -385,6 +386,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 5. Render brand-aligned HTML welcome email with safe HTML escaping
   const { subject, html, text } = renderWelcomeEmail({
     customerName,
+    locale,
   });
 
   // 6. Dispatch through Resend using verified brand sender and Idempotency-Key

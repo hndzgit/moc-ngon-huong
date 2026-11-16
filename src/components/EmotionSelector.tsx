@@ -1,12 +1,18 @@
 import { assetUrl } from '../lib/assets';
-import { FIGMA_PRODUCT_COPY } from '../data/figmaMedia';
 import { QR_SVG_DATA_URLS } from '../data/qrCodes';
 import { MotionDialog } from '../motion/MotionDialog';
 import { MotionImage } from '../motion/MotionImage';
 import { useChangeMotion } from '../motion/motion';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState } from 'react';
-import { EMOTION_CARDS, PRODUCTS } from '../data/products';
+import { useTranslation } from 'react-i18next';
+import { PRODUCTS } from '../data/products';
+import {
+  getLocalizedEmotionCards,
+  getLocalizedFigmaProductCopy,
+  getLocalizedProduct,
+} from '../data/localizedCatalog';
+import { formatVnd, normalizeLocale } from '../lib/locale';
 import { EmotionKey, PageRoute, Product, TeaEmotion } from '../types';
 
 interface EmotionSelectorProps {
@@ -20,15 +26,19 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
   onAddToCart,
   onComposeGift,
 }) => {
+  const { t, i18n } = useTranslation('home');
+  const locale = normalizeLocale(i18n.language);
+  const emotionCards = getLocalizedEmotionCards(locale);
   const [selectedEmotion, setSelectedEmotion] = useState<Exclude<EmotionKey, 'ALL' | 'COMBO'>>('AN');
   const [qrOpen, setQrOpen] = useState(false);
   const flavorMotion = useChangeMotion<HTMLDivElement>(selectedEmotion, '[data-flavor-copy]', .3);
 
   const activeItem =
-    EMOTION_CARDS.find((item) => item.key === selectedEmotion) || EMOTION_CARDS[0];
-  const storyCopy = FIGMA_PRODUCT_COPY[activeItem.productId];
-  const matchedProduct =
+    emotionCards.find((item) => item.key === selectedEmotion) || emotionCards[0];
+  const storyCopy = getLocalizedFigmaProductCopy(activeItem.productId, locale);
+  const rawProduct =
     PRODUCTS.find((p) => p.id === activeItem.productId) || PRODUCTS[0];
+  const matchedProduct = getLocalizedProduct(rawProduct, locale);
 
   const handleSelectEmotion = (key: Exclude<EmotionKey, 'ALL' | 'COMBO'>) => {
     setSelectedEmotion(key);
@@ -44,19 +54,19 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
         {/* Section Heading (Figma 56:1033) */}
         <div className="text-center max-w-[760px] mx-auto mb-10">
           <p className="text-[13px] md:text-[14px] font-medium text-[#9c5435] mb-1.5">
-            Trải nghiệm Tương Tác
+            {t('emotions.kicker')}
           </p>
           <h2 className="font-philosopher font-bold text-[28px] sm:text-[38px] lg:text-[44px] text-[#203323] leading-[1.15] mb-3">
-            Hôm nay, bạn muốn gửi điều gì?
+            {t('emotions.title')}
           </h2>
           <p className="text-[14px] md:text-[15px] text-[#666666] leading-[22px] max-w-[560px] mx-auto">
-            Đôi khi ta ngập ngừng chưa thể nói hết lòng mình. Hãy chọn thông điệp bạn đang ấp ủ, Mộc Ngôn Hương sẽ gợi mở hương trà tương ứng.
+            {t('emotions.subtitle')}
           </p>
         </div>
 
         {/* 4 Emotion Selector Cards (Figma Component 5) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 mb-8">
-          {EMOTION_CARDS.map((card) => {
+          {emotionCards.map((card) => {
             const isSelected = card.key === selectedEmotion;
             return (
               <button
@@ -102,7 +112,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
           })}
         </div>
 
-        {onComposeGift&&<div className="emotion-compose-entry"><span>Đã tìm thấy hương trà cho lời muốn gửi?</span><button type="button" onClick={()=>onComposeGift(selectedEmotion)}>Viết lời nhắn cho món quà {matchedProduct.shortName}</button></div>}
+        {onComposeGift&&<div className="emotion-compose-entry"><span>{t('emotions.composePrompt')}</span><button type="button" onClick={()=>onComposeGift(selectedEmotion)}>{t('emotions.composeCtaPrefix')} {matchedProduct.shortName}</button></div>}
         {/* Main Flavor Card Showcase (Figma Component 6 - 80:4148) */}
         <div ref={flavorMotion} className="bg-white rounded-[20px] border border-gray-200/80 shadow-[0_12px_36px_rgba(32,51,35,0.08)] p-6 sm:p-8 lg:p-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
@@ -132,7 +142,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 pt-3 border-t border-gray-100">
                   <div>
                     <h4 className="text-[12px] text-[#888888] mb-0.5">
-                      Tầng hương
+                      {t('emotions.scentLayerLabel')}
                     </h4>
                     <p className="text-[13px] font-medium text-[#222222] line-clamp-2">
                       {storyCopy.scent}
@@ -141,7 +151,7 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
 
                   <div>
                     <h4 className="text-[12px] text-[#888888] mb-0.5">
-                      Món quà hoàn hảo cho
+                      {t('emotions.giftForLabel')}
                     </h4>
                     <p className="text-[13px] font-medium text-[#222222] line-clamp-2">
                       {storyCopy.giftFor}
@@ -153,28 +163,28 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
               {/* Price & Full-width 2-Column Buttons */}
               <div className="pt-3 border-t border-gray-100">
                 <div className="font-philosopher font-bold text-[24px] md:text-[28px] text-[#203323] mb-4">
-                  {matchedProduct.price.toLocaleString('en-US')}đ
+                  {formatVnd(rawProduct.price, locale, 'compact-en')}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <button
                     type="button"
-                    onClick={() => onAddToCart(matchedProduct, 1)}
+                    onClick={() => onAddToCart(rawProduct, 1)}
                     className="h-[44px] px-5 rounded-full border border-[#3e5641] text-[#3e5641] font-semibold text-[14px] hover:bg-[#3e5641]/5 transition-colors flex items-center justify-center gap-2"
                   >
                     <FigmaIcon name="giftBag" />
-                    <span>Thêm Vào Giỏ Hàng</span>
+                    <span>{t('emotions.addToCart')}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
-                      onAddToCart(matchedProduct, 1);
+                      onAddToCart(rawProduct, 1);
                       onNavigate('checkout');
                     }}
                     className="h-[44px] px-5 rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[14px] hover:bg-[#203323] transition-colors shadow-xs flex items-center justify-center gap-2"
                   >
-                    <FigmaIcon name="wallet" /><span>Mua Ngay</span>
+                    <FigmaIcon name="wallet" /><span>{t('emotions.buyNow')}</span>
                   </button>
                 </div>
               </div>
@@ -199,12 +209,12 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                       className="h-[38px] px-4 rounded-full bg-white/95 backdrop-blur-sm text-[#203323] font-medium text-[13px] shadow-md hover:bg-white transition-all flex items-center gap-2"
                     >
                       <FigmaIcon name="scan" />
-                      <span>Quét QR nghe Audio chuyện trà</span>
+                      <span>{t('emotions.scanQrCta')}</span>
                     </button>
                   </div>
                 ) : null}
                 <MotionDialog open={qrOpen} onClose={()=>setQrOpen(false)}>
-                  <div role="dialog" aria-modal="true" aria-label="Mã QR nghe chuyện trà" className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 sm:p-6 animate-fadeIn text-center">
+                  <div role="dialog" aria-modal="true" aria-label={t('emotions.qrModal.dialogAria')} className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 sm:p-6 animate-fadeIn text-center">
                     <div className="bg-white p-4 rounded-[16px] shadow-2xl mb-3 max-w-[280px] w-full flex flex-col items-center">
                       <span
                         className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold mb-1"
@@ -220,11 +230,11 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                       </p>
                       <img
                         src={QR_SVG_DATA_URLS[activeItem.productId] || assetUrl("/assets/figma/qr-code.png")}
-                        alt={`Mã QR nghe Audio chuyện trà — ${activeItem.teaName}`}
+                        alt={`${t('emotions.qrModal.qrAltPrefix')} ${activeItem.teaName}`}
                         className="w-[164px] h-[164px] object-contain"
                       />
                       <p className="text-[11.5px] text-[#555555] leading-snug mt-2 mb-2.5">
-                        Quét mã hoặc chạm bên dưới để mở trang chuyện trà và thông tin chi tiết.
+                        {t('emotions.qrModal.description')}
                       </p>
                       <button
                         type="button"
@@ -234,14 +244,14 @@ export const EmotionSelector: React.FC<EmotionSelectorProps> = ({
                         }}
                         className="w-full h-[36px] px-3 rounded-full bg-[#3e5641] text-[#f7f4d5] font-medium text-[12px] hover:bg-[#203323] transition-colors flex items-center justify-center gap-1.5"
                       >
-                        <span>Mở trang chuyện trà & chi tiết</span>
+                        <span>{t('emotions.qrModal.openDetailCta')}</span>
                       </button>
                     </div>
                     <button
                       type="button"
                       onClick={() => setQrOpen(false)}
                       className="w-9 h-9 rounded-full bg-white text-[#222222] flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
-                      aria-label="Đóng mã QR"
+                      aria-label={t('emotions.qrModal.closeAria')}
                     >
                       <FigmaIcon name="closeModal" />
                     </button>

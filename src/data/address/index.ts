@@ -199,19 +199,25 @@ export function validateDeliveryAddress(params: {
   address?: string;
   provinceCode?: string;
   communeCode?: string;
+  locale?: 'vi' | 'en';
 }): {
   isValid: boolean;
   error?: string;
   validated?: ValidatedDeliveryAddress;
 } {
+  const isEn = params.locale === 'en';
   const address = typeof params.address === 'string' ? params.address.trim() : '';
-  const pCode = typeof params.provinceCode === 'string' ? params.provinceCode.trim().padStart(2, '0') : '';
-  const cCode = typeof params.communeCode === 'string' ? params.communeCode.trim().padStart(5, '0') : '';
+  const rawPCode = typeof params.provinceCode === 'string' ? params.provinceCode.trim() : '';
+  const pCode = rawPCode ? rawPCode.padStart(2, '0') : '';
+  const rawCCode = typeof params.communeCode === 'string' ? params.communeCode.trim() : '';
+  const cCode = rawCCode ? rawCCode.padStart(5, '0') : '';
 
   if (!pCode) {
     return {
       isValid: false,
-      error: 'Vui lòng chọn Tỉnh / Thành phố nhận hàng.',
+      error: isEn
+        ? 'Please select a delivery Province / Municipality.'
+        : 'Vui lòng chọn Tỉnh / Thành phố nhận hàng.',
     };
   }
 
@@ -219,14 +225,18 @@ export function validateDeliveryAddress(params: {
   if (!province) {
     return {
       isValid: false,
-      error: `Tỉnh / Thành phố với mã "${pCode}" không tồn tại trong danh mục hành chính 2026.`,
+      error: isEn
+        ? `Province code "${pCode}" does not exist in our 2026 Vietnam address catalog.`
+        : `Tỉnh / Thành phố với mã "${pCode}" không tồn tại trong danh mục hành chính 2026.`,
     };
   }
 
   if (!cCode) {
     return {
       isValid: false,
-      error: 'Vui lòng chọn Phường / Xã / Đặc khu nhận hàng.',
+      error: isEn
+        ? 'Please select a delivery Ward / Commune / Special Zone.'
+        : 'Vui lòng chọn Phường / Xã / Đặc khu nhận hàng.',
     };
   }
 
@@ -234,21 +244,27 @@ export function validateDeliveryAddress(params: {
   if (!commune) {
     return {
       isValid: false,
-      error: `Phường / Xã / Đặc khu mã "${cCode}" không thuộc "${province.fullName}". Vui lòng chọn lại.`,
+      error: isEn
+        ? `Ward / Commune code "${cCode}" does not belong to "${province.fullName}". Please choose again.`
+        : `Phường / Xã / Đặc khu mã "${cCode}" không thuộc "${province.fullName}". Vui lòng chọn lại.`,
     };
   }
 
   if (!address || address.length < 3) {
     return {
       isValid: false,
-      error: 'Vui lòng nhập địa chỉ nhận hàng chi tiết (số nhà, tên đường, thôn, xóm hoặc tổ dân phố).',
+      error: isEn
+        ? 'Please enter your street address (house number, street, alley, or hamlet).'
+        : 'Vui lòng nhập địa chỉ nhận hàng chi tiết (số nhà, tên đường, thôn, xóm hoặc tổ dân phố).',
     };
   }
 
   if (address.length > 250) {
     return {
       isValid: false,
-      error: 'Địa chỉ nhận hàng chi tiết quá dài (tối đa 250 ký tự).',
+      error: isEn
+        ? 'Detailed street address is too long (maximum 250 characters).'
+        : 'Địa chỉ nhận hàng chi tiết quá dài (tối đa 250 ký tự).',
     };
   }
 

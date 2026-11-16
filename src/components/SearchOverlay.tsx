@@ -3,10 +3,13 @@ import { usePresenceMotion } from '../motion/motion';
 import { useDialogLifecycle } from './useDialogLifecycle';
 import { FigmaIcon } from './FigmaIcon';
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
-import { FIGMA_CARD_COPY, FIGMA_LISTING_MEDIA } from '../data/figmaMedia';
+import { FIGMA_LISTING_MEDIA } from '../data/figmaMedia';
+import { getLocalizedCardCopy, getProductSearchCorpus } from '../data/localizedCatalog';
+import { normalizeLocale } from '../lib/locale';
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -23,6 +26,8 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   cartQuantities,
   onUpdateQuantity,
 }) => {
+  const { t, i18n } = useTranslation('products');
+  const locale = normalizeLocale(i18n.language);
   const {ref,present,phase}=usePresenceMotion<HTMLDivElement>(isOpen,'search');
   useDialogLifecycle(present,onClose,ref);
   const [query, setQuery] = useState('');
@@ -41,12 +46,10 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     if (!q) return PRODUCTS;
     const tokens = q.split(/\s+/).filter(Boolean);
     return PRODUCTS.filter((p) => {
-      const titleText = normalize(`${p.name} ${p.shortName} ${p.emotionLabel}`);
-      const descText = normalize(p.shortDesc);
+      const searchText = normalize(getProductSearchCorpus(p));
       return (
-        titleText.includes(q) ||
-        descText.includes(q) ||
-        (tokens.length > 0 && tokens.every((token) => titleText.includes(token)))
+        searchText.includes(q) ||
+        (tokens.length > 0 && tokens.every((token) => searchText.includes(token)))
       );
     });
   }, [query]);
@@ -76,7 +79,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       <div className="fixed inset-0" onClick={onClose} />
 
       {/* Centered White Rounded Search Card (Figma 127:12938, 127:13466, 127:13960 - max-w-[1290px]) */}
-      <div inert={!isOpen} role="dialog" aria-modal="true" aria-label="Tìm kiếm sản phẩm" className="search-card relative z-10 w-full max-w-[1680px] bg-white rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.3)] p-6 sm:p-8 lg:p-10 my-auto md:my-0">
+      <div inert={!isOpen} role="dialog" aria-modal="true" aria-label={t('search.dialogAria')} className="search-card relative z-10 w-full max-w-[1680px] bg-white rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.3)] p-6 sm:p-8 lg:p-10 my-auto md:my-0">
         {/* Top Search Input Pill */}
         <div className="relative flex items-center w-full h-[52px] rounded-full border border-[#222222]/35 bg-white px-5 mb-7 focus-within:border-[#3e5641] focus-within:ring-2 focus-within:ring-[#3e5641]/15">
           <img
@@ -88,7 +91,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm kiếm sản phẩm"
+            placeholder={t('search.placeholder')}
             autoFocus
             className="w-full bg-transparent text-[15px] md:text-[16px] text-[#222222] placeholder:text-[#888888] focus:outline-none"
           />
@@ -102,7 +105,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               }
             }}
             className="ml-2 w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-[#555555] text-[16px] shrink-0"
-            aria-label={query ? 'Xóa từ khóa' : 'Đóng tìm kiếm'}
+            aria-label={query ? t('search.clearAria') : t('search.closeAria')}
           >
             <FigmaIcon name="closeModal" />
           </button>
@@ -112,9 +115,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         {noResults && (
           <div className="py-6 mb-4 text-center">
             <p className="text-[15px] md:text-[16px] text-[#444444]">
-              Không tìm thấy kết quả nào cho &ldquo;
+              {t('search.emptyPrefix')}
               <span className="font-semibold text-[#222222]">{query}</span>
-              &rdquo;. Hãy thử tìm kiếm khác
+              {t('search.emptySuffix')}
             </p>
           </div>
         )}
@@ -124,30 +127,33 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-philosopher font-bold text-[20px] md:text-[22px] text-[#222222]">
-                Đã xem gần đây
+                {t('search.recentlyViewed')}
               </h3>
               <button
                 type="button"
                 onClick={() => setRecentViewed([])}
                 className="text-[14px] text-[#666666] hover:text-[#222222] transition-colors"
               >
-                Xóa
+                {t('search.clearRecent')}
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-              {recentViewed.map((product) => (
-                <ProductCard
-                  key={`recent-${product.id}`}
-                  product={product}
-                  displayTitle={FIGMA_CARD_COPY[product.id]?.title}
-                  displayDescription={FIGMA_CARD_COPY[product.id]?.subtitle}
-                  quantity={cartQuantities[product.id] || 0}
-                  onUpdateQuantity={onUpdateQuantity}
-                  onSelect={handleSelect}
-                  imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
-                  compact
-                />
-              ))}
+              {recentViewed.map((product) => {
+                const copy = getLocalizedCardCopy(product.id, locale);
+                return (
+                  <ProductCard
+                    key={`recent-${product.id}`}
+                    product={product}
+                    displayTitle={copy?.title}
+                    displayDescription={copy?.subtitle}
+                    quantity={cartQuantities[product.id] || 0}
+                    onUpdateQuantity={onUpdateQuantity}
+                    onSelect={handleSelect}
+                    imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
+                    compact
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -155,22 +161,25 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         {/* Main 5-Column Product Row: "Sản phẩm của Mộc Ngôn Hương" */}
         {!noResults && <div>
           <h3 className="font-philosopher font-bold text-[20px] md:text-[22px] text-[#222222] mb-4">
-            Sản phẩm của Mộc Ngôn Hương
+            {t('search.allProductsHeading')}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-            {(noResults ? PRODUCTS : filteredProducts).map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                displayTitle={FIGMA_CARD_COPY[product.id]?.title}
-                displayDescription={FIGMA_CARD_COPY[product.id]?.subtitle}
-                quantity={cartQuantities[product.id] || 0}
-                onUpdateQuantity={onUpdateQuantity}
-                onSelect={handleSelect}
-                imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
-                compact
-              />
-            ))}
+            {(noResults ? PRODUCTS : filteredProducts).map((product) => {
+              const copy = getLocalizedCardCopy(product.id, locale);
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  displayTitle={copy?.title}
+                  displayDescription={copy?.subtitle}
+                  quantity={cartQuantities[product.id] || 0}
+                  onUpdateQuantity={onUpdateQuantity}
+                  onSelect={handleSelect}
+                  imageSrc={FIGMA_LISTING_MEDIA[product.id] || product.image}
+                  compact
+                />
+              );
+            })}
           </div>
         </div>}
       </div>

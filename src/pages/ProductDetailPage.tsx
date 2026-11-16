@@ -4,16 +4,22 @@ import { MotionImage } from '../motion/MotionImage';
 import { useChangeMotion } from '../motion/motion';
 import {
   FIGMA_PRODUCT_MEDIA,
-  FIGMA_PRODUCT_COPY,
-  FIGMA_CARD_COPY,
   FIGMA_RELATED_MEDIA,
-  FIGMA_DETAIL_GALLERY,
   FigmaGalleryItem,
   figmaImage,
 } from '../data/figmaMedia';
+import {
+  getLocalizedCardCopy,
+  getLocalizedDetailGallery,
+  getLocalizedEmotionCards,
+  getLocalizedFigmaProductCopy,
+  getLocalizedProduct,
+} from '../data/localizedCatalog';
+import { formatVnd, normalizeLocale } from '../lib/locale';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState, useEffect, useMemo } from 'react';
-import { EMOTION_CARDS, PRODUCTS } from '../data/products';
+import { useTranslation } from 'react-i18next';
+import { PRODUCTS } from '../data/products';
 import { PageRoute, Product } from '../types';
 import { ProductCard } from '../components/ProductCard';
 
@@ -25,29 +31,6 @@ interface ProductDetailPageProps {
   onAddToCart: (product: Product, quantity?: number) => void;
 }
 
-const SERVICE_BADGES = [
-  {
-    icon: 'group' as const,
-    title: 'Hỏa Tốc',
-    subtitle: 'Nội thành Hà Nội',
-  },
-  {
-    icon: 'dollar' as const,
-    title: 'COD',
-    subtitle: 'Thanh toán khi nhận',
-  },
-  {
-    icon: 'box' as const,
-    title: 'Hút Chân Không',
-    subtitle: 'Theo yêu cầu',
-  },
-  {
-    icon: 'airplane' as const,
-    title: 'Giao Hàng Bay',
-    subtitle: 'Đà Nẵng, HCM',
-  },
-];
-
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   productId,
   onNavigate,
@@ -55,14 +38,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onUpdateQuantity,
   onAddToCart,
 }) => {
-  const product =
+  const { t, i18n } = useTranslation(['products', 'common']);
+  const locale = normalizeLocale(i18n.language);
+  const rawProduct =
     PRODUCTS.find((p) => p.id === productId) || PRODUCTS[0];
+  const product = getLocalizedProduct(rawProduct, locale);
+  const emotionCards = getLocalizedEmotionCards(locale);
+  const serviceBadges = t('products:detail.serviceBadges', {
+    returnObjects: true,
+  }) as ReadonlyArray<{
+    icon: 'group' | 'dollar' | 'box' | 'airplane';
+    title: string;
+    subtitle: string;
+  }>;
 
   const media = FIGMA_PRODUCT_MEDIA[product.id];
-  const copy = FIGMA_PRODUCT_COPY[product.id];
+  const copy = getLocalizedFigmaProductCopy(product.id, locale);
 
   const galleryItems = useMemo<FigmaGalleryItem[]>(() => {
-    const figmaGallery = FIGMA_DETAIL_GALLERY[product.id];
+    const figmaGallery = getLocalizedDetailGallery(product.id, locale);
     if (figmaGallery && figmaGallery.length > 0) {
       return figmaGallery;
     }
@@ -86,12 +80,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       thumb: img,
       alt: `${product.name} ${i + 1}`,
     }));
-  }, [media, product]);
+  }, [media, product, locale]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const activeSlide = galleryItems[activeIndex] || galleryItems[0];
   const [buyQty, setBuyQty] = useState(1);
-  const [selectedComboFlavor, setSelectedComboFlavor] = useState<typeof EMOTION_CARDS[number] | null>(null);
+  const [selectedComboFlavor, setSelectedComboFlavor] = useState<ReturnType<typeof getLocalizedEmotionCards>[number] | null>(null);
   const quantityMotion=useChangeMotion<HTMLSpanElement>(buyQty,undefined,.18);
 
   useEffect(() => {
@@ -108,7 +102,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const otherProducts = PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
 
-  const selectedFlavorCopy = selectedComboFlavor ? FIGMA_PRODUCT_COPY[selectedComboFlavor.productId] : null;
+  const selectedFlavorCopy = selectedComboFlavor ? getLocalizedFigmaProductCopy(selectedComboFlavor.productId, locale) : null;
 
   const storyData =
     product.id === 'hop-qua-tam-y' && selectedComboFlavor
@@ -154,7 +148,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     key={item.full}
                     type="button"
                     onClick={() => setActiveIndex(idx)}
-                    aria-label={item.alt || `Ảnh sản phẩm ${idx + 1}`}
+                    aria-label={item.alt || t('products:detail.imageFallbackAlt', { index: idx + 1 })}
                     aria-pressed={activeIndex === idx}
                     className={`relative aspect-[4/3] rounded-[10px] overflow-hidden bg-[#f0ede6] border-2 transition-all ${
                       activeIndex === idx
@@ -192,13 +186,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </p>
 
               <div className="font-philosopher font-bold text-[28px] md:text-[34px] text-[#222222] mt-4">
-                {product.price.toLocaleString('en-US')}đ
+                {formatVnd(rawProduct.price, locale, 'compact-en')}
                 {product.sku && (
                   <p
                     data-testid="product-detail-sku"
                     className="font-mono font-normal text-[12.5px] sm:text-[13px] leading-[18px] text-[#666666] mt-1 tracking-normal"
                   >
-                    Mã sản phẩm:{' '}
+                    {t('products:detail.skuLabel')}{' '}
                     <span className="whitespace-nowrap">{product.sku}</span>
                   </p>
                 )}
@@ -207,9 +201,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Quantity Row (Số Lượng / Tình trạng) */}
               <div className="mt-5 pt-5 border-t border-gray-200 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-[14.5px] text-[#222222]">Số Lượng</p>
+                  <p className="font-bold text-[14.5px] text-[#222222]">{t('products:detail.qtyTitle')}</p>
                   <p className="text-[12px] text-[#3e5641]">
-                    Còn hàng • Đóng gói thủ công
+                    {t('products:detail.stockNote')}
                   </p>
                 </div>
 
@@ -219,7 +213,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     onClick={() => setBuyQty((q) => Math.max(1, q - 1))}
                     disabled={buyQty <= 1}
                     className="text-[16px] font-medium text-[#222222] hover:text-[#3e5641] px-1 disabled:opacity-35 disabled:cursor-not-allowed"
-                    aria-label="Giảm số lượng"
+                    aria-label={t('common:actions.decreaseQty')}
                   >
                     -
                   </button>
@@ -231,7 +225,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     onClick={() => setBuyQty((q) => Math.min(99, product.stock, q + 1))}
                     disabled={buyQty >= Math.min(99, product.stock)}
                     className="text-[16px] font-medium text-[#222222] hover:text-[#3e5641] px-1 disabled:opacity-35 disabled:cursor-not-allowed"
-                    aria-label="Tăng số lượng"
+                    aria-label={t('common:actions.increaseQty')}
                   >
                     +
                   </button>
@@ -241,7 +235,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* 2x2 Included Flavors Selector for Signature Combo "TÂM Ý" (Figma 120:6560) */}
               {product.id === 'hop-qua-tam-y' && (
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {EMOTION_CARDS.map((card) => {
+                  {emotionCards.map((card) => {
                     const active = selectedComboFlavor?.key === card.key;
                     const codeLabel = card.key === 'THUONG' ? 'THƯƠNG' : card.key === 'CAM' ? 'CẢM' : card.key === 'NHO' ? 'NHỚ' : 'AN';
                     return (
@@ -290,7 +284,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
               {/* 2x2 Service Guarantees Grid */}
               <div className="mt-5 pt-4 border-t border-gray-200 grid grid-cols-2 gap-3">
-                {SERVICE_BADGES.map((badge) => (
+                {serviceBadges.map((badge) => (
                   <div
                     key={badge.title}
                     className="flex items-center gap-2.5 py-1.5"
@@ -314,21 +308,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <button
                   type="button"
-                  onClick={() => onAddToCart(product, buyQty)}
+                  onClick={() => onAddToCart(rawProduct, buyQty)}
                   className="h-[46px] rounded-full border border-[#3e5641] text-[#3e5641] bg-white font-semibold text-[14.5px] hover:bg-[#3e5641]/5 transition-colors flex items-center justify-center gap-2"
                 >
                   <FigmaIcon name="detailBag" />
-                  <span>Thêm Vào Giỏ Hàng</span>
+                  <span>{t('products:detail.addToCart')}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    onAddToCart(product, buyQty);
+                    onAddToCart(rawProduct, buyQty);
                     onNavigate('checkout');
                   }}
                   className="h-[46px] rounded-full bg-[#3e5641] text-[#f7f4d5] font-semibold text-[14.5px] hover:bg-[#203323] transition-colors shadow-xs"
                 >
-                  <FigmaIcon name="detailWallet" /> Mua Ngay
+                  <FigmaIcon name="detailWallet" /> {t('products:detail.buyNow')}
                 </button>
               </div>
             </div>
@@ -366,7 +360,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
                 <div className="rounded-[10px] border border-[#f7f4d5]/30 bg-white/5 px-4 py-3">
                   <h3 className="text-[11.5px] text-[#f7f4d5]/70 mb-0.5">
-                    Tầng hương:
+                    {t('products:detail.scentLabel')}
                   </h3>
                   <p className="text-[13px] font-medium text-[#f7f4d5]">
                     {storyData.scent}
@@ -375,7 +369,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                 <div className="rounded-[10px] border border-[#f7f4d5]/30 bg-white/5 px-4 py-3">
                   <h3 className="text-[11.5px] text-[#f7f4d5]/70 mb-0.5">
-                    Món quà hoàn hảo cho:
+                    {t('products:detail.giftForLabel')}
                   </h3>
                   <p className="text-[13px] font-medium text-[#f7f4d5]">
                     {storyData.giftFor}
@@ -391,23 +385,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       <section className="py-12 md:py-16 bg-[#faf8f3]">
         <div className="figma-container">
           <h2 className="font-philosopher font-bold text-[24px] sm:text-[30px] text-[#222222] text-center mb-8">
-            Các sản phẩm khác của Mộc Ngôn Hương
+            {t('products:detail.relatedHeading')}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {otherProducts.map((item) => (
-              <ProductCard
-                key={item.id}
-                product={item}
-                displayTitle={FIGMA_CARD_COPY[item.id]?.title}
-                displayDescription={FIGMA_CARD_COPY[item.id]?.description}
-                displayNote={FIGMA_CARD_COPY[item.id]?.note}
-                imageSrc={FIGMA_RELATED_MEDIA[item.id] || item.image}
-                quantity={cartQuantities[item.id] || 0}
-                onUpdateQuantity={onUpdateQuantity}
-                onSelect={(id) => onNavigate('detail', id)}
-              />
-            ))}
+            {otherProducts.map((item) => {
+              const cardCopy = getLocalizedCardCopy(item.id, locale);
+              return (
+                <ProductCard
+                  key={item.id}
+                  product={item}
+                  displayTitle={cardCopy?.title}
+                  displayDescription={cardCopy?.description}
+                  displayNote={cardCopy?.note}
+                  imageSrc={FIGMA_RELATED_MEDIA[item.id] || item.image}
+                  quantity={cartQuantities[item.id] || 0}
+                  onUpdateQuantity={onUpdateQuantity}
+                  onSelect={(id) => onNavigate('detail', id)}
+                />
+              );
+            })}
           </div>
         </div>
       </section>
@@ -417,20 +414,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         <div className="figma-container">
           <div className="bg-white rounded-[18px] p-6 sm:p-10 border border-black/5 shadow-xs text-center">
             <h2 className="font-philosopher font-bold text-[24px] md:text-[28px] text-[#222222] mb-3">
-              Đánh giá sản phẩm
+              {t('products:detail.reviewsHeading')}
             </h2>
             <p className="text-[15px] font-medium text-[#3e5641] mb-2">
-              Chưa có đánh giá trực tuyến cho sản phẩm này
+              {t('products:detail.reviewsEmptyTitle')}
             </p>
             <p className="text-[13.5px] leading-[22px] text-[#666666] max-w-[560px] mx-auto mb-6">
-              Mộc Ngôn Hương chỉ đăng tải nhận xét xác thực từ khách hàng đã hoàn tất đơn hàng và trải nghiệm trà. Nếu bạn cần tư vấn chọn hương trà phù hợp, đội ngũ tiệm trà luôn sẵn sàng hỗ trợ.
+              {t('products:detail.reviewsEmptyBody')}
             </p>
             <button
               type="button"
               onClick={() => onNavigate('contact')}
               className="h-[42px] px-6 rounded-full border border-[#3e5641] text-[#3e5641] hover:bg-[#3e5641] hover:text-[#f7f4d5] transition-colors font-medium text-[13.5px]"
             >
-              Liên hệ tư vấn trực tiếp
+              {t('products:detail.reviewsContactCta')}
             </button>
           </div>
         </div>

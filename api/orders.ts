@@ -9,7 +9,11 @@
 
 import crypto from 'crypto';
 import { getAdminDb, isProductionRuntime, verifyAuthToken } from './_lib/firebaseAdmin.js';
-import { sendOrderNotification, sendOrderRecoveryEmail } from './_lib/notifications.js';
+import {
+  normalizeNotificationLocale,
+  sendOrderNotification,
+  sendOrderRecoveryEmail,
+} from './_lib/notifications.js';
 import {
   buildOrderRecoveryUrl,
   checkRecoveryRateLimit,
@@ -308,6 +312,7 @@ async function handleGetOrder(req: any, res: any) {
 // POST /api/orders (Action: report_transfer — Customer clicks "Tôi đã chuyển khoản")
 // ============================================================================
 async function handleCustomerReportTransfer(req: any, res: any, body: any) {
+  const reqLocale = body?.locale !== undefined ? normalizeNotificationLocale(body.locale) : undefined;
   const orderId = typeof body?.orderId === 'string' ? body.orderId.trim() : '';
   const recoveryToken =
     typeof body?.recoveryToken === 'string'
@@ -318,7 +323,7 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
     return sendJson(res, 400, {
       success: false,
       code: 'MISSING_ORDER_ID',
-      error: 'Thiếu mã đơn hàng cần xác nhận chuyển khoản.',
+      error: reqLocale === 'en' ? 'Missing order ID to report transfer.' : 'Thiếu mã đơn hàng cần xác nhận chuyển khoản.',
     });
   }
 
@@ -370,11 +375,16 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
       rawOrder.recoveryTokenExpiresAt
     );
 
+    const effLocale = reqLocale || normalizeNotificationLocale(rawOrder?.locale);
+    const isEnReport = effLocale === 'en';
+
     if (!ownsByUid && !tokenCheck.valid) {
       return {
         status: 403,
         code: 'FORBIDDEN_ORDER_ACCESS',
-        error: 'Bạn không có quyền cập nhật thông báo chuyển khoản cho đơn hàng này.',
+        error: isEnReport
+          ? 'You do not have permission to report a transfer for this order.'
+          : 'Bạn không có quyền cập nhật thông báo chuyển khoản cho đơn hàng này.',
       };
     }
 
@@ -382,7 +392,9 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
       return {
         status: 400,
         code: 'INVALID_PAYMENT_METHOD',
-        error: 'Đơn hàng thanh toán khi nhận hàng (COD) không áp dụng thông báo chuyển khoản VietQR.',
+        error: isEnReport
+          ? 'Cash on Delivery (COD) orders do not support VietQR transfer notices.'
+          : 'Đơn hàng thanh toán khi nhận hàng (COD) không áp dụng thông báo chuyển khoản VietQR.',
       };
     }
 
@@ -390,7 +402,9 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
       return {
         status: 409,
         code: 'ORDER_CANCELLED',
-        error: 'Đơn hàng này đã bị hủy, không thể ghi nhận thông báo chuyển khoản.',
+        error: isEnReport
+          ? 'This order was cancelled and cannot accept a transfer notice.'
+          : 'Đơn hàng này đã bị hủy, không thể ghi nhận thông báo chuyển khoản.',
       };
     }
 
@@ -399,7 +413,9 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
         status: 200,
         updatedOrder: rawOrder,
         mutated: false,
-        message: 'Đơn hàng của bạn đã được Mộc Ngôn Hương xác nhận thanh toán thành công.',
+        message: isEnReport
+          ? 'Payment for this order has already been verified and confirmed by Mộc Ngôn Hương.'
+          : 'Đơn hàng của bạn đã được Mộc Ngôn Hương xác nhận thanh toán thành công.',
       };
     }
 
@@ -408,8 +424,9 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
         status: 200,
         updatedOrder: rawOrder,
         mutated: false,
-        message:
-          'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.',
+        message: isEnReport
+          ? 'Your transfer notice has been recorded. Mộc Ngôn Hương will verify the transaction and confirm payment.'
+          : 'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.',
       };
     }
 
@@ -417,7 +434,9 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
       return {
         status: 409,
         code: 'INVALID_PAYMENT_STATE',
-        error: `Trạng thái thanh toán hiện tại (${rawOrder.paymentStatus}) không thể chuyển sang báo đã chuyển khoản.`,
+        error: isEnReport
+          ? `Current payment status (${rawOrder.paymentStatus}) cannot transition to customer transfer reported.`
+          : `Trạng thái thanh toán hiện tại (${rawOrder.paymentStatus}) không thể chuyển sang báo đã chuyển khoản.`,
       };
     }
 
@@ -446,8 +465,9 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
       status: 200,
       updatedOrder,
       mutated: true,
-      message:
-        'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.',
+      message: isEnReport
+        ? 'Your transfer notice has been recorded. Mộc Ngôn Hương will verify the transaction and confirm payment.'
+        : 'Đã ghi nhận thông báo chuyển khoản của bạn. Mộc Ngôn Hương sẽ kiểm tra giao dịch và xác nhận thanh toán.',
     };
   };
 
@@ -530,6 +550,8 @@ async function handleCustomerReportTransfer(req: any, res: any, body: any) {
 // POST /api/orders (Action: request_recovery_link — Non-enumerating email link)
 // ============================================================================
 async function handleRequestRecoveryLink(req: any, res: any, body: any) {
+  const reqLocale = body?.locale !== undefined ? normalizeNotificationLocale(body.locale) : undefined;
+  const isEnRecovery = reqLocale === 'en';
   const orderCode = typeof body?.orderCode === 'string' ? body.orderCode.trim().toUpperCase() : '';
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
 
@@ -537,7 +559,9 @@ async function handleRequestRecoveryLink(req: any, res: any, body: any) {
     return sendJson(res, 400, {
       success: false,
       code: 'INVALID_RECOVERY_INPUT',
-      error: 'Vui lòng nhập đúng Mã đơn hàng (ví dụ: MNH000000) và địa chỉ Email đã dùng khi đặt hàng.',
+      error: isEnRecovery
+        ? 'Please enter a valid Order Code (e.g. MNH000000) and the matching Email address used at checkout.'
+        : 'Vui lòng nhập đúng Mã đơn hàng (ví dụ: MNH000000) và địa chỉ Email đã dùng khi đặt hàng.',
     });
   }
 
@@ -547,12 +571,15 @@ async function handleRequestRecoveryLink(req: any, res: any, body: any) {
     return sendJson(res, 429, {
       success: false,
       code: 'RATE_LIMITED',
-      error: 'Bạn đã yêu cầu gửi lại liên kết quá nhiều lần. Vui lòng thử lại sau 1 phút.',
+      error: isEnRecovery
+        ? 'Too many lookup requests. Please try again in 1 minute.'
+        : 'Bạn đã yêu cầu gửi lại liên kết quá nhiều lần. Vui lòng thử lại sau 1 phút.',
     });
   }
 
-  const genericMessage =
-    'Nếu mã đơn hàng và địa chỉ email trùng khớp với dữ liệu hệ thống, liên kết khôi phục đơn hàng đã được gửi tới hộp thư của bạn.';
+  const genericMessage = isEnRecovery
+    ? 'If your order code and email address match our records, a fresh lookup link has been sent to your inbox.'
+    : 'Nếu mã đơn hàng và địa chỉ email trùng khớp với dữ liệu hệ thống, liên kết khôi phục đơn hàng đã được gửi tới hộp thư của bạn.';
 
   const db = getEffectiveDb();
   let matchedOrder: any = null;
@@ -584,10 +611,11 @@ async function handleRequestRecoveryLink(req: any, res: any, body: any) {
         await sendOrderRecoveryEmail({
           orderId: matchedOrder.id,
           orderCode: matchedOrder.orderCode,
-          customerName: matchedOrder.customer?.fullName || 'Quý khách',
+          customerName: matchedOrder.customer?.fullName || (isEnRecovery ? 'Valued Guest' : 'Quý khách'),
           customerEmail: matchedOrder.customer.email,
           total: matchedOrder.total || 0,
           recoveryToken: fresh.recoveryToken,
+          locale: reqLocale || normalizeNotificationLocale(matchedOrder.locale),
         });
       }
     } catch (err) {
@@ -613,10 +641,11 @@ async function handleRequestRecoveryLink(req: any, res: any, body: any) {
         await sendOrderRecoveryEmail({
           orderId: localOrders[idx].id,
           orderCode: localOrders[idx].orderCode,
-          customerName: localOrders[idx].customer?.fullName || 'Quý khách',
+          customerName: localOrders[idx].customer?.fullName || (isEnRecovery ? 'Valued Guest' : 'Quý khách'),
           customerEmail: localOrders[idx].customer.email,
           total: localOrders[idx].total || 0,
           recoveryToken: fresh.recoveryToken,
+          locale: reqLocale || normalizeNotificationLocale(localOrders[idx].locale),
         });
       }
     });
@@ -668,7 +697,9 @@ export default async function handler(req: any, res: any) {
   // ==========================================================================
   // DEFAULT POST ACTION: CREATE NEW ORDER (COD OR VIETQR BANK TRANSFER)
   // ==========================================================================
-  const { items, customer, paymentMethod, idempotencyKey } = body || {};
+  const { items, customer, paymentMethod, idempotencyKey, locale: rawLocale } = body || {};
+  const locale = normalizeNotificationLocale(rawLocale);
+  const isEn = locale === 'en';
 
   let verifiedCustomerUid: string | null = null;
   let isAnonymousSession = false;
@@ -751,14 +782,14 @@ export default async function handler(req: any, res: any) {
   if (!fullName || fullName.length < 2) {
     return sendJson(res, 400, {
       success: false,
-      error: 'Vui lòng nhập Họ và Tên hợp lệ (tối thiểu 2 ký tự).',
+      error: isEn ? 'Please enter a valid full name (at least 2 characters).' : 'Vui lòng nhập Họ và Tên hợp lệ (tối thiểu 2 ký tự).',
     });
   }
 
   if (!/^(0|\+84)[1-9][0-9]{8}$/.test(phoneClean)) {
     return sendJson(res, 400, {
       success: false,
-      error: 'Số điện thoại không đúng định dạng Việt Nam (10 chữ số, ví dụ: 0889742556).',
+      error: isEn ? 'Please enter a valid 10-digit Vietnamese phone number (e.g. 0889742556).' : 'Số điện thoại không đúng định dạng Việt Nam (10 chữ số, ví dụ: 0889742556).',
     });
   }
 
@@ -766,7 +797,7 @@ export default async function handler(req: any, res: any) {
   if (!email || !emailRegex.test(email)) {
     return sendJson(res, 400, {
       success: false,
-      error: 'Vui lòng nhập địa chỉ Email hợp lệ để nhận xác nhận đơn hàng.',
+      error: isEn ? 'Please enter a valid email address for order confirmation.' : 'Vui lòng nhập địa chỉ Email hợp lệ để nhận xác nhận đơn hàng.',
     });
   }
 
@@ -777,11 +808,13 @@ export default async function handler(req: any, res: any) {
 
   if (shippingMode === 'delivery') {
     if (provinceCode || communeCode) {
-      const addrCheck = validateDeliveryAddress({ address, provinceCode, communeCode });
+      const addrCheck = validateDeliveryAddress({ address, provinceCode, communeCode, locale });
       if (!addrCheck.isValid || !addrCheck.validated) {
         return sendJson(res, 400, {
           success: false,
-          error: addrCheck.error || 'Thông tin địa chỉ giao hàng chưa hợp lệ.',
+          error:
+            addrCheck.error ||
+            (isEn ? 'Shipping address details are incomplete or invalid.' : 'Thông tin địa chỉ giao hàng chưa hợp lệ.'),
         });
       }
       verifiedProvinceName = addrCheck.validated.provinceName || '';
@@ -794,14 +827,16 @@ export default async function handler(req: any, res: any) {
     } else {
       return sendJson(res, 400, {
         success: false,
-        error: 'Vui lòng chọn Tỉnh/Thành phố, Phường/Xã/Đặc khu và nhập địa chỉ chi tiết.',
+        error: isEn
+          ? 'Please select Province/City, Ward/Commune/Special Zone and enter a detailed street address.'
+          : 'Vui lòng chọn Tỉnh/Thành phố, Phường/Xã/Đặc khu và nhập địa chỉ chi tiết.',
       });
     }
   } else {
     if (!pickupStore) {
       return sendJson(res, 400, {
         success: false,
-        error: 'Vui lòng chọn cơ sở nhận hàng tại tiệm.',
+        error: isEn ? 'Please choose a pickup store location.' : 'Vui lòng chọn cơ sở nhận hàng tại tiệm.',
       });
     }
   }
@@ -809,7 +844,7 @@ export default async function handler(req: any, res: any) {
   if (paymentMethod !== 'cod' && paymentMethod !== 'bank') {
     return sendJson(res, 400, {
       success: false,
-      error: 'Phương thức thanh toán không hợp lệ.',
+      error: isEn ? 'Invalid payment method.' : 'Phương thức thanh toán không hợp lệ.',
     });
   }
 
@@ -1036,6 +1071,7 @@ export default async function handler(req: any, res: any) {
       shippingFee,
       discount,
       total: finalTotal,
+      locale,
       paymentMethod,
       paymentStatus: initialPaymentStatus,
       paymentInstructions: persistedInstructions,
@@ -1325,11 +1361,19 @@ export default async function handler(req: any, res: any) {
     persisted: true,
     notificationSent: Boolean(finalOrderRecord.notificationSent),
     recoveryToken: activeRecoveryToken,
-    recoveryUrl: buildOrderRecoveryUrl(finalOrderRecord.id, activeRecoveryToken),
+    recoveryUrl: buildOrderRecoveryUrl(
+      finalOrderRecord.id,
+      activeRecoveryToken,
+      normalizeNotificationLocale(finalOrderRecord.locale || locale)
+    ),
     message:
       outcomeStatus === 'created'
-        ? 'Đặt hàng thành công. Đơn hàng của bạn đã được lưu trữ an toàn trên hệ thống.'
-        : 'Đơn hàng của bạn đã được hệ thống ghi nhận trước đó (tránh tạo trùng đơn).',
+        ? isEn
+          ? 'Order placed successfully. Your order details are securely saved.'
+          : 'Đặt hàng thành công. Đơn hàng của bạn đã được lưu trữ an toàn trên hệ thống.'
+        : isEn
+          ? 'Your submission resolved cleanly to your existing order.'
+          : 'Đơn hàng của bạn đã được hệ thống ghi nhận trước đó (tránh tạo trùng đơn).',
     order: enrichAndSanitizeOrderForClient(finalOrderRecord, activeRecoveryToken),
   });
 }

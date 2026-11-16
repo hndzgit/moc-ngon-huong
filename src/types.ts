@@ -155,6 +155,7 @@ export interface OrderRecord {
   updatedBy?: string;
   idempotencyKey?: string;
   schemaVersion?: string;
+  locale?: 'vi' | 'en';
   /** Transient cleartext token returned only on creation/recovery; never stored in Firestore */
   recoveryToken?: string;
 }
