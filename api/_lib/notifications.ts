@@ -13,6 +13,14 @@ import {
   DEFAULT_VIETQR_BANK_FULL_NAME,
   DEFAULT_VIETQR_BANK_SHORT_NAME,
 } from '../../src/lib/vietqr.js';
+import { BUSINESS_CONTACT } from '../../src/lib/contact.js';
+
+export function renderEmailSupportFooterHtml(compact = false): string {
+  const padding = compact ? '14px 28px' : '16px 28px';
+  return `<div style="padding: ${padding}; background: #faf8f3; border-top: 1px solid #efe9dc; font-size: 12px; color: #777; text-align: center;">
+      ${BUSINESS_CONTACT.brandName} &bull; Hotline/Zalo: <a href="${BUSINESS_CONTACT.hotlineTelHref}" style="color: #3e5641; text-decoration: none; font-weight: 600;">${BUSINESS_CONTACT.hotlineDisplay}</a> &bull; <a href="${BUSINESS_CONTACT.emailMailtoHref}" style="color: #3e5641; text-decoration: none;">${BUSINESS_CONTACT.email}</a>
+    </div>`;
+}
 
 export type NotificationLocale = 'vi' | 'en';
 
@@ -340,9 +348,7 @@ function buildOrderCreatedCustomerEmailEn(order: OrderNotificationPayload): {
         Save your personal lookup &amp; payment link: <a href="${escapeHtml(recoveryUrl)}" style="color: #3e5641; word-break: break-all;">${escapeHtml(recoveryUrl)}</a>
       </div>
     </div>
-    <div style="padding: 16px 28px; background: #faf8f3; border-top: 1px solid #efe9dc; font-size: 12px; color: #777; text-align: center;">
-      Mộc Ngôn Hương • Hotline/Zalo: 0889 742 556 • mocngonhuong@gmail.com
-    </div>
+    ${renderEmailSupportFooterHtml(false)}
   </div>
 </body>
 </html>`;
@@ -434,9 +440,7 @@ function buildPaymentConfirmedCustomerEmailEn(order: OrderNotificationPayload): 
         </a>
       </div>
     </div>
-    <div style="padding: 16px 28px; background: #faf8f3; border-top: 1px solid #efe9dc; font-size: 12px; color: #777; text-align: center;">
-      Mộc Ngôn Hương • Hotline/Zalo: 0889 742 556 • mocngonhuong@gmail.com
-    </div>
+    ${renderEmailSupportFooterHtml(false)}
   </div>
 </body>
 </html>`;
@@ -811,6 +815,7 @@ export async function sendOrderNotification(
         Liên kết tra cứu và khôi phục phiên đơn hàng của Quý khách:<br/>
         <a href="${escapeHtml(recoveryUrl)}" style="color: #3e5641; word-break: break-all;">${escapeHtml(recoveryUrl)}</a>
       </div>
+      <div style="margin-top: 18px;">${renderEmailSupportFooterHtml(true)}</div>
     </div>
   `;
 
@@ -973,6 +978,7 @@ export async function sendPaymentConfirmedNotification(
           Theo Dõi Trạng Thái Đơn Hàng ${escapeHtml(order.orderCode)}
         </a>
       </div>
+      <div style="margin-top: 18px;">${renderEmailSupportFooterHtml(true)}</div>
     </div>
   `;
 
@@ -1071,9 +1077,7 @@ export async function sendOrderRecoveryEmail(params: {
       <p style="margin: 0; font-size: 12px; word-break: break-all;"><a href="${escapeHtml(recoveryUrl)}" style="color: #3e5641;">${escapeHtml(recoveryUrl)}</a></p>
       <p style="margin: 16px 0 0 0; font-size: 12px; color: #777;">Please keep this link private and do not share it publicly.</p>
     </div>
-    <div style="padding: 14px 28px; background: #faf8f3; border-top: 1px solid #efe9dc; font-size: 12px; color: #777; text-align: center;">
-      Mộc Ngôn Hương • Hotline/Zalo: 0889 742 556 • mocngonhuong@gmail.com
-    </div>
+    ${renderEmailSupportFooterHtml(true)}
   </div>
 </body>
 </html>`;
@@ -1112,6 +1116,7 @@ export async function sendOrderRecoveryEmail(params: {
       <p style="font-size: 12px; color: #666;">
         Liên kết trực tiếp: <a href="${escapeHtml(recoveryUrl)}" style="color: #3e5641; word-break: break-all;">${escapeHtml(recoveryUrl)}</a>
       </p>
+      <div style="margin-top: 18px;">${renderEmailSupportFooterHtml(true)}</div>
     </div>
   `;
   const text = `Mộc Ngôn Hương — Liên kết khôi phục đơn hàng ${params.orderCode} (${formatVND(params.total)}):\n${recoveryUrl}`;

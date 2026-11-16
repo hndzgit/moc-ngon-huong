@@ -1,13 +1,15 @@
+import { BUSINESS_CONTACT } from '../../lib/contact';
+
 export const common = {
   brand: {
-    name: 'Mộc Ngôn Hương',
+    name: BUSINESS_CONTACT.brandName,
     artisanSubtitle: 'MỘC NGÔN HƯƠNG • ARTISAN VIETNAMESE TEA',
     atelier: 'Mộc Ngôn Hương Atelier',
     tagline: 'Sharing Aroma, Sending Affection',
     addressShort: '42 Hang Dieu Street, Hoan Kiem District, Hanoi',
     addressWorkshop: 'Tan Cuong Commune, Thai Nguyen City',
-    hotline: '0889 742 556',
-    email: 'mocngonhuong@gmail.com',
+    hotline: BUSINESS_CONTACT.hotlineDisplay,
+    email: BUSINESS_CONTACT.email,
   },
   language: {
     label: 'Language',

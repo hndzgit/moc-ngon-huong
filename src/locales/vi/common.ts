@@ -1,13 +1,15 @@
+import { BUSINESS_CONTACT } from '../../lib/contact';
+
 export const common = {
   brand: {
-    name: 'Mộc Ngôn Hương',
+    name: BUSINESS_CONTACT.brandName,
     artisanSubtitle: 'MỘC NGÔN HƯƠNG • TRÀ THỦ CÔNG',
     atelier: 'Mộc Ngôn Hương Atelier',
     tagline: 'Trao hương, gửi lời thương',
     addressShort: '42 Phố Hàng Điếu, Quận Hoàn Kiếm, Hà Nội',
     addressWorkshop: 'Xã Tân Cương, TP. Thái Nguyên',
-    hotline: '0889 742 556',
-    email: 'mocngonhuong@gmail.com',
+    hotline: BUSINESS_CONTACT.hotlineDisplay,
+    email: BUSINESS_CONTACT.email,
   },
   language: {
     label: 'Ngôn ngữ',

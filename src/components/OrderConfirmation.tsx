@@ -12,6 +12,7 @@ import { PRODUCTS, findLegacyOrderProductVisual } from '../data/products';
 import { getOrderMedia } from '../data/figmaMedia';
 import { getCartProductSubtitle, getCartProductTitle } from '../data/localizedCatalog';
 import { formatLocaleDateTime, formatVnd, normalizeLocale } from '../lib/locale';
+import { BUSINESS_CONTACT } from '../lib/contact';
 import {
   buildOrderPaymentInstructions,
   DEFAULT_VIETQR_ACCOUNT_NAME,
@@ -1066,15 +1067,15 @@ export function OrderConfirmation({
           <div className="mt-8 pt-6 border-t border-[#E5DFD5]/70 text-center text-[13px] text-[#8E867B]">
             <p>
               {t('cartCheckout:confirmation.supportFooterPrefix')}{' '}
-              <a href="tel:0889742556" className="text-[#3E5641] font-bold hover:underline">
-                0889 742 556
+              <a href={BUSINESS_CONTACT.hotlineTelHref} className="text-[#3E5641] font-bold hover:underline">
+                {BUSINESS_CONTACT.hotlineDisplay}
               </a>{' '}
               {t('cartCheckout:confirmation.supportFooterOr')}{' '}
               <a
-                href="mailto:mocngonhuong@gmail.com"
+                href={BUSINESS_CONTACT.emailMailtoHref}
                 className="text-[#3E5641] font-medium hover:underline"
               >
-                mocngonhuong@gmail.com
+                {BUSINESS_CONTACT.email}
               </a>
             </p>
           </div>

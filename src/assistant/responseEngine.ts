@@ -11,6 +11,7 @@ import { CATALOG_FACTS, STORE_POLICIES } from './catalogKnowledge';
 import { CATALOG_FACTS_EN, STORE_POLICIES_EN, EN_RECIPIENT_DISPLAY_NAMES } from './englishNlp';
 import { PRODUCTS } from '../data/products';
 import { formatVnd, type SupportedLocale } from '../lib/locale';
+import { BUSINESS_CONTACT } from '../lib/contact';
 import { recommendProducts } from './recommendationEngine';
 import { generateCardSuggestions } from './greetingCardEngine';
 
@@ -288,7 +289,7 @@ export function composeResponse(
     case 'DISCOUNT_INQUIRY': {
       if (isEn) {
         let text = `Mộc Ngôn Hương currently follows transparent **official listed VND pricing** (**289,000 VND** per 100g single-flavor gift box; **399,000 VND** per "Tâm Ý" 4-flavor gift box) with **complimentary nationwide shipping** and personalized message cards included.\n\n`;
-        text += `For corporate events or bulk gift orders, please visit our **Corporate Gifts** page or contact Hotline/Zalo **0889 742 556** (email: mocngonhuong@gmail.com) for a tailored quotation.`;
+        text += `For corporate events or bulk gift orders, please visit our **Corporate Gifts** page or contact Hotline/Zalo **${BUSINESS_CONTACT.hotlineDisplay}** (email: ${BUSINESS_CONTACT.email}) for a tailored quotation.`;
         return {
           text,
           suggestedQuickReplies: [
@@ -300,7 +301,7 @@ export function composeResponse(
       }
 
       let text = `Hiện tại Mộc Ngôn Hương áp dụng **giá niêm yết thống nhất** (75.000đ/túi lẻ, 289.000đ/hộp quà 4 vị, 399.000đ/Hộp Quà Tâm Ý) cùng **miễn phí giao hàng toàn quốc** và tặng kèm thiệp lời chúc cho mọi đơn đặt trực tuyến ạ.\n\n`;
-      text += `Nếu bạn đặt số lượng lớn cho doanh nghiệp hoặc sự kiện, vui lòng tham khảo trang **Quà Doanh Nghiệp** hoặc liên hệ Hotline/Zalo **0889 742 556** (email: mocngonhuong@gmail.com) để được tư vấn báo giá riêng nhé.`;
+      text += `Nếu bạn đặt số lượng lớn cho doanh nghiệp hoặc sự kiện, vui lòng tham khảo trang **Quà Doanh Nghiệp** hoặc liên hệ Hotline/Zalo **${BUSINESS_CONTACT.hotlineDisplay}** (email: ${BUSINESS_CONTACT.email}) để được tư vấn báo giá riêng nhé.`;
 
       return {
         text,

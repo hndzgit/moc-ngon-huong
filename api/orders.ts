@@ -28,6 +28,7 @@ import {
   writeLocalNextSeq,
 } from './_lib/orderRecovery.js';
 import { buildOrderPaymentInstructions } from '../src/lib/vietqr.js';
+import { BUSINESS_CONTACT } from '../src/lib/contact.js';
 import { PRODUCTS } from '../src/data/products.js';
 import { getOrderMedia } from '../src/data/figmaMedia.js';
 import {
@@ -789,7 +790,9 @@ export default async function handler(req: any, res: any) {
   if (!/^(0|\+84)[1-9][0-9]{8}$/.test(phoneClean)) {
     return sendJson(res, 400, {
       success: false,
-      error: isEn ? 'Please enter a valid 10-digit Vietnamese phone number (e.g. 0889742556).' : 'Số điện thoại không đúng định dạng Việt Nam (10 chữ số, ví dụ: 0889742556).',
+      error: isEn
+        ? `Please enter a valid 10-digit Vietnamese phone number (e.g. ${BUSINESS_CONTACT.hotlineDigits}).`
+        : `Số điện thoại không đúng định dạng Việt Nam (10 chữ số, ví dụ: ${BUSINESS_CONTACT.hotlineDigits}).`,
     });
   }
 
@@ -1286,7 +1289,7 @@ export default async function handler(req: any, res: any) {
       success: false,
       code: 'ORDER_CODE_EXHAUSTED',
       error:
-        'Không gian mã đơn hàng 6 chữ số (MNH000000–MNH999999) đã đầy. Quý khách vui lòng liên hệ hotline 0889 742 556 để được hỗ trợ ngay.',
+        `Không gian mã đơn hàng 6 chữ số (MNH000000–MNH999999) đã đầy. Quý khách vui lòng liên hệ hotline ${BUSINESS_CONTACT.hotlineDisplay} để được hỗ trợ ngay.`,
     });
   }
 
@@ -1295,7 +1298,7 @@ export default async function handler(req: any, res: any) {
       success: false,
       code: 'ORDER_PERSISTENCE_UNAVAILABLE',
       error:
-        'Hệ thống lưu trữ đơn hàng hiện đang bảo trì hoặc tạm thời gián đoạn. Đơn hàng chưa được tạo và giỏ hàng của bạn vẫn được giữ nguyên an toàn. Quý khách vui lòng thử lại sau ít phút hoặc liên hệ hotline 0889 742 556.',
+        `Hệ thống lưu trữ đơn hàng hiện đang bảo trì hoặc tạm thời gián đoạn. Đơn hàng chưa được tạo và giỏ hàng của bạn vẫn được giữ nguyên an toàn. Quý khách vui lòng thử lại sau ít phút hoặc liên hệ hotline ${BUSINESS_CONTACT.hotlineDisplay}.`,
     });
   }
 

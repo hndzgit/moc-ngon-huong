@@ -7,6 +7,7 @@ import {
   RecipientCategory,
 } from './types';
 import { TeaEmotion } from '../types';
+import { BUSINESS_CONTACT } from '../lib/contact';
 import type { CatalogProductFact } from './catalogKnowledge';
 
 export const EN_RECIPIENT_SYNONYMS: Record<RecipientCategory, string[]> = {
@@ -261,12 +262,12 @@ export const STORE_POLICIES_EN = {
     conditions: 'Applicable if packaging is damaged in transit or items differ from your confirmed order.',
   },
   contact: {
-    hotline: '0889 742 556 (Hotline & Zalo: 8:00 AM – 9:00 PM ICT)',
+    hotline: `${BUSINESS_CONTACT.hotlineDisplay} (Hotline & Zalo: 8:00 AM – 9:00 PM ICT)`,
     address: 'Workshop: La Bang Commune, Dai Tu District, Thai Nguyen • Pickup: 42 Hang Dieu St, Hoan Kiem, Hanoi',
-    email: 'mocngonhuong@gmail.com',
+    email: BUSINESS_CONTACT.email,
   },
   corporateGifting: {
-    contactMethod: 'Hotline/Zalo 0889 742 556 or submit an inquiry on our Corporate Gifts page.',
+    contactMethod: `Hotline/Zalo ${BUSINESS_CONTACT.hotlineDisplay} or submit an inquiry on our Corporate Gifts page.`,
   },
 };
 

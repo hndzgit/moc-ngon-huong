@@ -1,4 +1,5 @@
 import { isFigmaPreview } from '../lib/previewMode';
+import { BUSINESS_CONTACT } from '../lib/contact';
 import { MotionDialog } from '../motion/MotionDialog';
 import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState } from 'react';
@@ -76,8 +77,8 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
               <div>
                 <h3 className="font-philosopher font-bold text-[#3e5641]">{t('contact.hotlineTitle')}</h3>
                 <p className="text-[#666]">
-                  <a href="tel:+84889742556" className="hover:text-[#3e5641] transition-colors">
-                    0889 742 556
+                  <a href={BUSINESS_CONTACT.hotlineTelHref} className="hover:text-[#3e5641] transition-colors">
+                    {BUSINESS_CONTACT.hotlineDisplay}
                   </a>
                 </p>
               </div>
@@ -89,8 +90,8 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
               <div>
                 <h3 className="font-philosopher font-bold text-[#3e5641]">{t('contact.emailTitle')}</h3>
                 <p className="text-[#666]">
-                  <a href="mailto:mocngonhuong@gmail.com" className="hover:text-[#3e5641] transition-colors">
-                    mocngonhuong@gmail.com
+                  <a href={BUSINESS_CONTACT.emailMailtoHref} className="hover:text-[#3e5641] transition-colors">
+                    {BUSINESS_CONTACT.email}
                   </a>
                 </p>
               </div>

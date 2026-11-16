@@ -506,12 +506,19 @@ async function runTests() {
         const runtimeErrors: string[] = [];
         page.on('pageerror', (e: any) => runtimeErrors.push(e?.message || String(e)));
 
-        // A. Default VI load + SEO check (static + dynamic)
+        // A. Default VI load + SEO check (static + dynamic + robots.txt + sitemap.xml + OG tags)
         const staticIndexHtml = fs.readFileSync(path.join(DIST_DIR, 'index.html'), 'utf-8');
         assert(staticIndexHtml.includes('rel="canonical"'));
         assert(staticIndexHtml.includes('hreflang="en"'));
         assert(staticIndexHtml.includes('hreflang="vi"'));
         assert(staticIndexHtml.includes('hreflang="x-default"'));
+        assert(staticIndexHtml.includes('property="og:title"') && staticIndexHtml.includes('name="twitter:card"'));
+
+        const robotsTxt = fs.readFileSync(path.join(DIST_DIR, 'robots.txt'), 'utf-8');
+        assert(robotsTxt.includes('Disallow: /api/') && robotsTxt.includes('Sitemap: https://mocngonhuong.com/sitemap.xml'));
+        const sitemapXml = fs.readFileSync(path.join(DIST_DIR, 'sitemap.xml'), 'utf-8');
+        assert(sitemapXml.includes('<loc>https://mocngonhuong.com/</loc>') && sitemapXml.includes('<loc>https://mocngonhuong.com/?lang=en</loc>'));
+        assert(!sitemapXml.includes('#/'), 'sitemap.xml must never list unindexable hash fragments');
 
         await page.goto(`${baseUrl}/#/`, { waitUntil: 'networkidle' });
         await page.waitForTimeout(300);
@@ -522,11 +529,15 @@ async function runTests() {
           hreflangVi: document.querySelector('link[hreflang="vi"]')?.getAttribute('href'),
           hreflangEn: document.querySelector('link[hreflang="en"]')?.getAttribute('href'),
           hreflangDefault: document.querySelector('link[hreflang="x-default"]')?.getAttribute('href'),
+          ogLocale: document.querySelector('meta[property="og:locale"]')?.getAttribute('content'),
+          robots: document.querySelector('meta[name="robots"]')?.getAttribute('content'),
         }));
         assert.equal(viSeo.lang, 'vi');
         assert(viSeo.title.includes('Mộc Ngôn Hương'));
         assert(viSeo.canonical === 'https://mocngonhuong.com/');
         assert(viSeo.hreflangVi && viSeo.hreflangEn && viSeo.hreflangDefault);
+        assert.equal(viSeo.ogLocale, 'vi_VN');
+        assert.equal(viSeo.robots, 'index, follow');
 
         // B. Switch to EN via Header Switcher + URL ?lang=en sync + Escape check + reload persistence
         await page.click('[data-testid="header-language-switcher"]');
@@ -606,13 +617,21 @@ async function runTests() {
         await page.keyboard.press('Escape');
         await page.waitForTimeout(150);
 
-        // D. Product Detail Page (MNH-A02) & Cart Retention across VI <-> EN toggle
+        // D. Product Detail Page (MNH-A02) & Product SEO + Cart Retention across VI <-> EN toggle
         await page.goto(`${baseUrl}/#/san-pham/buoi-an`, { waitUntil: 'networkidle' });
         await page.waitForTimeout(250);
         const detailTextEn = await page.locator('main').innerText();
         assert(detailTextEn.includes('Pomelo Blossom Tea'));
         assert(detailTextEn.includes('289,000 VND'));
         assert(detailTextEn.includes('MNH-A02'));
+        const detailSeo = await page.evaluate(() => ({
+          desc: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+          ogType: document.querySelector('meta[property="og:type"]')?.getAttribute('content') || '',
+          ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content') || '',
+        }));
+        assert(detailSeo.desc.toLowerCase().includes('pomelo'), `Product detail meta description should match active tea, got: ${detailSeo.desc}`);
+        assert.equal(detailSeo.ogType, 'product');
+        assert(detailSeo.ogImage.includes('card-buoi-an-800.webp'));
         await page.screenshot({ path: path.join(EVIDENCE_DIR, 'desktop-1440-product-detail-en.png') });
 
         // Add to cart -> opens CartDrawer
@@ -655,6 +674,21 @@ async function runTests() {
         await page.getByRole('button', { name: /Store Pickup/i }).first().click();
         await page.waitForTimeout(150);
         await page.click('[data-testid="payment-method-bank"]');
+
+        // Verify language switch EN -> VI -> EN preserves filled checkout form fields, cart & payment mode
+        await page.click('[data-testid="header-language-switcher"]');
+        await page.click('[data-testid="language-option-vi"]');
+        await page.waitForTimeout(200);
+        assert.equal(await page.evaluate(() => document.documentElement.lang), 'vi');
+        assert.equal(await page.inputValue('#checkout-fullName'), 'Linh Pham');
+        assert.equal(await page.inputValue('#checkout-phone'), '0912345678');
+        assert.equal(await page.inputValue('#checkout-email'), 'checkout.en@example.com');
+        assert((await page.locator('main').innerText()).includes('289.000'), 'VI checkout total must retain item price');
+        await page.click('[data-testid="header-language-switcher"]');
+        await page.click('[data-testid="language-option-en"]');
+        await page.waitForTimeout(200);
+        assert.equal(await page.inputValue('#checkout-fullName'), 'Linh Pham');
+
         await page.screenshot({ path: path.join(EVIDENCE_DIR, 'desktop-1440-checkout-en.png') });
 
         // Submit Order
@@ -684,11 +718,16 @@ async function runTests() {
         assert(!/payment successful/i.test(feedbackText), 'customer_reported_paid must NEVER say Payment Successful');
         await page.screenshot({ path: path.join(EVIDENCE_DIR, 'desktop-1440-reported-transfer-en.png') });
 
-        // G. Admin route remains Vietnamese and never exposes Admin nav inside Language Switcher
+        // G. Admin route remains Vietnamese, sets robots=noindex, and never exposes Admin nav inside Language Switcher
         await page.goto(`${baseUrl}/#/admin`, { waitUntil: 'networkidle' });
         await page.waitForTimeout(250);
         const adminText = await page.locator('main').innerText();
         assert(/Quản trị|Đăng nhập|Quản lý/i.test(adminText), 'AdminPage must remain in Vietnamese');
+        assert.equal(
+          await page.evaluate(() => document.querySelector('meta[name="robots"]')?.getAttribute('content')),
+          'noindex, nofollow',
+          'Admin route must set robots=noindex, nofollow'
+        );
 
         // H. Mobile 390px Drawer Language Switch in WebKit
         const mobileCtx = await wk.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });

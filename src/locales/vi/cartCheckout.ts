@@ -1,3 +1,5 @@
+import { BUSINESS_CONTACT } from '../../lib/contact';
+
 export const cartCheckout = {
   cart: {
     dialogAria: 'Giỏ hàng',
@@ -153,12 +155,12 @@ export const cartCheckout = {
       missingContact: 'Vui lòng điền đầy đủ Họ và Tên, Số Điện Thoại và Email.',
       invalidAddress: 'Vui lòng kiểm tra lại địa chỉ giao hàng.',
       invalidPhone:
-        'Số điện thoại không đúng định dạng. Vui lòng nhập số điện thoại 10 chữ số tại Việt Nam (Ví dụ: 0889 742 556).',
+        `Số điện thoại không đúng định dạng. Vui lòng nhập số điện thoại 10 chữ số tại Việt Nam (Ví dụ: ${BUSINESS_CONTACT.hotlineDisplay}).`,
       invalidServerResponse: 'Máy chủ phản hồi định dạng không hợp lệ.',
       conflict409:
         'Xung đột mã yêu cầu (409 Conflict): Khóa đặt hàng này đã được sử dụng với nội dung khác. Vui lòng tạo đơn hàng mới.',
       unavailable503:
-        'Hệ thống tiếp nhận đơn hàng đang bảo trì cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline Mộc Ngôn Hương (0889 742 556). Giỏ hàng của bạn vẫn được lưu giữ an toàn.',
+        `Hệ thống tiếp nhận đơn hàng đang bảo trì cơ sở dữ liệu. Quý khách vui lòng liên hệ hotline ${BUSINESS_CONTACT.brandName} (${BUSINESS_CONTACT.hotlineDisplay}). Giỏ hàng của bạn vẫn được lưu giữ an toàn.`,
       genericError: 'Không thể tạo đơn hàng (Mã lỗi {{status}}). Giỏ hàng của bạn vẫn được lưu giữ.',
       timeoutError:
         'Kết nối tới máy chủ bị gián đoạn hoặc vượt quá thời gian chờ (Timeout). Đơn hàng của bạn có thể đã được tiếp nhận trên hệ thống.',

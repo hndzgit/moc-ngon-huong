@@ -3,6 +3,7 @@
 
 import { PRODUCTS } from '../data/products';
 import { INTENTIONS } from '../data/giftJourney';
+import { BUSINESS_CONTACT } from '../lib/contact';
 import { Product } from '../types';
 
 export interface CatalogProductFact {
@@ -185,9 +186,9 @@ export const STORE_POLICIES = {
     conditions: 'Áp dụng khi sản phẩm bị lỗi bao bì, móp méo do vận chuyển hoặc không đúng quy cách.',
   },
   contact: {
-    hotline: '0889 742 556 (Hỗ trợ Hotline & Zalo 8:00 - 21:00)',
+    hotline: `${BUSINESS_CONTACT.hotlineDisplay} (Hỗ trợ Hotline & Zalo 8:00 - 21:00)`,
     address: 'Xã La Bằng, Huyện Đại Từ, Tỉnh Thái Nguyên',
-    email: 'mocngonhuong@gmail.com',
+    email: BUSINESS_CONTACT.email,
   },
   corporateGifting: {
     benefits: [
@@ -196,6 +197,6 @@ export const STORE_POLICIES = {
       'Giao hàng tận nơi theo danh sách đối tác trên toàn quốc.',
       'Xuất hóa đơn và hợp đồng đầy đủ.',
     ],
-    contactMethod: 'Hotline/Zalo 0889 742 556 hoặc để lại thông tin tại trang Đối tác Doanh nghiệp.',
+    contactMethod: `Hotline/Zalo ${BUSINESS_CONTACT.hotlineDisplay} hoặc để lại thông tin tại trang Đối tác Doanh nghiệp.`,
   },
 };

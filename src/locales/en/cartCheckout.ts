@@ -1,3 +1,5 @@
+import { BUSINESS_CONTACT } from '../../lib/contact';
+
 export const cartCheckout = {
   cart: {
     dialogAria: 'Shopping Cart',
@@ -153,12 +155,12 @@ export const cartCheckout = {
       missingContact: 'Please complete your Full Name, Phone Number, and Email Address.',
       invalidAddress: 'Please verify your shipping address fields.',
       invalidPhone:
-        'Invalid phone format. Please enter a 10-digit Vietnam phone number (e.g., 0889 742 556).',
+        `Invalid phone format. Please enter a 10-digit Vietnam phone number (e.g., ${BUSINESS_CONTACT.hotlineDisplay}).`,
       invalidServerResponse: 'The server returned an unexpected response format.',
       conflict409:
         'Request key conflict (409): This checkout request key was already used for different cart contents. Please start a fresh order.',
       unavailable503:
-        'Order persistence is temporarily under maintenance. Your cart is safely preserved — please call hotline 0889 742 556 for immediate assistance.',
+        `Order persistence is temporarily under maintenance. Your cart is safely preserved — please call hotline ${BUSINESS_CONTACT.hotlineDisplay} for immediate assistance.`,
       genericError: 'Unable to create order (HTTP {{status}}). Your cart has been preserved.',
       timeoutError:
         'Server connection was interrupted or timed out. Your order may already have been received safely.',

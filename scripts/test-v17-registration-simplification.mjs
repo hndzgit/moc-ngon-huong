@@ -6,6 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { renderWelcomeEmail } from '../api/_lib/authEmailTemplates.js';
 import welcomeHandler from '../api/auth/send-welcome-email.js';
+import { viResources } from '../src/locales/vi/index.js';
+import { enResources } from '../src/locales/en/index.js';
 
 console.log('=== [TEST] Mộc Ngôn Hương V17.0B Registration Simplification Suite ===\n');
 
@@ -82,7 +84,7 @@ async function runSuite() {
     console.log('✓ PASS: AuthContext.register dispatches welcome email and keeps emailVerified truthful.');
   }
 
-  // 2. Audit UI Code: Verify Simplified Registration Form
+  // 2. Audit UI Code: Verify Simplified Registration Form (supports i18next VI/EN)
   {
     console.log('[2/8] Verifying AuthPage.tsx registration form...');
     const authPageContent = fs.readFileSync(path.resolve('src/pages/AuthPage.tsx'), 'utf-8');
@@ -92,26 +94,48 @@ async function runSuite() {
       'AuthPage must implement single-step handleRegister'
     );
     assert(
-      authPageContent.includes('Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công.'),
-      'AuthPage must display exact supporting message upon registration success'
+      authPageContent.includes("t('profile.registerSuccessDesc')"),
+      'AuthPage must render profile.registerSuccessDesc via i18next'
     );
     assert(
-      authPageContent.includes('Đăng ký tài khoản thành công!'),
-      'AuthPage must display exact title upon registration success'
+      authPageContent.includes("t('profile.registerSuccessTitle')"),
+      'AuthPage must render profile.registerSuccessTitle via i18next'
     );
     assert(
-      !authPageContent.includes('Chưa xác thực email'),
+      authPageContent.includes("t('profile.memberBadge')"),
+      'AuthPage must render profile.memberBadge via i18next'
+    );
+    assert.strictEqual(
+      viResources.authAccount.profile.registerSuccessDesc,
+      'Chào mừng bạn đến với Mộc Ngôn Hương. Tài khoản của bạn đã được tạo thành công. Hãy cùng khám phá những hương trà và món quà ý nghĩa!',
+      'VI registerSuccessDesc copy must remain accurate'
+    );
+    assert.strictEqual(
+      viResources.authAccount.profile.registerSuccessTitle,
+      'Đăng ký tài khoản thành công!',
+      'VI registerSuccessTitle copy must remain accurate'
+    );
+    assert.strictEqual(
+      viResources.authAccount.profile.memberBadge,
+      'Thành viên thân thiết',
+      'VI memberBadge copy must remain accurate'
+    );
+    assert(
+      enResources.authAccount.profile.registerSuccessTitle.length > 0 &&
+        enResources.authAccount.profile.registerSuccessDesc.length > 0 &&
+        enResources.authAccount.profile.memberBadge.length > 0,
+      'EN registration confirmation strings must be present'
+    );
+    assert(
+      !authPageContent.includes('Chưa xác thực email') &&
+        !viResources.authAccount.profile.memberBadge.includes('Chưa xác thực email'),
       'AuthPage must not show confusing "Chưa xác thực email" blocker banner'
     );
     assert(
       !authPageContent.includes('Email đã xác thực'),
       'AuthPage must not show misleading "Email đã xác thực" indicator for unverified users'
     );
-    assert(
-      authPageContent.includes('Thành viên thân thiết'),
-      'AuthPage must display respectful member badge'
-    );
-    console.log('✓ PASS: Registration form is unified and verification banners are removed.');
+    console.log('✓ PASS: Registration form is unified, localized cleanly (VI/EN), and verification banners are removed.');
   }
 
   // 3. Welcome Email Content & Vietnamese Copy Verification

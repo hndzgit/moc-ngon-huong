@@ -11,6 +11,7 @@
  */
 
 import type { } from 'http';
+import { BUSINESS_CONTACT } from '../../src/lib/contact.js';
 
 export type EmailLocale = 'vi' | 'en';
 
@@ -120,7 +121,7 @@ function renderBrandAuthEmailEn(params: {
                 <strong>Mộc Ngôn Hương</strong> • Handcrafted Vietnamese Floral Tea &amp; Gifting
               </p>
               <p class="text-muted" style="margin: 0; font-size: 11px; color: #8C948D;">
-                La Bằng, Thái Nguyên • 42 Hàng Điếu, Hanoi • Hotline/Zalo: 0889 742 556 • mocngonhuong.com
+                La Bằng, Thái Nguyên • 42 Hàng Điếu, Hanoi • Hotline/Zalo: <a href="${BUSINESS_CONTACT.hotlineTelHref}" style="color: #3E5641; text-decoration: none; font-weight: 600;">${BUSINESS_CONTACT.hotlineDisplay}</a> • <a href="${BUSINESS_CONTACT.emailMailtoHref}" style="color: #3E5641; text-decoration: none;">${BUSINESS_CONTACT.email}</a> • <a href="https://mocngonhuong.com" style="color: #C89F5D; text-decoration: none; font-weight: 600;">mocngonhuong.com</a>
               </p>
             </td>
           </tr>
@@ -187,7 +188,7 @@ export function renderVerificationEmail(params: {
       fallbackLinkNote: 'If the button above does not work, copy and paste this verification link into your browser:',
       footnoteHtml: `<p class="text-muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 22px; color: #6B726D;">If you did not register this account, you can safely ignore this email.</p>`,
     });
-    const text = `Welcome to Mộc Ngôn Hương!\n\nDear ${plainName},\n\nThank you for joining Mộc Ngôn Hương. Please verify your email address using the link below:\n${actionUrl}\n\nIf you did not create this account, you may safely ignore this message.\n\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com`;
+    const text = `Welcome to Mộc Ngôn Hương!\n\nDear ${plainName},\n\nThank you for joining Mộc Ngôn Hương. Please verify your email address using the link below:\n${actionUrl}\n\nIf you did not create this account, you may safely ignore this message.\n\n---\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com\nHotline: ${BUSINESS_CONTACT.hotlineDisplay}\nEmail: ${BUSINESS_CONTACT.email}`;
     return { subject, html, text };
   }
 
@@ -384,7 +385,7 @@ export function renderPasswordResetEmail(params: {
       fallbackLinkNote: 'If the button above does not open, copy and paste this secure link into your browser:',
       footnoteHtml: `<p class="text-muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 22px; color: #6B726D;">For security reasons, this link expires soon. If you did not request a password reset, please ignore this email—your account remains safe.</p>`,
     });
-    const text = `Reset Your Account Password\n\nDear ${plainName},\n\nWe received a password reset request for your Mộc Ngôn Hương account.\nOpen the link below to create a new password:\n${actionUrl}\n\nIf you did not request this, you can safely ignore this email.\n\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com`;
+    const text = `Reset Your Account Password\n\nDear ${plainName},\n\nWe received a password reset request for your Mộc Ngôn Hương account.\nOpen the link below to create a new password:\n${actionUrl}\n\nIf you did not request this, you can safely ignore this email.\n\n---\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com\nHotline: ${BUSINESS_CONTACT.hotlineDisplay}\nEmail: ${BUSINESS_CONTACT.email}`;
     return { subject, html, text };
   }
 
@@ -579,7 +580,7 @@ export function renderWelcomeEmail(params: {
       ctaUrl: shopUrl,
       footnoteHtml: `<p class="text-muted" style="margin: 20px 0 0 0; font-size: 13px; line-height: 22px; color: #6B726D;">Need gift recommendations or corporate assistance? Reach us anytime via Hotline/Zalo <strong>0889 742 556</strong> or reply to this email.</p>`,
     });
-    const text = `Dear ${plainName},\n\nWelcome to Mộc Ngôn Hương!\nYour account has been created successfully.\n\nExplore our flower-scented teas and curate thoughtful gifts at:\n${shopUrl}\n\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com`;
+    const text = `Dear ${plainName},\n\nWelcome to Mộc Ngôn Hương!\nYour account has been created successfully.\n\nExplore our flower-scented teas and curate thoughtful gifts at:\n${shopUrl}\n\n---\nWarm regards,\nMộc Ngôn Hương • https://mocngonhuong.com\nHotline: ${BUSINESS_CONTACT.hotlineDisplay}\nEmail: ${BUSINESS_CONTACT.email}`;
     return { subject, html, text };
   }
 
@@ -706,7 +707,7 @@ export function renderWelcomeEmail(params: {
                 Mộc Ngôn Hương — 42 Phố Hàng Điếu, Hoàn Kiếm, Hà Nội
               </p>
               <p class="text-muted" style="margin: 0 0 8px 0; font-size: 12px; line-height: 18px; color: #8C7B6B;">
-                Hotline / Zalo: <a href="tel:0889742556" style="color: #3E5641; text-decoration: none; font-weight: 600;">0889 742 556</a> &bull; Email: <a href="mailto:mocngonhuong@gmail.com" style="color: #3E5641; text-decoration: none;">mocngonhuong@gmail.com</a>
+                Hotline / Zalo: <a href="${BUSINESS_CONTACT.hotlineTelHref}" style="color: #3E5641; text-decoration: none; font-weight: 600;">${BUSINESS_CONTACT.hotlineDisplay}</a> &bull; Email: <a href="${BUSINESS_CONTACT.emailMailtoHref}" style="color: #3E5641; text-decoration: none;">${BUSINESS_CONTACT.email}</a>
               </p>
               <p class="text-muted" style="margin: 0; font-size: 11px; color: #A89B8C;">
                 &copy; ${new Date().getFullYear()} Mộc Ngôn Hương. Toàn bộ quyền được bảo lưu.

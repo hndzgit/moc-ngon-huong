@@ -8,6 +8,7 @@ import { CartItem, PageRoute, OrderRecord } from '../types';
 import { getOrderMedia } from '../data/figmaMedia';
 import { getCartProductSubtitle, getCartProductTitle } from '../data/localizedCatalog';
 import { formatVnd, normalizeLocale } from '../lib/locale';
+import { BUSINESS_CONTACT } from '../lib/contact';
 import { useAuth } from '../context/AuthContext';
 import {
   getProvinces,
@@ -1451,7 +1452,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <PhoneCall className="w-4 h-4 text-[#3E5641] shrink-0" />
-                    <span>{t('cartCheckout:checkout.summary.trust3Prefix')} <strong>0889 742 556</strong></span>
+                    <span>{t('cartCheckout:checkout.summary.trust3Prefix')} <strong>{BUSINESS_CONTACT.hotlineDisplay}</strong></span>
                   </div>
                 </div>
 
