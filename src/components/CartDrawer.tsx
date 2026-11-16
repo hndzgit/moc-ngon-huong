@@ -120,12 +120,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       style={{ objectPosition: getOrderMedia(product.id)?.position }}
                       alt={product.name}
                       onClick={() => {
-                        const baseId = product.id.endsWith('-le')
-                          ? product.id === 'combo-tam-y-le'
-                            ? 'hop-qua-tam-y'
-                            : product.id.replace('-le', '')
-                          : product.id;
-                        onNavigate('detail', baseId);
+                        onNavigate('detail', product.id);
                         onClose();
                       }}
                       className="w-[82px] h-[62px] rounded-[8px] object-cover shrink-0 cursor-pointer border border-black/5"
@@ -134,12 +129,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <div className="min-w-0 flex-1">
                       <h3
                         onClick={() => {
-                          const baseId = product.id.endsWith('-le')
-                            ? product.id === 'combo-tam-y-le'
-                              ? 'hop-qua-tam-y'
-                              : product.id.replace('-le', '')
-                            : product.id;
-                          onNavigate('detail', baseId);
+                          onNavigate('detail', product.id);
                           onClose();
                         }}
                         className="font-philosopher font-bold text-[16px] md:text-[17px] text-[#222222] hover:text-[#3e5641] transition-colors cursor-pointer leading-snug truncate"
@@ -148,15 +138,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </h3>
                       <p className="cart-item-subtitle text-[12px] text-[#222] mt-1">
                         {product.emotion === 'COMBO' ? 'AN · THƯƠNG · CẢM · NHỚ' : {AN:'Trà Hương Hoa Bưởi',THUONG:'Trà Hương Hoa Nhài',CAM:'Trà Hương Hoa Sói',NHO:'Trà Hương Cốm',ALL:'Các hương trà'}[product.emotion]}
-                        {product.sku && (
-                          <span data-testid={`cart-item-sku-${product.id}`} className="text-[#666666] font-mono whitespace-nowrap">
-                            {' · '}
-                            {product.sku}
-                          </span>
-                        )}
                       </p>
+                      {product.sku && (
+                        <div
+                          data-testid={`cart-item-sku-${product.id}`}
+                          className="text-[11.5px] text-[#666666] font-mono mt-0.5 leading-[16px] whitespace-nowrap"
+                        >
+                          Mã sản phẩm: {product.sku}
+                        </div>
+                      )}
                       <p className="cart-item-price text-[14px] text-[#444444] mt-1">
                         {product.price.toLocaleString('en-US')}đ
+                        {quantity > 1 && (
+                          <span
+                            data-testid={`cart-item-line-total-${product.id}`}
+                            className="ml-2 text-[12px] font-sans font-normal text-[#666666]"
+                          >
+                            × {quantity} = {(product.price * quantity).toLocaleString('en-US')}đ
+                          </span>
+                        )}
                       </p>
                       {giftConfiguration&&<p className="text-[10px] leading-4 text-[#3e5641] mt-1">Có bản nháp thiệp · xem tại thanh toán</p>}
                     </div>

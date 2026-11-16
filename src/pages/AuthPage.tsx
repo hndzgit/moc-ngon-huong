@@ -5,7 +5,7 @@ import { FigmaIcon } from '../components/FigmaIcon';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthStep, PageRoute, OrderRecord, OrderStatus, PaymentStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { findLegacyOrderProductVisual } from '../data/products';
 import { getOrderMedia } from '../data/figmaMedia';
 
 interface AuthPageProps {
@@ -419,13 +419,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
-  const allCatalog = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS];
   const getItemImage = (item: { productId: string; image?: string }) => {
     const orderMedia = getOrderMedia(item.productId);
     if (orderMedia) return assetUrl(orderMedia.image);
     if (item.image) return assetUrl(item.image);
-    const found = allCatalog.find((p) => p.id === item.productId);
-    return assetUrl(found?.image || '/assets/optimized/card-buoi-an-800.webp');
+    return assetUrl(findLegacyOrderProductVisual(item.productId).image);
   };
 
   const getOrderStatusBadge = (status: OrderStatus) => {
@@ -883,7 +881,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                       <span className="font-medium text-[#222222]">{item.price?.toLocaleString('vi-VN')} đ</span>
                                       {item.sku && (
                                         <span className="font-mono text-[#555555] whitespace-nowrap">
-                                          {' • Mã SP: '}
+                                          {' • Mã sản phẩm: '}
                                           {item.sku}
                                         </span>
                                       )}
@@ -1681,7 +1679,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           Đơn giá xác thực: <span className="font-medium text-[#222222]">{item.price?.toLocaleString('vi-VN')} đ</span> • Số lượng: <span className="font-bold text-[#3e5641]">x{item.quantity}</span>
                           {item.sku && (
                             <span className="font-mono text-[#555555] whitespace-nowrap">
-                              {' • Mã SP: '}
+                              {' • Mã sản phẩm: '}
                               {item.sku}
                             </span>
                           )}

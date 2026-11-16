@@ -1324,15 +1324,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                 NHO: 'Trà Hương Cốm · Dịu Êm',
                                 ALL: 'Các hương trà đặc sản',
                               }[product.emotion]}
-                          {product.sku && (
-                            <span
-                              data-testid={`checkout-item-sku-${product.id}`}
-                              className="font-mono text-[#666666] whitespace-nowrap"
-                            >
-                              {' · '}
-                              {product.sku}
-                            </span>
-                          )}
+                        </p>
+                        {product.sku && (
+                          <p
+                            data-testid={`checkout-item-sku-${product.id}`}
+                            className="text-[11px] font-mono text-[#555555] mt-0.5 whitespace-nowrap"
+                          >
+                            Mã sản phẩm: {product.sku}
+                          </p>
+                        )}
+                        <p className="text-[11px] text-[#777777] mt-0.5">
+                          Số lượng: <strong className="text-[#222222]">{quantity}</strong> • Đơn giá:{' '}
+                          {product.price.toLocaleString('vi-VN')}đ
                         </p>
                         {giftConfiguration && (
                           <span className="inline-flex items-center gap-1 text-[11px] text-[#C89F5D] font-medium mt-0.5">

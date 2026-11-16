@@ -1,80 +1,13 @@
 import { Product, ProductSku, ReviewItem, SkuCatalogEntry } from '../types';
+import { getOrderMedia } from './figmaMedia';
 
 /**
- * Official Mộc Ngôn Hương Centralized Product SKU Reference Table.
- *
- * Category A — Individual Tea Boxes (100g, 100,000 VND):
- *   MNH-A01 (AN), MNH-T01 (THƯƠNG), MNH-C01 (CẢM), MNH-N01 (NHỚ)
- *   Status: Reserved / Inactive (`published: false`) until commercial assets & stock are approved for storefront sale.
- *
- * Category B — Gift Tea Boxes (200g, 289,000 VND):
- *   MNH-A02 (AN), MNH-T02 (THƯƠNG), MNH-C02 (CẢM), MNH-N02 (NHỚ)
- *   Status: Active / Published (`published: true`).
- *
- * Category C — Gift Combo (399,000 VND):
- *   MNH-TY (TÂM Ý)
- *   Status: Active / Published (`published: true`).
+ * Mộc Ngôn Hương — Centralized Authorized Website Product SKU Catalog.
+ * ONLY the 5 official sellable products approved for online sale are defined here:
+ * - Category B — Gift Tea Boxes (200g, 289,000 VND): MNH-A02, MNH-T02, MNH-C02, MNH-N02
+ * - Category C — Gift Combo (399,000 VND): MNH-TY
  */
 export const OFFICIAL_SKU_CATALOG: readonly SkuCatalogEntry[] = [
-  // Category A — Individual Tea Boxes (100g) — Reserved / Inactive for storefront checkout
-  {
-    sku: 'MNH-A01',
-    productId: 'buoi-an-100g',
-    variantId: 'buoi-an-100g',
-    shortCodeName: 'AN',
-    productName: 'Trà Hương Hoa Bưởi – AN (100g)',
-    category: 'CATEGORY_A_100G',
-    emotion: 'AN',
-    weightGrams: 100,
-    weightLabel: '100g',
-    price: 100000,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-  },
-  {
-    sku: 'MNH-T01',
-    productId: 'nhai-thuong-100g',
-    variantId: 'nhai-thuong-100g',
-    shortCodeName: 'THƯƠNG',
-    productName: 'Trà Hương Hoa Nhài – THƯƠNG (100g)',
-    category: 'CATEGORY_A_100G',
-    emotion: 'THUONG',
-    weightGrams: 100,
-    weightLabel: '100g',
-    price: 100000,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-  },
-  {
-    sku: 'MNH-C01',
-    productId: 'soi-cam-100g',
-    variantId: 'soi-cam-100g',
-    shortCodeName: 'CẢM',
-    productName: 'Trà Hương Hoa Sói – CẢM (100g)',
-    category: 'CATEGORY_A_100G',
-    emotion: 'CAM',
-    weightGrams: 100,
-    weightLabel: '100g',
-    price: 100000,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-  },
-  {
-    sku: 'MNH-N01',
-    productId: 'com-nho-100g',
-    variantId: 'com-nho-100g',
-    shortCodeName: 'NHỚ',
-    productName: 'Trà Hương Cốm – NHỚ (100g)',
-    category: 'CATEGORY_A_100G',
-    emotion: 'NHO',
-    weightGrams: 100,
-    weightLabel: '100g',
-    price: 100000,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-  },
-
-  // Category B — Gift Tea Boxes (200g) — Active / Published
   {
     sku: 'MNH-A02',
     productId: 'buoi-an',
@@ -131,8 +64,6 @@ export const OFFICIAL_SKU_CATALOG: readonly SkuCatalogEntry[] = [
     published: true,
     publicationStatus: 'published',
   },
-
-  // Category C — Gift Combo — Active / Published
   {
     sku: 'MNH-TY',
     productId: 'hop-qua-tam-y',
@@ -439,112 +370,11 @@ export const PRODUCTS: Product[] = [
   }
 ];
 
-// Category A — Individual Tea Boxes (100g, 100,000 VND) — Reserved / Inactive in storefront until business launch approval
-export const RESERVED_100G_PRODUCTS: Product[] = [
-  {
-    ...PRODUCTS[0],
-    id: 'buoi-an-100g',
-    sku: 'MNH-A01',
-    variantId: 'buoi-an-100g',
-    code: 'MNH-A01',
-    name: 'Trà Hương Hoa Bưởi – AN (100g)',
-    shortName: 'Trà Hương Hoa Bưởi (AN)',
-    price: 100000,
-    weight: '100g',
-    weightGrams: 100,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-    image: '/assets/optimized/card-buoi-an-800.webp',
-  },
-  {
-    ...PRODUCTS[1],
-    id: 'nhai-thuong-100g',
-    sku: 'MNH-T01',
-    variantId: 'nhai-thuong-100g',
-    code: 'MNH-T01',
-    name: 'Trà Hương Hoa Nhài – THƯƠNG (100g)',
-    shortName: 'Trà Hương Hoa Nhài (THƯƠNG)',
-    price: 100000,
-    weight: '100g',
-    weightGrams: 100,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-    image: '/assets/optimized/card-nhai-thuong-800.webp',
-  },
-  {
-    ...PRODUCTS[2],
-    id: 'soi-cam-100g',
-    sku: 'MNH-C01',
-    variantId: 'soi-cam-100g',
-    code: 'MNH-C01',
-    name: 'Trà Hương Hoa Sói – CẢM (100g)',
-    shortName: 'Trà Hương Hoa Sói (CẢM)',
-    price: 100000,
-    weight: '100g',
-    weightGrams: 100,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-    image: '/assets/optimized/card-soi-cam-800.webp',
-  },
-  {
-    ...PRODUCTS[3],
-    id: 'com-nho-100g',
-    sku: 'MNH-N01',
-    variantId: 'com-nho-100g',
-    code: 'MNH-N01',
-    name: 'Trà Hương Cốm – NHỚ (100g)',
-    shortName: 'Trà Hương Cốm (NHỚ)',
-    price: 100000,
-    weight: '100g',
-    weightGrams: 100,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-    image: '/assets/optimized/card-com-nho-800.webp',
-  },
-];
-
-// Legacy compatibility export for historical cart/order media lookup (Marked unpublished/inactive for new orders)
-export const LOOSE_TEA_PRODUCTS: Product[] = [
-  {
-    ...RESERVED_100G_PRODUCTS[0],
-    id: 'buoi-an-le',
-  },
-  {
-    ...RESERVED_100G_PRODUCTS[1],
-    id: 'nhai-thuong-le',
-  },
-  {
-    ...RESERVED_100G_PRODUCTS[2],
-    id: 'soi-cam-le',
-  },
-  {
-    ...RESERVED_100G_PRODUCTS[3],
-    id: 'com-nho-le',
-  },
-  {
-    ...PRODUCTS[4],
-    id: 'combo-tam-y-le',
-    sku: 'MNH-TY',
-    variantId: 'hop-qua-tam-y',
-    code: 'MNH-TY',
-    name: 'Combo Signature "Tâm Ý"',
-    shortName: 'Combo Signature "Tâm Ý"',
-    price: 399000,
-    published: false,
-    publicationStatus: 'reserved_pending_approval',
-    image: '/assets/optimized/card-hop-qua-tam-y-800.webp',
-  },
-];
-
 const SKU_BY_UPPER_CODE = new Map<string, SkuCatalogEntry>(
   OFFICIAL_SKU_CATALOG.map((entry) => [entry.sku.toUpperCase(), entry])
 );
 
 const PUBLISHED_SKU_BY_PRODUCT_ID = new Map<string, SkuCatalogEntry>(
-  OFFICIAL_SKU_CATALOG.filter((entry) => entry.published).map((entry) => [entry.productId, entry])
-);
-
-const ALL_SKU_BY_PRODUCT_ID = new Map<string, SkuCatalogEntry>(
   OFFICIAL_SKU_CATALOG.map((entry) => [entry.productId, entry])
 );
 
@@ -560,36 +390,43 @@ export function getPublishedCatalogEntryByProductId(
   return PUBLISHED_SKU_BY_PRODUCT_ID.get(productId.trim());
 }
 
-export function getAnyCatalogEntryByProductId(
-  productId: string | undefined | null
-): SkuCatalogEntry | undefined {
-  if (!productId || typeof productId !== 'string') return undefined;
-  const trimmed = productId.trim();
-  if (ALL_SKU_BY_PRODUCT_ID.has(trimmed)) {
-    return ALL_SKU_BY_PRODUCT_ID.get(trimmed);
+/**
+ * Non-sellable visual fallback for rendering historical order items (including legacy `-le` records).
+ * Never returns or guesses a sellable SKU or price.
+ */
+export function findLegacyOrderProductVisual(productId: string | undefined | null): {
+  emotion?: Product['emotion'];
+  image: string;
+} {
+  const id = typeof productId === 'string' ? productId.trim() : '';
+  const orderMedia = getOrderMedia(id);
+  const directMatch = PRODUCTS.find((p) => p.id === id);
+  if (directMatch) {
+    return {
+      emotion: directMatch.emotion,
+      image: orderMedia?.image || directMatch.image,
+    };
   }
-  const legacyMap: Record<string, ProductSku> = {
-    'buoi-an-le': 'MNH-A01',
-    'nhai-thuong-le': 'MNH-T01',
-    'soi-cam-le': 'MNH-C01',
-    'com-nho-le': 'MNH-N01',
-    'combo-tam-y-le': 'MNH-TY',
+  const normalizedBaseId =
+    id === 'combo-tam-y-le' || id === 'tam-y-le' ? 'hop-qua-tam-y' : id.replace(/-le$/, '');
+  const baseMatch = PRODUCTS.find((p) => p.id === normalizedBaseId);
+  return {
+    emotion: baseMatch?.emotion,
+    image: orderMedia?.image || baseMatch?.image || '/assets/optimized/order-thumb-buoi-an.webp',
   };
-  const mappedSku = legacyMap[trimmed];
-  return mappedSku ? getCatalogEntryBySku(mappedSku) : undefined;
 }
 
 /**
  * Safe SKU resolution for order item snapshots (including historical pre-SKU orders).
  * - If the snapshot explicitly stores `sku`, returns it directly.
- * - If `sku` is missing (legacy order), never guesses a wrong SKU when variant ambiguity exists.
+ * - If `sku` is missing (legacy order), never guesses a wrong SKU when original variant metadata is absent.
  */
 export function resolveOrderItemSkuDisplay(item: {
   sku?: string | null;
   productId?: string;
   price?: number;
 }): {
-  sku: string | null;
+  sku: ProductSku | string | null;
   isLegacyFallback: boolean;
   displayText: string;
 } {

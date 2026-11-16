@@ -193,6 +193,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
               <div className="font-philosopher font-bold text-[28px] md:text-[34px] text-[#222222] mt-4">
                 {product.price.toLocaleString('en-US')}đ
+                {product.sku && (
+                  <p
+                    data-testid="product-detail-sku"
+                    className="font-mono font-normal text-[12.5px] sm:text-[13px] leading-[18px] text-[#666666] mt-1 tracking-normal whitespace-nowrap"
+                  >
+                    Mã sản phẩm: {product.sku}
+                  </p>
+                )}
               </div>
 
               {/* Quantity Row (Số Lượng / Tình trạng) */}
@@ -201,14 +209,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <p className="font-bold text-[14.5px] text-[#222222]">Số Lượng</p>
                   <p className="text-[12px] text-[#3e5641]">
                     Còn hàng • Đóng gói thủ công
-                    {product.sku && (
-                      <>
-                        {' • '}
-                        <span data-testid="product-detail-sku" className="font-mono text-[#555555] whitespace-nowrap">
-                          Mã SP: {product.sku}
-                        </span>
-                      </>
-                    )}
                   </p>
                 </div>
 

@@ -9,7 +9,7 @@ import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { CartItem, GiftConfiguration, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
 import { changeEmotion, createGiftDraft, INTENTIONS, journeyHash } from './data/giftJourney';
 import { AtelierIntroduction } from './components/AtelierIntroduction';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from './data/products';
+import { PRODUCTS } from './data/products';
 import { FIGMA_CARD_COPY } from './data/figmaMedia';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -105,10 +105,14 @@ export function App() {
           // Recover valid rows after a malformed/stale storage entry. Catalogue
           // data stays authoritative; never trust stored prices or product shapes.
           return parsed.flatMap(item => {
+            const rawProd = item?.product;
+            if (!rawProd || typeof rawProd.id !== 'string') {
+              return [];
+            }
+            const rawSku =
+              typeof rawProd.sku === 'string' ? rawProd.sku.trim().toUpperCase() : '';
             const product = PRODUCTS.find(
-              p =>
-                p.id === item?.product?.id &&
-                (!item?.product?.sku || p.sku === item.product.sku)
+              p => p.id === rawProd.id && (!rawSku || p.sku === rawSku)
             );
             if (!product || !Number.isSafeInteger(item?.quantity) || item.quantity <= 0) {
               return [];

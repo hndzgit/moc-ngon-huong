@@ -2,7 +2,7 @@
 // Mộc Ngôn Hương — Catalog-Grounded Intelligent Product Recommendation Engine
 
 import { Product } from '../types';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { PRODUCTS } from '../data/products';
 import {
   ConversationContext,
   RecipientCategory,

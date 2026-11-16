@@ -72,20 +72,11 @@ export interface OrderNotificationDelivery {
   paymentConfirmed?: NotificationDeliveryEntry;
 }
 
-export type ProductSku =
-  | 'MNH-A01'
-  | 'MNH-T01'
-  | 'MNH-C01'
-  | 'MNH-N01'
-  | 'MNH-A02'
-  | 'MNH-T02'
-  | 'MNH-C02'
-  | 'MNH-N02'
-  | 'MNH-TY';
+export type ProductSku = 'MNH-A02' | 'MNH-T02' | 'MNH-C02' | 'MNH-N02' | 'MNH-TY';
 
-export type ProductCategoryCode = 'CATEGORY_A_100G' | 'CATEGORY_B_200G_GIFT' | 'CATEGORY_C_COMBO';
+export type ProductCategoryCode = 'CATEGORY_B_200G_GIFT' | 'CATEGORY_C_COMBO';
 
-export type ProductPublicationStatus = 'published' | 'reserved_pending_approval';
+export type ProductPublicationStatus = 'published';
 
 export interface SkuCatalogEntry {
   sku: ProductSku;

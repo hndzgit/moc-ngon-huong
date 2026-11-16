@@ -1,7 +1,7 @@
 // src/assistant/catalogKnowledge.ts
 // Mộc Ngôn Hương — Structured Grounded Knowledge Base from Product Catalog
 
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { PRODUCTS } from '../data/products';
 import { INTENTIONS } from '../data/giftJourney';
 import { Product } from '../types';
 

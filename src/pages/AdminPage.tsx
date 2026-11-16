@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useDialogLifecycle } from '../components/useDialogLifecycle';
 import { useAuth } from '../context/AuthContext';
 import { assetUrl } from '../lib/assets';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS, resolveOrderItemSkuDisplay } from '../data/products';
+import { findLegacyOrderProductVisual, resolveOrderItemSkuDisplay } from '../data/products';
 import { getOrderMedia } from '../data/figmaMedia';
 import type { OrderRecord, OrderStatus, PaymentStatus, PageRoute } from '../types';
 import {
@@ -90,14 +90,12 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     }, 4000);
   };
 
-  // Catalogue lookup for product thumbnails
-  const allCatalog = useMemo(() => [...PRODUCTS, ...LOOSE_TEA_PRODUCTS], []);
+  // Catalogue lookup for product thumbnails (includes safe historical visual fallback)
   const getItemThumbnail = (item: { productId: string; image?: string }) => {
     const orderMedia = getOrderMedia(item.productId);
     if (orderMedia) return assetUrl(orderMedia.image);
     if (item.image) return assetUrl(item.image);
-    const found = allCatalog.find((p) => p.id === item.productId);
-    return assetUrl(found?.image || '/assets/optimized/order-thumb-buoi-an.webp');
+    return assetUrl(findLegacyOrderProductVisual(item.productId).image);
   };
 
   // Format currency
@@ -1287,6 +1285,20 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                         <div className="text-xs text-stone-400 mt-0.5">
                           {formatDateTime(order.createdAt)}
                         </div>
+                        {order.items && order.items.some((it) => it.sku) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Array.from(
+                              new Set(order.items.map((it) => it.sku).filter(Boolean))
+                            ).map((skuCode) => (
+                              <span
+                                key={skuCode}
+                                className="inline-block font-mono text-[10px] font-semibold text-[#3e5641] bg-[#3e5641]/10 px-1.5 py-0.5 rounded"
+                              >
+                                {skuCode}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusVisual.bg}`}

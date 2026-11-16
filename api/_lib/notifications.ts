@@ -153,7 +153,7 @@ function formatItemsHtmlRows(order: OrderNotificationPayload): string {
         : '';
 
       const skuHtml = item.sku
-        ? `<div style="margin-top: 2px; font-size: 12px; color: #666; font-family: monospace;">Mã SP: ${escapeHtml(item.sku)}</div>`
+        ? `<div style="margin-top: 2px; font-size: 12px; color: #666; font-family: monospace;">Mã sản phẩm: ${escapeHtml(item.sku)}</div>`
         : '';
 
       return `
@@ -176,6 +176,13 @@ function formatItemsHtmlRows(order: OrderNotificationPayload): string {
       `;
     })
     .join('');
+}
+
+function formatItemsTextLines(order: OrderNotificationPayload): string[] {
+  return order.items.map((item) => {
+    const skuPart = item.sku ? ` [Mã sản phẩm: ${item.sku}]` : '';
+    return `- ${item.productName}${skuPart} | SL: ${item.quantity} | Thành tiền: ${formatVND(item.price * item.quantity)}`;
+  });
 }
 
 async function dispatchResendEmail(params: {
@@ -385,6 +392,7 @@ export async function sendOrderNotification(
     `Địa chỉ nhận: ${deliveryDestination}`,
     `Phương thức thanh toán: ${paymentMethodLabel}`,
     `Trạng thái thanh toán: ${paymentStatusLabel}`,
+    ...formatItemsTextLines(order),
     `Tổng thanh toán: ${formatVND(order.total)}`,
     ...(isBank
       ? [
@@ -541,6 +549,7 @@ export async function sendPaymentConfirmedNotification(
     `Thời gian xác nhận: ${confirmedTime}`,
     `Trạng thái đơn hàng: ${orderStatusLabel}`,
     `Địa chỉ nhận hàng: ${deliveryDestination}`,
+    ...formatItemsTextLines(order),
     `Theo dõi đơn hàng: ${recoveryUrl}`,
   ].join('\n');
 

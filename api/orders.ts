@@ -24,11 +24,8 @@ import {
   writeLocalNextSeq,
 } from './_lib/orderRecovery.js';
 import { buildOrderPaymentInstructions } from '../src/lib/vietqr.js';
-import {
-  PRODUCTS,
-  getAnyCatalogEntryByProductId,
-  getCatalogEntryBySku,
-} from '../src/data/products.js';
+import { PRODUCTS } from '../src/data/products.js';
+import { getOrderMedia } from '../src/data/figmaMedia.js';
 import {
   validateDeliveryAddress,
   getProvinceByCode,
@@ -42,6 +39,7 @@ interface ServerCatalogItem {
   name: string;
   price: number;
   weightGrams?: number;
+  image: string;
   maxStock: number;
 }
 
@@ -57,6 +55,7 @@ for (const p of PRODUCTS) {
     name: p.name,
     price: p.price,
     ...(typeof p.weightGrams === 'number' ? { weightGrams: p.weightGrams } : {}),
+    image: getOrderMedia(p.id)?.image || p.image,
     maxStock: p.stock || 50,
   };
   SERVER_CATALOG[p.id] = entry;
@@ -823,6 +822,7 @@ export default async function handler(req: any, res: any) {
     price: number;
     quantity: number;
     weightGrams?: number;
+    image: string;
     giftConfiguration?: any;
   }> = [];
 
@@ -835,20 +835,26 @@ export default async function handler(req: any, res: any) {
     }
 
     const rawProductId = typeof item.productId === 'string' ? item.productId.trim() : '';
+    const hasExplicitSku = 'sku' in item && item.sku !== undefined && item.sku !== null;
     const rawSku = typeof item.sku === 'string' ? item.sku.trim().toUpperCase() : '';
+    const hasExplicitVariant =
+      'variantId' in item && item.variantId !== undefined && item.variantId !== null;
     const rawVariantId = typeof item.variantId === 'string' ? item.variantId.trim() : '';
     const quantity = Number(item.quantity);
 
-    // Check if the client requested an unpublished / reserved 100g SKU or product ID
-    const knownById = rawProductId ? getAnyCatalogEntryByProductId(rawProductId) : undefined;
-    const knownBySku = rawSku ? getCatalogEntryBySku(rawSku) : undefined;
-
-    if ((knownById && !knownById.published) || (knownBySku && !knownBySku.published)) {
-      const reservedSku = knownBySku?.sku || knownById?.sku || rawSku || rawProductId;
+    if (hasExplicitSku && !rawSku) {
       return sendJson(res, 400, {
         success: false,
-        code: 'PRODUCT_NOT_PUBLISHED',
-        error: `Phân loại sản phẩm (${reservedSku}) hiện đang tạm dừng mở bán trực tuyến.`,
+        code: 'INVALID_PRODUCT_SKU',
+        error: 'Mã SKU sản phẩm không hợp lệ.',
+      });
+    }
+
+    if (hasExplicitVariant && !rawVariantId) {
+      return sendJson(res, 400, {
+        success: false,
+        code: 'INVALID_PRODUCT_VARIANT',
+        error: 'Phân loại sản phẩm không hợp lệ.',
       });
     }
 
@@ -862,12 +868,12 @@ export default async function handler(req: any, res: any) {
       return sendJson(res, 400, {
         success: false,
         code: 'INVALID_PRODUCT',
-        error: `Sản phẩm không tồn tại trong danh mục chính thức (mã: ${rawProductId || rawSku || 'trống'}).`,
+        error: `Sản phẩm không tồn tại hoặc không thuộc danh mục mở bán chính thức (mã: ${rawProductId || rawSku || 'trống'}).`,
       });
     }
 
-    // Reject manipulated or mismatched client SKU
-    if (rawSku && rawSku !== catalogEntry.sku) {
+    // Reject manipulated, unauthorized, or mismatched client SKU
+    if (hasExplicitSku && rawSku !== catalogEntry.sku) {
       return sendJson(res, 400, {
         success: false,
         code: 'INVALID_PRODUCT_SKU',
@@ -877,7 +883,7 @@ export default async function handler(req: any, res: any) {
 
     // Reject manipulated or mismatched client variantId
     if (
-      rawVariantId &&
+      hasExplicitVariant &&
       rawVariantId !== catalogEntry.variantId &&
       rawVariantId !== catalogEntry.productId
     ) {
@@ -907,6 +913,7 @@ export default async function handler(req: any, res: any) {
       ...(typeof catalogEntry.weightGrams === 'number'
         ? { weightGrams: catalogEntry.weightGrams }
         : {}),
+      image: catalogEntry.image,
       ...(sanitizedGift ? { giftConfiguration: sanitizedGift } : {}),
     });
   }

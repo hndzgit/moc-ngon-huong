@@ -7,7 +7,7 @@ import type {
   PageRoute,
   PaymentStatus,
 } from '../types';
-import { PRODUCTS, LOOSE_TEA_PRODUCTS } from '../data/products';
+import { PRODUCTS, findLegacyOrderProductVisual } from '../data/products';
 import { FIGMA_PRODUCT_COPY, getOrderMedia } from '../data/figmaMedia';
 import {
   buildOrderPaymentInstructions,
@@ -65,8 +65,6 @@ export interface OrderConfirmationProps {
   onStartNewCheckout?: () => void;
   onNavigate: (page: PageRoute) => void;
 }
-
-const ALL_CATALOG = [...PRODUCTS, ...LOOSE_TEA_PRODUCTS];
 
 export function OrderConfirmation({
   items,
@@ -149,7 +147,9 @@ export function OrderConfirmation({
   const displayItems = useMemo(() => {
     if (order?.items && order.items.length > 0) {
       return order.items.map((snap) => {
-        const found = ALL_CATALOG.find((p) => p.id === snap.productId);
+        const found = PRODUCTS.find((p) => p.id === snap.productId);
+        const visualFallback = findLegacyOrderProductVisual(snap.productId);
+        const resolvedEmotion = found?.emotion || visualFallback.emotion;
         return {
           id: snap.productId,
           sku: typeof snap.sku === 'string' && snap.sku.trim() ? snap.sku.trim() : undefined,
@@ -157,8 +157,8 @@ export function OrderConfirmation({
             snap.productId === 'hop-qua-tam-y'
               ? 'Hộp Quà Tâm Ý'
               : FIGMA_PRODUCT_COPY[snap.productId]?.title || snap.productName,
-          subtitle: found?.emotion
-            ? found.emotion === 'COMBO'
+          subtitle: resolvedEmotion
+            ? resolvedEmotion === 'COMBO'
               ? 'AN, THƯƠNG, CẢM, NHỚ'
               : {
                   AN: 'Trà Hương Hoa Bưởi thanh khiết',
@@ -166,15 +166,14 @@ export function OrderConfirmation({
                   CAM: 'Trà Hương Hoa Sói trầm ấm',
                   NHO: 'Trà Hương Cốm dịu ngọt',
                   ALL: 'Bộ sưu tập hương trà',
-                }[found.emotion] || ''
+                }[resolvedEmotion] || ''
             : 'Trà thủ công Mộc Ngôn Hương',
           price: snap.price,
           quantity: snap.quantity,
           image:
             getOrderMedia(snap.productId)?.image ||
             snap.image ||
-            found?.image ||
-            '/assets/optimized/card-buoi-an-800.webp',
+            visualFallback.image,
           position: getOrderMedia(snap.productId)?.position,
         };
       });
@@ -573,6 +572,17 @@ export function OrderConfirmation({
                       {paymentBadgeInfo.label}
                     </span>
                   </div>
+                  {total > 0 && (
+                    <div className="text-[13.5px] text-[#555555]">
+                      Tổng tiền:{' '}
+                      <strong
+                        data-testid="order-confirmation-header-total"
+                        className="text-[#3E5641] font-bold"
+                      >
+                        {money(total)}
+                      </strong>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -888,27 +898,22 @@ export function OrderConfirmation({
                     <h3 className="font-philosopher text-[17px] sm:text-[20px] text-[#3E5641] font-bold truncate">
                       {item.name}
                     </h3>
-                    <p className="text-[#777777] text-[13px] mt-0.5">
-                      {item.subtitle}
-                      {item.sku && (
-                        <span
-                          data-testid={`confirmation-item-sku-${item.id}`}
-                          className="font-mono text-[#555555] whitespace-nowrap"
-                        >
-                          {' · Mã SP: '}
-                          {item.sku}
-                        </span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-3 mt-2">
+                    <p className="text-[#777777] text-[13px] mt-0.5">{item.subtitle}</p>
+                    {item.sku && (
+                      <p
+                        data-testid={`confirmation-item-sku-${item.id}`}
+                        className="text-[#555555] text-[12px] font-mono mt-0.5 whitespace-nowrap"
+                      >
+                        Mã sản phẩm: {item.sku}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
                       <span className="text-[#3E5641] text-[16px] sm:text-[18px] font-semibold">
                         {money(item.price * item.quantity)}
                       </span>
-                      {item.quantity > 1 && (
-                        <span className="text-[#888888] text-[12px]">
-                          ({money(item.price)} / hộp)
-                        </span>
-                      )}
+                      <span className="text-[#777777] text-[12.5px]">
+                        (Số lượng: {item.quantity} × {money(item.price)})
+                      </span>
                     </div>
                   </div>
                 </div>
