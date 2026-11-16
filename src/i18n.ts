@@ -5,9 +5,11 @@ import { enResources } from './locales/en';
 import {
   DEFAULT_LOCALE,
   SupportedLocale,
+  detectExplicitUrlLocale,
   detectInitialLocale,
   normalizeLocale,
   persistLocale,
+  syncUrlLocale,
 } from './lib/locale';
 import type { PageRoute } from './types';
 import { getLocalizedProductNameById } from './data/localizedCatalog';
@@ -47,6 +49,10 @@ if (!i18n.isInitialized) {
 
 if (typeof document !== 'undefined') {
   document.documentElement.lang = initialLanguage;
+  const isAdminHash = (window.location.hash || '').startsWith('#/admin');
+  if (!isAdminHash && (detectExplicitUrlLocale() !== null || initialLanguage === 'en')) {
+    syncUrlLocale(initialLanguage);
+  }
 }
 
 export function getActiveLocale(): SupportedLocale {
@@ -56,6 +62,9 @@ export function getActiveLocale(): SupportedLocale {
 export async function changeAppLanguage(nextLang: SupportedLocale): Promise<void> {
   const normalized = normalizeLocale(nextLang);
   persistLocale(normalized);
+  if (typeof window !== 'undefined' && !(window.location.hash || '').startsWith('#/admin')) {
+    syncUrlLocale(normalized);
+  }
   if (typeof document !== 'undefined') {
     document.documentElement.lang = normalized;
   }

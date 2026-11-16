@@ -10,8 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { CartItem, GiftConfiguration, GiftDraft, PageRoute, Product, TeaEmotion } from './types';
 import { changeEmotion, createGiftDraft, INTENTIONS, journeyHash } from './data/giftJourney';
 import { getLocalizedCardCopy } from './data/localizedCatalog';
-import { normalizeLocale } from './lib/locale';
-import { updateDocumentSeo } from './i18n';
+import { detectExplicitUrlLocale, normalizeLocale } from './lib/locale';
+import { changeAppLanguage, updateDocumentSeo } from './i18n';
 import { AtelierIntroduction } from './components/AtelierIntroduction';
 import { PRODUCTS } from './data/products';
 import { Navbar } from './components/Navbar';
@@ -90,6 +90,10 @@ export function App() {
 
   useEffect(() => {
     const restoreRoute = () => {
+      const hashLang = detectExplicitUrlLocale('', window.location.hash);
+      if (hashLang && hashLang !== locale) {
+        void changeAppLanguage(hashLang);
+      }
       const route = readRoute();
       setCurrentPage(route.page);
       if (route.productId) setSelectedProductId(route.productId);
@@ -102,7 +106,7 @@ export function App() {
     };
     window.addEventListener('hashchange',restoreRoute);
     return () => window.removeEventListener('hashchange',restoreRoute);
-  },[]);
+  },[locale]);
 
   // Preserve saved carts; seed the Figma 127:8439 fixture only in explicit dev QA mode.
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {

@@ -17,25 +17,56 @@ export function isSupportedLocale(input: unknown): input is SupportedLocale {
   return input === 'vi' || input === 'en';
 }
 
-export function detectInitialLocale(): SupportedLocale {
-  if (typeof window !== 'undefined') {
-    try {
-      const searchParams = new URLSearchParams(window.location.search);
+export function detectExplicitUrlLocale(
+  searchStr?: string,
+  hashStr?: string
+): SupportedLocale | null {
+  try {
+    const rawSearch =
+      searchStr !== undefined
+        ? searchStr
+        : typeof window !== 'undefined'
+        ? window.location.search
+        : '';
+    if (rawSearch) {
+      const searchParams = new URLSearchParams(rawSearch);
       const queryLang = searchParams.get('lang');
-      if (queryLang && (queryLang.trim().toLowerCase() === 'en' || queryLang.trim().toLowerCase() === 'vi')) {
-        return normalizeLocale(queryLang);
+      if (queryLang) {
+        const lower = queryLang.trim().toLowerCase();
+        if (lower === 'en' || lower.startsWith('en-') || lower.startsWith('en_') || lower === 'vi' || lower.startsWith('vi-') || lower.startsWith('vi_')) {
+          return normalizeLocale(queryLang);
+        }
       }
-      const hash = window.location.hash || '';
-      const qIdx = hash.indexOf('?');
-      if (qIdx >= 0) {
-        const hashParams = new URLSearchParams(hash.slice(qIdx + 1));
-        const hashLang = hashParams.get('lang');
-        if (hashLang && (hashLang.trim().toLowerCase() === 'en' || hashLang.trim().toLowerCase() === 'vi')) {
+    }
+    const rawHash =
+      hashStr !== undefined
+        ? hashStr
+        : typeof window !== 'undefined'
+        ? window.location.hash || ''
+        : '';
+    const qIdx = rawHash.indexOf('?');
+    if (qIdx >= 0) {
+      const hashParams = new URLSearchParams(rawHash.slice(qIdx + 1));
+      const hashLang = hashParams.get('lang');
+      if (hashLang) {
+        const lower = hashLang.trim().toLowerCase();
+        if (lower === 'en' || lower.startsWith('en-') || lower.startsWith('en_') || lower === 'vi' || lower.startsWith('vi-') || lower.startsWith('vi_')) {
           return normalizeLocale(hashLang);
         }
       }
-    } catch {
-      // Ignore URL parsing errors
+    }
+  } catch {
+    // Ignore URL parsing errors
+  }
+  return null;
+}
+
+export function detectInitialLocale(): SupportedLocale {
+  if (typeof window !== 'undefined') {
+    const explicit = detectExplicitUrlLocale();
+    if (explicit) {
+      persistLocale(explicit);
+      return explicit;
     }
 
     try {
@@ -48,6 +79,37 @@ export function detectInitialLocale(): SupportedLocale {
     }
   }
   return DEFAULT_LOCALE;
+}
+
+export function syncUrlLocale(locale: SupportedLocale): void {
+  if (typeof window === 'undefined' || !window.history?.replaceState) return;
+  try {
+    const url = new URL(window.location.href);
+    if (locale === 'en') {
+      url.searchParams.set('lang', 'en');
+    } else {
+      url.searchParams.delete('lang');
+    }
+
+    // Keep hash path clean and prevent stale ?lang= inside hash from overriding active locale on reload
+    if (url.hash && url.hash.includes('?')) {
+      const qIdx = url.hash.indexOf('?');
+      const hashBase = url.hash.slice(0, qIdx);
+      const hashParams = new URLSearchParams(url.hash.slice(qIdx + 1));
+      if (hashParams.has('lang')) {
+        hashParams.delete('lang');
+        const nextHashQuery = hashParams.toString();
+        url.hash = nextHashQuery ? `${hashBase}?${nextHashQuery}` : hashBase;
+      }
+    }
+
+    const nextHref = url.toString();
+    if (nextHref !== window.location.href) {
+      window.history.replaceState(window.history.state, '', nextHref);
+    }
+  } catch {
+    // Ignore history API restrictions
+  }
 }
 
 export function persistLocale(locale: SupportedLocale): void {

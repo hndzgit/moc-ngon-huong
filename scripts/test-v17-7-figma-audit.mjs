@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -34,7 +35,13 @@ await new Promise((resolve, reject) => {
 console.log(`✓ Vite preview server started on ${BASE_URL}`);
 
 try {
-  const browser = await chromium.launch();
+  const chromeExecutable =
+    process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
+    ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find((p) => existsSync(p));
+  const browser = await chromium.launch({
+    headless: true,
+    ...(chromeExecutable ? { executablePath: chromeExecutable } : {}),
+  });
   const ctx1x = await browser.newContext({
     viewport: { width: 1440, height: 1080 },
     deviceScaleFactor: 1,

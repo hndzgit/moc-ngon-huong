@@ -557,20 +557,31 @@ export function getLocalizedReviews(locale: SupportedLocale): ReviewItem[] {
   ];
 }
 
-export function getProductSearchCorpus(product: Product): string {
+export function getProductSearchFields(product: Product): {
+  viTitle: string;
+  viDesc: string;
+  enTitle: string;
+  enDesc: string;
+} {
   const en = PRODUCT_EN_CONTENT[product.id];
-  return [
-    product.name,
-    product.shortName,
-    product.emotionLabel,
-    product.shortDesc,
-    product.sku,
-    en?.name || '',
-    en?.shortName || '',
-    en?.emotionLabel || '',
-    en?.shortDesc || '',
-    en?.searchKeywords || '',
-  ].join(' ');
+  return {
+    viTitle: [product.name, product.shortName, product.emotionLabel, product.sku, product.id].join(' '),
+    viDesc: product.shortDesc,
+    enTitle: [
+      en?.name || product.name,
+      en?.shortName || product.shortName,
+      en?.emotionLabel || product.emotionLabel,
+      en?.searchKeywords || '',
+      product.sku,
+      product.id,
+    ].join(' '),
+    enDesc: en?.shortDesc || product.shortDesc,
+  };
+}
+
+export function getProductSearchCorpus(product: Product): string {
+  const fields = getProductSearchFields(product);
+  return `${fields.viTitle} ${fields.viDesc} ${fields.enTitle} ${fields.enDesc}`;
 }
 
 export function getCartProductTitle(product: Product, locale: SupportedLocale): string {

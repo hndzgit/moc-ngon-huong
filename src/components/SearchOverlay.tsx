@@ -8,7 +8,7 @@ import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
 import { FIGMA_LISTING_MEDIA } from '../data/figmaMedia';
-import { getLocalizedCardCopy, getProductSearchCorpus } from '../data/localizedCatalog';
+import { getLocalizedCardCopy, getProductSearchFields } from '../data/localizedCatalog';
 import { normalizeLocale } from '../lib/locale';
 
 interface SearchOverlayProps {
@@ -46,11 +46,17 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     if (!q) return PRODUCTS;
     const tokens = q.split(/\s+/).filter(Boolean);
     return PRODUCTS.filter((p) => {
-      const searchText = normalize(getProductSearchCorpus(p));
-      return (
-        searchText.includes(q) ||
-        (tokens.length > 0 && tokens.every((token) => searchText.includes(token)))
-      );
+      const fields = getProductSearchFields(p);
+      const matchLang = (titleRaw: string, descRaw: string) => {
+        const titleText = normalize(titleRaw);
+        const descText = normalize(descRaw);
+        return (
+          titleText.includes(q) ||
+          descText.includes(q) ||
+          (tokens.length > 0 && tokens.every((token) => titleText.includes(token)))
+        );
+      };
+      return matchLang(fields.viTitle, fields.viDesc) || matchLang(fields.enTitle, fields.enDesc);
     });
   }, [query]);
 

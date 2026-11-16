@@ -506,7 +506,13 @@ async function runTests() {
         const runtimeErrors: string[] = [];
         page.on('pageerror', (e: any) => runtimeErrors.push(e?.message || String(e)));
 
-        // A. Default VI load + SEO check
+        // A. Default VI load + SEO check (static + dynamic)
+        const staticIndexHtml = fs.readFileSync(path.join(DIST_DIR, 'index.html'), 'utf-8');
+        assert(staticIndexHtml.includes('rel="canonical"'));
+        assert(staticIndexHtml.includes('hreflang="en"'));
+        assert(staticIndexHtml.includes('hreflang="vi"'));
+        assert(staticIndexHtml.includes('hreflang="x-default"'));
+
         await page.goto(`${baseUrl}/#/`, { waitUntil: 'networkidle' });
         await page.waitForTimeout(300);
         const viSeo = await page.evaluate(() => ({
@@ -519,9 +525,10 @@ async function runTests() {
         }));
         assert.equal(viSeo.lang, 'vi');
         assert(viSeo.title.includes('Mộc Ngôn Hương'));
+        assert(viSeo.canonical === 'https://mocngonhuong.com/');
         assert(viSeo.hreflangVi && viSeo.hreflangEn && viSeo.hreflangDefault);
 
-        // B. Switch to EN via Header Switcher + keyboard Escape check + reload persistence
+        // B. Switch to EN via Header Switcher + URL ?lang=en sync + Escape check + reload persistence
         await page.click('[data-testid="header-language-switcher"]');
         await page.keyboard.press('Escape');
         await page.waitForTimeout(100);
@@ -533,6 +540,11 @@ async function runTests() {
 
         assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
         assert.equal(await page.evaluate(() => window.localStorage.getItem('mnh_language_v1')), 'en');
+        assert(page.url().includes('?lang=en'), `Switching to EN should keep ?lang=en in shareable URL, got ${page.url()}`);
+        assert.equal(
+          await page.evaluate(() => document.querySelector('link[rel="canonical"]')?.getAttribute('href')),
+          'https://mocngonhuong.com/?lang=en'
+        );
         await page.screenshot({ path: path.join(EVIDENCE_DIR, 'desktop-1440-home-en.png') });
 
         // Reload and ensure EN persists
@@ -540,13 +552,57 @@ async function runTests() {
         await page.waitForTimeout(250);
         assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
 
-        // C. Bilingual Search Overlay ('jasmine' finds THƯƠNG)
+        // B2. Fresh incognito context opening hash EN link (#/san-pham/buoi-an?lang=en) with empty localStorage
+        const freshUrlCtx = await chrome.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+        const freshUrlPage = await freshUrlCtx.newPage();
+        await freshUrlPage.goto(`${baseUrl}/#/san-pham/buoi-an?lang=en`, { waitUntil: 'networkidle' });
+        await freshUrlPage.waitForTimeout(250);
+        assert.equal(await freshUrlPage.evaluate(() => document.documentElement.lang), 'en');
+        assert.equal(await freshUrlPage.evaluate(() => window.localStorage.getItem('mnh_language_v1')), 'en');
+        await freshUrlPage.locator('header nav button:has-text("Products")').click();
+        await freshUrlPage.waitForTimeout(200);
+        assert(freshUrlPage.url().includes('?lang=en'), `Navigation from EN link must retain ?lang=en: ${freshUrlPage.url()}`);
+        await freshUrlPage.reload({ waitUntil: 'networkidle' });
+        await freshUrlPage.waitForTimeout(250);
+        assert.equal(await freshUrlPage.evaluate(() => document.documentElement.lang), 'en');
+        // Switching EN -> VI strips ?lang=en from URL so reload stays VI
+        await freshUrlPage.click('[data-testid="header-language-switcher"]');
+        await freshUrlPage.click('[data-testid="language-option-vi"]');
+        await freshUrlPage.waitForTimeout(200);
+        assert(!freshUrlPage.url().includes('lang=en'), `Switching to VI must remove ?lang=en from URL: ${freshUrlPage.url()}`);
+        await freshUrlPage.reload({ waitUntil: 'networkidle' });
+        await freshUrlPage.waitForTimeout(200);
+        assert.equal(await freshUrlPage.evaluate(() => document.documentElement.lang), 'vi');
+        // Hashchange with ?lang=en updates locale dynamically
+        await freshUrlPage.evaluate(() => {
+          window.location.hash = '#/cau-chuyen?lang=en';
+        });
+        await freshUrlPage.waitForTimeout(250);
+        assert.equal(await freshUrlPage.evaluate(() => document.documentElement.lang), 'en');
+        // Direct ?lang=vi overrides existing 'en' in localStorage
+        await freshUrlPage.goto(`${baseUrl}/?lang=vi#/san-pham`, { waitUntil: 'networkidle' });
+        await freshUrlPage.waitForTimeout(200);
+        assert.equal(await freshUrlPage.evaluate(() => document.documentElement.lang), 'vi');
+        await freshUrlCtx.close();
+
+        // C. Bilingual Search Overlay ('jasmine' finds THƯƠNG, 'jasmine blossom' -> 1, 'tra huong buoi' -> 1, 'tra da huong' -> 1)
         await page.locator('header button[aria-label*="Search"]').click();
         await page.waitForTimeout(150);
-        await page.locator('input[placeholder*="Search"]').fill('jasmine');
-        await page.waitForTimeout(200);
+        const sInput = page.locator('input[placeholder*="Search"]');
+        await sInput.fill('jasmine');
+        await page.waitForTimeout(180);
+        assert((await page.locator('.search-card .product-card').count()) >= 1, '"jasmine" must match at least 1 product');
         const searchBody = await page.locator('body').innerText();
         assert(searchBody.includes('Jasmine Blossom Tea'), 'Bilingual search for "jasmine" must match THƯƠNG');
+        await sInput.fill('jasmine blossom');
+        await page.waitForTimeout(150);
+        assert.equal(await page.locator('.search-card .product-card').count(), 1, '"jasmine blossom" must match 1 product');
+        await sInput.fill('tra huong buoi');
+        await page.waitForTimeout(150);
+        assert.equal(await page.locator('.search-card .product-card').count(), 1, '"tra huong buoi" must match 1 product');
+        await sInput.fill('tra da huong');
+        await page.waitForTimeout(150);
+        assert.equal(await page.locator('.search-card .product-card').count(), 1, '"tra da huong" must match 1 product');
         await page.keyboard.press('Escape');
         await page.waitForTimeout(150);
 
