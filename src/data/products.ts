@@ -1,5 +1,4 @@
-import { Product, ProductSku, ReviewItem, SkuCatalogEntry } from '../types';
-import { getOrderMedia } from './figmaMedia';
+import type { Product, ProductSku, ReviewItem, SkuCatalogEntry } from '../types.js';
 
 /**
  * Mộc Ngôn Hương — Centralized Authorized Website Product SKU Catalog.
@@ -399,12 +398,11 @@ export function findLegacyOrderProductVisual(productId: string | undefined | nul
   image: string;
 } {
   const id = typeof productId === 'string' ? productId.trim() : '';
-  const orderMedia = getOrderMedia(id);
   const directMatch = PRODUCTS.find((p) => p.id === id);
   if (directMatch) {
     return {
       emotion: directMatch.emotion,
-      image: orderMedia?.image || directMatch.image,
+      image: directMatch.image,
     };
   }
   const normalizedBaseId =
@@ -412,7 +410,7 @@ export function findLegacyOrderProductVisual(productId: string | undefined | nul
   const baseMatch = PRODUCTS.find((p) => p.id === normalizedBaseId);
   return {
     emotion: baseMatch?.emotion,
-    image: orderMedia?.image || baseMatch?.image || '/assets/optimized/order-thumb-buoi-an.webp',
+    image: baseMatch?.image || '/assets/optimized/order-thumb-buoi-an.webp',
   };
 }
 
