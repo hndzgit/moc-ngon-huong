@@ -142,9 +142,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       {product.sku && (
                         <div
                           data-testid={`cart-item-sku-${product.id}`}
-                          className="text-[11.5px] text-[#666666] font-mono mt-0.5 leading-[16px] whitespace-nowrap"
+                          className="text-[11.5px] text-[#666666] font-mono mt-0.5 leading-[16px]"
                         >
-                          Mã sản phẩm: {product.sku}
+                          Mã sản phẩm:{' '}
+                          <span className="whitespace-nowrap">{product.sku}</span>
                         </div>
                       )}
                       <p className="cart-item-price text-[14px] text-[#444444] mt-1">

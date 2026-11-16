@@ -1295,13 +1295,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 {/* Product Items List */}
                 <div className="divide-y divide-[#F0EBE1] max-h-[360px] overflow-y-auto pr-1">
                   {items.map(({ product, quantity, giftConfiguration }) => (
-                    <div key={product.id} className="py-3.5 flex items-center gap-3.5 group">
+                    <div key={product.id} className="py-3.5 flex items-start sm:items-center gap-3 sm:gap-3.5 group">
                       <div className="relative shrink-0">
                         <img
                           src={assetUrl(getOrderMedia(product.id)?.image || product.image)}
                           style={{ objectPosition: getOrderMedia(product.id)?.position }}
                           alt={product.name}
-                          className="w-[60px] h-[60px] rounded-[10px] object-cover border border-[#E5DFD5] bg-[#FAF8F3]"
+                          className="w-[56px] h-[56px] sm:w-[60px] sm:h-[60px] rounded-[10px] object-cover border border-[#E5DFD5] bg-[#FAF8F3]"
                         />
                         <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#3E5641] text-white text-[11px] font-bold flex items-center justify-center shadow-xs">
                           {quantity}
@@ -1328,14 +1328,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         {product.sku && (
                           <p
                             data-testid={`checkout-item-sku-${product.id}`}
-                            className="text-[11px] font-mono text-[#555555] mt-0.5 whitespace-nowrap"
+                            className="text-[11px] font-mono text-[#555555] mt-0.5 leading-snug"
                           >
-                            Mã sản phẩm: {product.sku}
+                            Mã sản phẩm:{' '}
+                            <span className="whitespace-nowrap font-semibold text-[#3E5641]">
+                              {product.sku}
+                            </span>
                           </p>
                         )}
-                        <p className="text-[11px] text-[#777777] mt-0.5">
+                        <p className="text-[11px] text-[#777777] mt-0.5 leading-snug">
                           Số lượng: <strong className="text-[#222222]">{quantity}</strong> • Đơn giá:{' '}
-                          {product.price.toLocaleString('vi-VN')}đ
+                          <span className="whitespace-nowrap">
+                            {product.price.toLocaleString('vi-VN')}đ
+                          </span>
                         </p>
                         {giftConfiguration && (
                           <span className="inline-flex items-center gap-1 text-[11px] text-[#C89F5D] font-medium mt-0.5">

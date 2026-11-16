@@ -902,9 +902,12 @@ export function OrderConfirmation({
                     {item.sku && (
                       <p
                         data-testid={`confirmation-item-sku-${item.id}`}
-                        className="text-[#555555] text-[12px] font-mono mt-0.5 whitespace-nowrap"
+                        className="text-[#555555] text-[12px] font-mono mt-0.5"
                       >
-                        Mã sản phẩm: {item.sku}
+                        Mã sản phẩm:{' '}
+                        <span className="whitespace-nowrap font-semibold text-[#3E5641]">
+                          {item.sku}
+                        </span>
                       </p>
                     )}
                     <div className="flex flex-wrap items-center gap-3 mt-1.5">

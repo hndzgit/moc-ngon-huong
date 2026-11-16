@@ -601,6 +601,14 @@ async function main() {
           );
           assert.ok(overflow <= 0, `Overflow ${overflow}px on Checkout at ${vp.width}px`);
           assert.equal(await page.getByTestId('checkout-item-sku-nhai-thuong').isVisible(), true);
+          const skuNonOverlap = await page.evaluate(() => {
+            const skuEl = document.querySelector('[data-testid="checkout-item-sku-nhai-thuong"]') as HTMLElement | null;
+            const rowEl = skuEl?.closest('.group') as HTMLElement | null;
+            const priceCol = rowEl?.lastElementChild as HTMLElement | null;
+            if (!skuEl || !priceCol) return false;
+            return skuEl.scrollWidth <= skuEl.clientWidth + 1 && skuEl.getBoundingClientRect().right <= priceCol.getBoundingClientRect().left + 2;
+          });
+          assert.equal(skuNonOverlap, true, `SKU overlaps price column at ${vp.width}px`);
         }
 
         // Intercept POST /api/orders with a deterministic local API-like response for UI confirmation verification

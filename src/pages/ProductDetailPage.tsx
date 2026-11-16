@@ -196,9 +196,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 {product.sku && (
                   <p
                     data-testid="product-detail-sku"
-                    className="font-mono font-normal text-[12.5px] sm:text-[13px] leading-[18px] text-[#666666] mt-1 tracking-normal whitespace-nowrap"
+                    className="font-mono font-normal text-[12.5px] sm:text-[13px] leading-[18px] text-[#666666] mt-1 tracking-normal"
                   >
-                    Mã sản phẩm: {product.sku}
+                    Mã sản phẩm:{' '}
+                    <span className="whitespace-nowrap">{product.sku}</span>
                   </p>
                 )}
               </div>
